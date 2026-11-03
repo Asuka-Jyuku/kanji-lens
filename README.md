@@ -143,4 +143,6 @@ Computer Vision, Deep Learning and CNNs, asynchronous processing, event-driven a
 
 ## License
 
-To be defined.
+The source code is licensed under the [MIT License](LICENSE).
+
+The license covers the code in this repository only. Datasets used for training and trained model weights are not part of the repository and are not covered by it: each dataset keeps its own terms, and weights trained on it may inherit them.
