@@ -92,6 +92,8 @@ Não crie documento vazio. Cada um nasce no primeiro PR que precisa dele e, daí
 
 Conventional Commits **em inglês** (fluxo de branches, comandos e o Project em [CONTRIBUTING.md](CONTRIBUTING.md)). Escopos: `frontend`, `backend`, `ml`, `infra`, `repo`. **A `main` é protegida** (só recebe merge de `develop`, `release/*` ou `hotfix/*`); trabalho novo parte de `develop` em `feature/<topic>` ou `fix/<topic>` e volta para `develop` por PR ([ADR 0008](docs/adr/0008-git-flow-and-changelog-by-release.md)). Nunca faça commit direto na `main` nem na `develop`.
 
+**Tipo de merge** (tabela em [CONTRIBUTING.md, "Tipo de merge"](CONTRIBUTING.md#tipo-de-merge)): PR para a `develop` entra por **squash**; release (`release/*` → `main`), hotfix (`hotfix/*` → `main`) e a volta `main` → `develop` entram por **merge commit**. Ao abrir ou revisar um PR, diga qual dos dois ele leva. Merge continua sendo decisão de uma pessoa.
+
 **Versão: só no arquivo `VERSION`**, na raiz; a tag `vX.Y.Z` tem de ser igual, e `pyproject.toml`/`package.json` seguem o mesmo número quando existirem. A versão **sobe no release, não a cada PR** (ADR 0008):
 - `feat` → o número do meio (0.2.0 → 0.3.0); `fix`, `docs`, `build`, `ci`, `refactor`, `perf`, `test`, `chore`, `style` → o último; quebra de verdade → o primeiro (pergunte ao usuário antes). Enquanto estiver em `0.x`, quebra sobe o número do meio.
 - No release, vale o maior tipo entre as entradas de `[Não publicado]`.
