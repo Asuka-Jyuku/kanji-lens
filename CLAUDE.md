@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Documentação: `docs/`, ADRs, `CHANGELOG.md`, `CONTRIBUTING.md`, este arquivo, skills e agentes de `.claude/` | Código: classes, funções, variáveis, **nomes de arquivos e pastas**, comentários no código, mensagens de log e de erro |
 | Issues (título e corpo) e o corpo dos PRs, seguindo os templates de `.github/` | Mensagens de commit, **título do PR** (vira o commit do squash) e nomes de branch |
 | Respostas, perguntas e resumos de fim de tarefa | Etiquetas do GitHub e nomes de skills e agentes |
+| **Textos da tela:** português primeiro, japonês depois, sempre pelo i18n e nunca escritos direto no template ([ADR 0009](docs/adr/0009-portuguese-ui-first-then-japanese.md)) | Códigos de erro e de estado que a API devolve (`queue_full`), que o frontend transforma em texto |
 
 Vale também quando o conteúdo técnico (log, erro, documentação de biblioteca) vier em inglês e depois de a conversa ser resumida. Termo técnico fica em inglês, sem tradução forçada (use case, port, adapter, worker, job, Top-5). O `README.md` é em inglês e tem a tradução `README.pt-BR.md`: **mudou um, muda o outro no mesmo PR**.
 
@@ -81,9 +82,13 @@ Não crie documento vazio. Cada um nasce no primeiro PR que precisa dele e, daí
 | `docs/architecture/domain.md` | o primeiro código de domínio: glossário e diagrama de estados do job | termo novo do domínio ou estado novo |
 | `docs/RUNNING.md` | a primeira parte que roda: como rodar localmente e na rede local | qualquer mudança em portas, variáveis de ambiente ou partida |
 
+## UI/UX
+
+**Mexeu em tela, canvas, resultado, navegação ou controle? Leia [docs/UI-UX.md](docs/UI-UX.md) antes de propor, avaliar, revisar ou implementar:** as referências obrigatórias (Nielsen, NN/g, WCAG 2.2, WAI-ARIA, Shneiderman) e os padrões propostos. Cite o princípio que sustenta cada decisão, separe o que vem das fontes do que é julgamento próprio e diga quando algo não foi validado com uso real num celular.
+
 ## Skills e agentes do projeto (`.claude/`)
 
-- **Angular:** a skill `angular-conventions` é o roteiro de todo trabalho no frontend (tela nova, mudança, revisão). O agente `dev-angular` a carrega, para implementar ou revisar telas em paralelo.
+- **Angular:** a skill `angular-conventions` é o roteiro de todo trabalho no frontend (tela nova, mudança, avaliação de UI/UX, revisão). O agente `dev-angular` a carrega, para avaliar telas em paralelo (um agente por tela), implementar ou revisar.
 - **FastAPI:** a skill `fastapi-conventions` é o roteiro de todo trabalho no backend (use case, adapter, endpoint, worker, revisão). O agente `dev-backend` a carrega.
 - **ML:** a skill `ml-conventions` é o roteiro de dataset, pré-processamento, treino, avaliação e do adapter do recognizer. O agente `dev-ml` a carrega.
 - Os agentes compartilham um hook (`.claude/hooks/block-merge-in-agent.sh`) que barra `gh pr merge` e `git push` forçado.

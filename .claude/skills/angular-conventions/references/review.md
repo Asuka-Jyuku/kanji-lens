@@ -1,10 +1,27 @@
-# Revisão de código Angular
+# Avaliação de tela e revisão de código Angular
 
-Use ao revisar um PR com frontend e no fim do seu próprio trabalho. Cada achado sai com `arquivo:linha`, o que acontece de errado (entrada → resultado) e a fonte da regra; o que for gosto, sem fonte, diga que é julgamento.
+Use ao avaliar uma tela, ao revisar um PR com frontend e no fim do seu próprio trabalho. Cada achado sai com `arquivo:linha` (ou o print), o que dá errado (quem usa faz X → acontece Y) e a fonte: o princípio de `docs/UI-UX.md`, a ADR ou a regra. O que for gosto, sem fonte, diga que é julgamento.
 
 ## O que a CI já pega (não gaste a revisão nisso)
 
 Build, checagem de tipos, testes, linter e o teste de arquitetura, quando existirem (ADR de ferramentas da etapa 3). Se um deles falhou na CI, a revisão aponta o job; não reexplica a regra.
+
+## Avaliar uma tela (UI/UX)
+
+Abra a tela num viewport de celular (360×800, com touch) e num de computador **e** leia o código. Prints automatizados entram quando a ferramenta de teste no navegador for escolhida na ADR de ferramentas da etapa 3; até lá, diga como olhou. Do mais grave ao menos:
+
+1. **O canvas é o centro:** é o maior elemento, cabe inteiro no celular sem rolar, e "Limpar" e "Reconhecer" ficam logo abaixo, ao alcance do polegar (Nielsen 8; Harley, NN/g).
+2. **Desenhar funciona no celular:** o traço não rola nem dá zoom na página, não sai borrado e continua se o dedo sair do canvas (`style.md`, "Canvas e touch").
+3. **Estado do job visível e anunciado:** na fila, reconhecendo, pronto, falhou, fila cheia e sem rede, cada um com texto e anunciado sem tirar o foco (Nielsen 1; WCAG 4.1.3 e 3.3.1).
+4. **Teclado:** tudo menos o traço funciona por teclado: limpar, reconhecer, escolher um candidato, abrir opções; foco visível (WCAG 2.1.1 e 1.4.11).
+5. **Gestos:** nenhum comando só por gesto ou arrasto fora do desenho; botões agem no soltar (WCAG 2.5.1, 2.5.2 e 2.5.7).
+6. **Alvo** de toque ≥ 1 cm (Harley, NN/g), nunca abaixo de 24×24 px (WCAG 2.5.8); **contraste** de texto ≥ 4,5:1 e de borda, traço e foco ≥ 3:1 (WCAG 1.4.3 e 1.4.11).
+7. **Candidatos:** texto de verdade com `lang="ja"`, do mais provável ao menos, confiança em porcentagem e sem jargão de ML (WCAG 1.1.1 e 3.1.2; Nielsen 2 e 6).
+8. **Controle e erro:** dá para desfazer o último traço e limpar tudo; "Reconhecer" não manda canvas vazio (Nielsen 3 e 5).
+9. **Dica e balão:** nada só em `title=`; o balão some com Esc e funciona no toque (WCAG 1.4.13).
+10. **Celular:** nada rola para o lado em 320 px, funciona em pé e deitado (WCAG 1.4.10 e 1.3.4).
+
+Separe o que viu na tela do que leu no código, e diga o que não deu para ver (backend falso, celular de verdade, leitor de tela de verdade, rede local).
 
 ## O que só a revisão pega
 
@@ -31,8 +48,12 @@ Build, checagem de tipos, testes, linter e o teste de arquitetura, quando existi
 **Rede local (ADR 0007)**
 - [ ] Nenhuma URL com `localhost` fixo; a base da API vem da configuração ou do proxy do servidor de desenvolvimento.
 
-**Acessibilidade**
-- [ ] Botões são botões de verdade, com rótulo; o estado de processamento e os resultados são anunciados (`aria-live`).
+**UI/UX (`docs/UI-UX.md`)**
+- [ ] Cada decisão de desenho no PR cita o princípio de UI/UX, separando fonte de julgamento, e diz o que não foi validado com uso real.
+- [ ] Padrão novo de UI: na lista de padrões de `docs/UI-UX.md` e, se mudar decisão, ADR.
 
 **Idioma (`CLAUDE.md`, "Idioma")**
 - [ ] Código, nomes de arquivos e comentários em inglês.
+- [ ] Nenhum texto de interface escrito direto no template ou no código: tudo pelo i18n, em português (ADR 0009).
+- [ ] Todo kanji na tela com `lang="ja"`; `<html lang>` certo; fonte japonesa do sistema ou empacotada, nunca de CDN (ADR 0009, WCAG 3.1.1 e 3.1.2).
+- [ ] Erro da API mostrado a partir do código (`queue_full`), não da mensagem do backend.

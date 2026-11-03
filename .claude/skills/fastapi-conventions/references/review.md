@@ -33,6 +33,7 @@ Formatter, linter, type checker, testes e o teste de arquitetura, quando existir
 
 **Contrato**
 - [ ] O formato da resposta bate com o ARCHITECTURE.md, seção 2.2 (`job_id`, `status`, `predictions[].kanji`, `predictions[].confidence`); uma mudança atualiza o documento e o frontend no mesmo PR.
+- [ ] Erro devolve um código estável (`queue_full`), não um texto para o usuário; código novo entra no frontend, com a tradução, no mesmo PR (ADR 0009).
 
 **Idioma (`CLAUDE.md`, "Idioma")**
 - [ ] Código, nomes de arquivos, comentários e mensagens de log e de erro em inglês.

@@ -45,7 +45,7 @@ flowchart LR
 
 ### 2.1 Frontend
 
-**Stack:** Angular, TypeScript, HTML, CSS, HTML Canvas API ([ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md)).
+**Stack:** Angular, TypeScript, HTML, CSS, HTML Canvas API ([ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md)). As referências e os padrões de UI/UX estão em [UI-UX.md](UI-UX.md). A interface é em português, com o japonês depois, e todo texto passa pelo i18n desde a primeira tela ([ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md)).
 
 Funcionalidades:
 
@@ -58,7 +58,7 @@ Funcionalidades:
 ```text
 ┌──────────────────────────────┐
 │          KanjiLens           │
-│        Draw your Kanji       │
+│       Desenhe um kanji       │
 │                              │
 │   ┌──────────────────────┐   │
 │   │                      │   │
@@ -66,9 +66,9 @@ Funcionalidades:
 │   │                      │   │
 │   └──────────────────────┘   │
 │                              │
-│   [Clear]       [Recognize]  │
+│   [Limpar]     [Reconhecer]  │
 │                              │
-│   Predictions                │
+│   Candidatos                 │
 │   日  81%                    │
 │   目  12%                    │
 │   白   4%                    │
@@ -438,6 +438,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Dataset | A definir | Em aberto |
 | Quantidade de classes | Centenas → 2.136 (Jōyō) | Em aberto |
 | Ferramentas de cada stack | Gerenciador de pacotes, linter, test runner | Em aberto — uma ADR no começo de cada etapa |
+| Idioma da interface | Português primeiro, japonês depois, com i18n desde a primeira tela | Decidido — [ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md) (o mecanismo de i18n sai na ADR de ferramentas da etapa 3) |
 
 Quando uma decisão em aberto for fechada, ela vira ADR em `docs/adr/` e a linha dela aqui passa a apontar para a ADR.
 
