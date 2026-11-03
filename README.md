@@ -1,2 +1,139 @@
-# kanji-lens
-Handwritten Kanji Recognition using Deep Learning and Computer Vision.
+# KanjiLens
+
+**Handwritten Kanji recognition using Deep Learning and Computer Vision.**
+
+[Português](README.pt-BR.md) · [Architecture (pt-BR)](docs/architecture.md)
+
+> **Status:** early stage. The architecture is defined; implementation has not started yet.
+
+---
+
+## Overview
+
+KanjiLens is a web application where you draw a kanji on a canvas and get back a ranked list of the characters it most likely represents.
+
+The goal is not to guess the exact character every time. The goal is to show the **top candidates ranked by confidence**, so you can pick the one you meant to write.
+
+Recognition runs on a convolutional neural network (CNN) built with PyTorch. The whole system runs on a single machine on your local network: open it from your phone or desktop over Wi-Fi, with no cloud hosting or public domain required.
+
+```text
+┌──────────────────────────────┐
+│          KanjiLens           │
+│                              │
+│   ┌──────────────────────┐   │
+│   │                      │   │
+│   │          日          │   │
+│   │                      │   │
+│   └──────────────────────┘   │
+│                              │
+│   [Clear]       [Recognize]  │
+│                              │
+│   Predictions                │
+│   日  81%                    │
+│   目  12%                    │
+│   白   4%                    │
+└──────────────────────────────┘
+```
+
+## How it works
+
+1. You draw a kanji on the canvas (mouse or touch).
+2. The frontend sends the drawing to the API.
+3. The API creates a `job_id`, queues the job, and replies right away. The HTTP request does not stay open while the model runs.
+4. A worker picks up the job and runs CNN inference. The model is loaded once per worker, not once per request.
+5. The backend pushes the result to the frontend (SSE or WebSocket).
+6. The frontend shows the top-K predictions with their confidence.
+
+```text
+ Phone / Desktop
+       │
+       ▼
+ Angular frontend ──REST──▶ FastAPI ──▶ Queue ──▶ Worker(s) ──▶ PyTorch CNN
+       ▲                                                            │
+       └──────────────── SSE / WebSocket ◀── Job results ◀──────────┘
+```
+
+## Tech stack
+
+| Layer | Technologies |
+|---|---|
+| Frontend | Angular, TypeScript, HTML Canvas API |
+| Backend | Python, FastAPI, REST, SSE or WebSocket |
+| Machine Learning | PyTorch, NumPy, OpenCV (optional) |
+| Queue | `asyncio.Queue` first; Redis + Celery/RQ if needed |
+| Deployment | Local machine, accessed over the LAN |
+
+## API (planned)
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/api/recognitions` | Submit a drawing for recognition |
+| `GET` | `/api/recognitions/{id}` | Get the status and result of a job |
+| `GET` | `/api/health` | Health check |
+
+Example of a completed job:
+
+```json
+{
+  "job_id": "abc123",
+  "status": "completed",
+  "predictions": [
+    { "kanji": "日", "confidence": 0.81 },
+    { "kanji": "目", "confidence": 0.12 },
+    { "kanji": "白", "confidence": 0.04 }
+  ]
+}
+```
+
+## Project structure (planned)
+
+```text
+kanji-lens/
+├── frontend/          # Angular app (canvas, API client, results)
+├── backend/
+│   └── app/
+│       ├── api/       # REST endpoints and SSE/WebSocket
+│       ├── services/  # Job orchestration
+│       ├── workers/   # Inference workers
+│       └── models/    # Schemas/DTOs
+├── ml/
+│   ├── datasets/
+│   ├── notebooks/
+│   ├── training/
+│   ├── evaluation/
+│   └── models/        # Trained weights
+├── infrastructure/
+│   └── docker/
+├── docs/
+└── docker-compose.yml
+```
+
+## Roadmap
+
+- [ ] **Machine Learning:** pick a dataset, preprocess, train a baseline CNN, evaluate (Top-1/Top-5), top-K inference
+- [ ] **Backend:** FastAPI project, recognition endpoint, async job processing, model integration, push notifications
+- [ ] **Frontend:** Angular app, responsive canvas with mouse and touch, results view
+- [ ] **Infrastructure:** LAN access, CORS and firewall setup, load test with ~10 concurrent users, CPU/memory/GPU profiling
+
+See the full checklist in [docs/architecture.md](docs/architecture.md#8-escopo-do-mvp).
+
+## Open decisions
+
+| Topic | Options | Current direction |
+|---|---|---|
+| Job queue | `asyncio.Queue` / Redis + Celery or RQ | Start with `asyncio.Queue`, move to Redis when needed |
+| Result notification | SSE / WebSocket | Leaning SSE (server → client only) |
+| Dataset | To be defined | Public handwritten kanji dataset |
+| Number of classes | A few hundred → 2,136 Jōyō kanji | Start small, then expand |
+
+## Running locally
+
+Not available yet. Setup instructions will be added once the first components are in place.
+
+## What this project explores
+
+Computer Vision, Deep Learning and CNNs, asynchronous processing, event-driven architecture, REST APIs, real-time communication, concurrency and job queues, and integration between a frontend and an ML model.
+
+## License
+
+To be defined.
