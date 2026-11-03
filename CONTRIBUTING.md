@@ -84,8 +84,8 @@ Um épico agrupa issues. Há dois tipos:
 
 | Tipo | O que é | Ciclo de vida |
 |---|---|---|
-| **Épico de entrega** | Um objetivo com fim, dividido em histórias em ordem (ex.: "Etapa 1 — Machine Learning", do [ARCHITECTURE.md, "Escopo do MVP"](docs/ARCHITECTURE.md#9-escopo-do-mvp)) | Fecha quando a definição de pronto é atingida |
-| **Épico de tema** | Uma área permanente, que continua recebendo issues (ex.: "Segurança", "Testes e CI", "Documentação") | **Nunca fecha**: fica em `In progress` no Project |
+| **Épico de entrega** | Um objetivo com fim, dividido em histórias em ordem (ex.: "Machine Learning", a etapa 1 do [ARCHITECTURE.md, "Escopo do MVP"](docs/ARCHITECTURE.md#9-escopo-do-mvp)) | Fica com o Status `Epic` no Project e é fechado à mão quando a definição de pronto é atingida |
+| **Épico de tema** | Uma área permanente, que continua recebendo issues (ex.: "Segurança", "Testes e CI", "Documentação") | **Nunca fecha**: fica com o Status `Epic` no Project |
 
 Regras:
 - **Título:** `Épico · <nome>`. **Etiquetas:** `epic` e `epic: <name>`; toda história do épico também leva `epic: <name>`.
@@ -93,15 +93,22 @@ Regras:
 - **As histórias são sub-issues** do épico (comando acima), listadas na seção "Etapas" do épico na ordem de trabalho, com *blocked by* só para dependência real.
 - **Ninguém é atribuído ao épico nem às histórias dele.** Só a história que alguém pega para fazer vai para o nome dessa pessoa, com `in progress`; o épico continua sem dono.
 - **O texto do épico fica em dia:** marque as histórias conforme fecham e ponha uma nota "Revisão de AAAA-MM-DD" no topo de "Etapas" quando o plano mudar (histórias novas, ordem nova, issue reaberta).
-- **Épicos de tema:** o workflow "Auto-close issue" do Project fecha a issue cujo Status vai para **Done**, então o épico de tema fica em **In progress**.
+- **Todo épico tem o Status `Epic` no Project**, do começo ao fim, e nunca passa por Backlog, In progress ou Done. O workflow "Auto-close issue" fecha a issue cujo Status vai para **Done**, então arrastar um épico para lá o fecharia. O andamento do épico aparece no campo "Sub-issues progress", não no Status. O "Auto-add to project" põe o épico recém-criado em `Backlog`: troque para `Epic` logo depois de criar (comando em "Backlog no Project").
 
 A estrutura do texto de um épico está no template de Épico (`.github/ISSUE_TEMPLATE/epic.md`).
 
 ### Backlog no Project
 
-As issues e o andamento ficam no GitHub Project do repositório *(o link entra aqui quando o Project for criado)*. Issue nova (e sub-issue) entra sozinha, pelo workflow "Auto-add to project", com o Status `Backlog`.
-- **Campos:** **Status** (Backlog, In progress, In review, Done, Epic), **Priority** (P0–P2) e **Size** (XS–XL). Na prática, a prioridade vai na etiqueta `priority: high|medium|low`.
-- **Pelo `gh`** (a conta precisa do escopo `project`): `gh project item-list <número> --owner Asuka-Jyuku`, `gh project field-list <número> --owner Asuka-Jyuku` e `gh project item-edit`.
+As issues e o andamento ficam no GitHub Project do repositório, o [CNN de Kanjis](https://github.com/orgs/Asuka-Jyuku/projects/6) (número 6). Issue nova (e sub-issue) entra sozinha, pelo workflow "Auto-add to project", com o Status `Backlog`.
+- **Campos:** **Status** (Backlog, Ready, In progress, In review, Done e Epic, este só para épicos), **Priority** (P0–P2) e **Size** (XS–XL). Na prática, a prioridade vai na etiqueta `priority: high|medium|low`.
+- **Pelo `gh`** (a conta precisa do escopo `project`): `gh project item-list 6 --owner Asuka-Jyuku`, `gh project field-list 6 --owner Asuka-Jyuku` e `gh project item-edit`.
+- **Pôr um épico no Status `Epic`:**
+
+  ```bash
+  item=$(gh project item-add 6 --owner Asuka-Jyuku --url <url do épico> --format json -q .id)   # devolve o item que já existe
+  gh project item-edit --project-id PVT_kwDOEOSoQM4BqAo9 --id "$item" \
+    --field-id PVTSSF_lADOEOSoQM4BqAo9zhoZnfE --single-select-option-id ddf6b0a8
+  ```
 
 ### Etiquetas
 
