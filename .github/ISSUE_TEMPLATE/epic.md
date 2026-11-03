@@ -11,6 +11,7 @@ Dois tipos (CONTRIBUTING.md, "Épicos"):
 - Épico de tema: mantenha "Do que trata", "Como escolher este épico" e "Para não fechar"; apague o resto.
 Crie também a etiqueta "epic: <name>" e ponha aqui e em toda história.
 Ninguém é atribuído ao épico nem às histórias; só à história que alguém pega.
+Depois de criar, troque o Status do épico no Project de Backlog para Epic (comando no CONTRIBUTING.md, "Backlog no Project").
 -->
 
 ## 🎯 Objetivo
@@ -50,5 +51,5 @@ Quando o plano mudar, ponha uma nota com data no topo: "> **Revisão de AAAA-MM-
 Uma issue tem um épico só: o objetivo principal decide; bug vai para o épico da área que quebrou; a área secundária fica na etiqueta.
 
 ## ⚠️ Para não fechar
-O Project fecha a issue cujo Status vai para Done ("Auto-close issue"). Este épico fica sempre em In progress.
+O Project fecha a issue cujo Status vai para Done ("Auto-close issue"). Este épico fica sempre com o Status Epic e nunca vai para Done.
 -->
