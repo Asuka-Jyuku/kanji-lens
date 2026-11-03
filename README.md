@@ -2,7 +2,7 @@
 
 **Handwritten Kanji recognition using Deep Learning and Computer Vision.**
 
-[Português](README.pt-BR.md) · [Architecture (pt-BR)](docs/architecture.md)
+[Português](README.pt-BR.md) · [Architecture (pt-BR)](docs/ARCHITECTURE.md) · [Decisions (ADRs, pt-BR)](docs/adr/README.md) · [Contributing (pt-BR)](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 > **Status:** early stage. The architecture is defined; implementation has not started yet.
 
@@ -87,21 +87,28 @@ Example of a completed job:
 
 ## Project structure (planned)
 
+Clean Architecture with ports and adapters, in layers ([ADR 0004](docs/adr/0004-clean-and-hexagonal-architecture.md)), in a single repository ([ADR 0002](docs/adr/0002-monorepo-for-frontend-backend-and-ml.md)).
+
 ```text
 kanji-lens/
-├── frontend/          # Angular app (canvas, API client, results)
-├── backend/
-│   └── app/
-│       ├── api/       # REST endpoints and SSE/WebSocket
-│       ├── services/  # Job orchestration
-│       ├── workers/   # Inference workers
-│       └── models/    # Schemas/DTOs
+├── frontend/                # Angular app, in layers
+│   └── src/app/
+│       ├── domain/          # Models and pure rules
+│       ├── application/     # Use cases and ports
+│       ├── infrastructure/  # HTTP and SSE adapters
+│       └── presentation/    # Canvas and results view
+├── backend/                 # FastAPI, ports and adapters
+│   └── src/kanjilens/
+│       ├── domain/          # RecognitionJob, Prediction, JobStatus
+│       ├── application/     # Use cases and ports
+│       ├── adapters/        # Inbound (HTTP, SSE, queue consumer), outbound (recognizer, queue, store)
+│       └── bootstrap/       # Composition root
 ├── ml/
-│   ├── datasets/
-│   ├── notebooks/
-│   ├── training/
-│   ├── evaluation/
-│   └── models/        # Trained weights
+│   ├── src/kanjilens_ml/    # Shared preprocessing, models, training, evaluation
+│   ├── configs/             # Versioned training configs
+│   ├── notebooks/           # Exploration only
+│   ├── datasets/            # Not in git
+│   └── artifacts/           # Trained weights, not in git
 ├── infrastructure/
 │   └── docker/
 ├── docs/
@@ -115,7 +122,7 @@ kanji-lens/
 - [ ] **Frontend:** Angular app, responsive canvas with mouse and touch, results view
 - [ ] **Infrastructure:** LAN access, CORS and firewall setup, load test with ~10 concurrent users, CPU/memory/GPU profiling
 
-See the full checklist in [docs/architecture.md](docs/architecture.md#8-escopo-do-mvp).
+See the full checklist in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-escopo-do-mvp).
 
 ## Open decisions
 

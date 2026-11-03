@@ -2,7 +2,7 @@
 
 **Reconhecimento de kanjis manuscritos com Deep Learning e Visão Computacional.**
 
-[English](README.md) · [Arquitetura](docs/architecture.md)
+[English](README.md) · [Arquitetura](docs/ARCHITECTURE.md) · [Decisões (ADRs)](docs/adr/README.md) · [Como contribuir](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 > **Status:** fase inicial. A arquitetura está definida; a implementação ainda não começou.
 
@@ -87,21 +87,28 @@ Exemplo de tarefa concluída:
 
 ## Estrutura do repositório (planejada)
 
+Clean Architecture com portas e adaptadores, em camadas ([ADR 0004](docs/adr/0004-clean-and-hexagonal-architecture.md)), em um único repositório ([ADR 0002](docs/adr/0002-monorepo-for-frontend-backend-and-ml.md)).
+
 ```text
 kanji-lens/
-├── frontend/          # App Angular (canvas, cliente da API, resultados)
-├── backend/
-│   └── app/
-│       ├── api/       # Endpoints REST e SSE/WebSocket
-│       ├── services/  # Orquestração das tarefas
-│       ├── workers/   # Workers de inferência
-│       └── models/    # Schemas/DTOs
+├── frontend/                # App Angular, em camadas
+│   └── src/app/
+│       ├── domain/          # Modelos e regras puras
+│       ├── application/     # Casos de uso e portas
+│       ├── infrastructure/  # Adaptadores HTTP e SSE
+│       └── presentation/    # Canvas e tela de resultados
+├── backend/                 # FastAPI, portas e adaptadores
+│   └── src/kanjilens/
+│       ├── domain/          # RecognitionJob, Prediction, JobStatus
+│       ├── application/     # Casos de uso e portas
+│       ├── adapters/        # Inbound (HTTP, SSE, consumidor da fila), outbound (reconhecedor, fila, armazenamento)
+│       └── bootstrap/       # Composition root
 ├── ml/
-│   ├── datasets/
-│   ├── notebooks/
-│   ├── training/
-│   ├── evaluation/
-│   └── models/        # Pesos treinados
+│   ├── src/kanjilens_ml/    # Pré-processamento compartilhado, modelos, treino, avaliação
+│   ├── configs/             # Configurações de treino versionadas
+│   ├── notebooks/           # Só exploração
+│   ├── datasets/            # Fora do git
+│   └── artifacts/           # Pesos treinados, fora do git
 ├── infrastructure/
 │   └── docker/
 ├── docs/
@@ -115,7 +122,7 @@ kanji-lens/
 - [ ] **Frontend:** app Angular, canvas responsivo com mouse e touch, tela de resultados
 - [ ] **Infraestrutura:** acesso pela LAN, CORS e firewall, teste com ~10 usuários simultâneos, consumo de CPU/memória/GPU
 
-O checklist completo está em [docs/architecture.md](docs/architecture.md#8-escopo-do-mvp).
+O checklist completo está em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-escopo-do-mvp).
 
 ## Decisões em aberto
 
