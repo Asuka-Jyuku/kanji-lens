@@ -47,3 +47,4 @@ As ADRs 0002, 0003 e 0005 a 0007 foram escritas depois das decisões, a partir d
 | [0006](0006-cnn-with-pytorch.md) | CNN em PyTorch para o reconhecimento | Aceita |
 | [0007](0007-local-execution-over-the-lan.md) | Execução local, acessada pela rede local, sem nuvem | Aceita |
 | [0008](0008-git-flow-and-changelog-by-release.md) | Branches `main` + `develop` e CHANGELOG por release | Aceita |
+| [0009](0009-portuguese-ui-first-then-japanese.md) | Interface em português primeiro, japonês depois, com i18n desde a primeira tela | Aceita |

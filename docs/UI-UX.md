@@ -2,7 +2,7 @@
 
 As fontes de UI/UX do projeto e os padrões que saem delas. Vale para quem propõe, avalia, revisa ou implementa tela, canvas, resultado, navegação ou controle, seja pessoa ou o Claude. O roteiro do código Angular (camadas, componentes, testes, revisão) está na skill `angular-conventions` (`.claude/skills/`), que aponta para este documento em vez de copiá-lo.
 
-> **Fase:** ainda não há frontend (etapa 3). As referências já valem; os padrões abaixo são **propostos** e passam a "adotados" quando a primeira tela entrar e for validada com uso real num celular. Os textos de tela citados aqui ("Na fila", "Desenhe um kanji") só ilustram: o idioma da interface ainda está em aberto ([ARCHITECTURE.md, "Decisões em resumo"](ARCHITECTURE.md#10-decisões-em-resumo)).
+> **Fase:** ainda não há frontend (etapa 3). As referências já valem; os padrões abaixo são **propostos** e passam a "adotados" quando a primeira tela entrar e for validada com uso real num celular. A interface é em português, com o japonês depois, e todo texto passa pelo i18n desde a primeira tela ([ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md)); os textos citados aqui ("Na fila", "Desenhe um kanji") são os de português.
 
 ## Referências obrigatórias
 
@@ -34,7 +34,15 @@ Ao propor, avaliar, revisar ou implementar qualquer coisa de UI/UX, basear a rec
 | 1.3.4 *Orientation* (AA) | Funciona com o celular em pé e deitado; não travar a orientação | [w3.org/WAI/WCAG22/Understanding/orientation](https://www.w3.org/WAI/WCAG22/Understanding/orientation) |
 | 1.4.13 *Content on Hover or Focus* (AA) | Dica ou balão: dispensável (Esc), alcançável e persistente; em toque não existe hover | [w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus) |
 | 3.3.1 *Error Identification* (A) | Erro (desenho vazio, fila cheia, servidor fora do ar, falha do reconhecimento) dito em texto: o que deu errado e o que fazer | [w3.org/WAI/WCAG22/Understanding/error-identification](https://www.w3.org/WAI/WCAG22/Understanding/error-identification) |
+| 3.1.1 *Language of Page* (A) | `<html lang="pt-BR">`, e `lang="ja"` quando a interface estiver em japonês | [w3.org/WAI/WCAG22/Understanding/language-of-page](https://www.w3.org/WAI/WCAG22/Understanding/language-of-page) |
+| 3.1.2 *Language of Parts* (AA) | Todo kanji na tela (candidatos, o kanji escolhido) com `lang="ja"`, em qualquer idioma da interface: o leitor de tela pronuncia em japonês | [w3.org/WAI/WCAG22/Understanding/language-of-parts](https://www.w3.org/WAI/WCAG22/Understanding/language-of-parts) |
 | 3.3.2 *Labels or Instructions* (A) | Todo controle com rótulo visível; uma instrução curta perto do canvas ("Desenhe um kanji") | [w3.org/WAI/WCAG22/Understanding/labels-or-instructions](https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions) |
+
+### Idioma e escrita japonesa
+
+| Fonte | Usar para | Link |
+|---|---|---|
+| W3C Internationalization — *Why use the language attribute?* | O `lang="ja"` também escolhe a fonte: chinês e japonês usam muitas vezes o mesmo código Unicode para um kanji, com pequenas diferenças no desenho, e sem `lang` o navegador pode mostrar a forma chinesa | [w3.org/International/questions/qa-lang-why](https://www.w3.org/International/questions/qa-lang-why) |
 
 ### Padrões de componente (WAI-ARIA APG e NN/g)
 
@@ -53,6 +61,8 @@ A partir das referências acima. Passam a "adotados" com a primeira tela validad
 - **"Reconhecer" desabilitado com o canvas vazio**, em vez de mandar e receber um erro (Nielsen 5).
 - **Desfazer o último traço**, além de limpar tudo: errar um traço não obriga a redesenhar o kanji inteiro (Nielsen 3).
 - **Candidatos como lista de botões**, do mais provável ao menos, com o kanji grande e a confiança em porcentagem ao lado; cada um é alvo de toque e de teclado (WCAG 2.1.1 e 2.5.8; Nielsen 6).
+- **Kanji sempre marcado como japonês** (`lang="ja"`) e com fonte japonesa do sistema ou empacotada, nunca de CDN (WCAG 3.1.2; W3C i18n; ADRs 0007 e 0009).
+- **Nenhum texto de interface fora do i18n**, nem com um idioma só; erro vindo da API chega como código e vira texto no frontend (ADR 0009).
 - **Confiança sem jargão:** "81%" em vez de "softmax 0.81"; se precisar explicar, um balão que abre por toque e por teclado, nunca só `title=` (Nielsen 2; WCAG 1.4.13).
 - **Nenhum comando por gesto além do desenho:** limpar e reconhecer são botões (WCAG 2.5.1 e 2.5.7).
 - **Funciona em pé, deitado e a partir de 320 px** (WCAG 1.3.4 e 1.4.10).

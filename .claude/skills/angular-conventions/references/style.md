@@ -23,7 +23,16 @@ O que se espera de Angular idiomático aqui, com a fonte de cada ponto. As regra
 | Tamanho interno do canvas × `devicePixelRatio` | senão o traço fica borrado em celular de alta densidade | [MDN: devicePixelRatio](https://developer.mozilla.org/en-US/docs/Web/API/Window/devicePixelRatio) |
 | `setPointerCapture` no `pointerdown` | o traço continua se o dedo sair do canvas | [MDN: setPointerCapture](https://developer.mozilla.org/en-US/docs/Web/API/Element/setPointerCapture) |
 | Enviar o desenho como foi desenhado (`canvas.toBlob`, PNG) | recortar, redimensionar, inverter e normalizar são pré-processamento de ML e moram só no `kanjilens_ml` | `CLAUDE.md`, "Pré-processamento sempre junto" |
-| Botões e estado acessíveis | "Recognize" e "Clear" são `<button>` de verdade; o estado de processamento e os resultados são anunciados (`aria-live`) | [WAI-ARIA: live regions](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Live_Regions) |
+| Botões e estado acessíveis | "Reconhecer" e "Limpar" são `<button>` de verdade; o estado de processamento e os resultados são anunciados (`aria-live`) | [WAI-ARIA: live regions](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Live_Regions) |
+
+## Idioma da interface (ADR 0009)
+
+| Ponto | Como fica aqui | Fonte |
+|---|---|---|
+| Textos | Todos pelo mecanismo de i18n escolhido na ADR de ferramentas da etapa 3, em português; nenhum texto direto no template ou no código, nem com um idioma só | ADR 0009 |
+| Kanji na tela | `lang="ja"` em todo candidato e kanji mostrado, em qualquer idioma da interface | [WCAG 3.1.2](https://www.w3.org/WAI/WCAG22/Understanding/language-of-parts), [W3C i18n](https://www.w3.org/International/questions/qa-lang-why) |
+| Fonte japonesa | Do sistema (`"Hiragino Sans"`, `"Yu Gothic"`, `"Noto Sans JP"`, `sans-serif`) ou empacotada no build; nunca de CDN | ADRs 0007 e 0009 |
+| Erros da API | O adapter recebe o código (`queue_full`) e a tela mostra o texto traduzido; a mensagem do backend nunca aparece para o usuário | ADR 0009 |
 
 ## O que evitamos
 

@@ -20,6 +20,7 @@ Você escreve e revisa o frontend do projeto (`frontend/`). O que vale **sempre*
 | URL da API a partir do celular, `0.0.0.0`, proxy × CORS | [ADR 0007](../../../docs/adr/0007-local-execution-over-the-lan.md) e [ARCHITECTURE.md, seção 6.1](../../../docs/ARCHITECTURE.md#61-configuração-necessária) |
 | O desenho vai como foi desenhado; nada de pré-processamento no frontend | `CLAUDE.md`, "Pré-processamento sempre junto" |
 | Idioma: código em inglês, documentação em português | `CLAUDE.md`, "Idioma" |
+| Textos da tela em português pelo i18n (japonês depois), `lang="ja"` nos kanjis, erro da API por código | [ADR 0009](../../../docs/adr/0009-portuguese-ui-first-then-japanese.md) e `references/style.md`, "Idioma da interface" |
 | Testes, branches, commits, CHANGELOG | `CLAUDE.md`, "Testes" e "Git / commits"; `CONTRIBUTING.md` |
 
 ## Referências (leia quando o passo pedir)

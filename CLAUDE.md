@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Documentação: `docs/`, ADRs, `CHANGELOG.md`, `CONTRIBUTING.md`, este arquivo, skills e agentes de `.claude/` | Código: classes, funções, variáveis, **nomes de arquivos e pastas**, comentários no código, mensagens de log e de erro |
 | Issues (título e corpo) e o corpo dos PRs, seguindo os templates de `.github/` | Mensagens de commit, **título do PR** (vira o commit do squash) e nomes de branch |
 | Respostas, perguntas e resumos de fim de tarefa | Etiquetas do GitHub e nomes de skills e agentes |
+| **Textos da tela:** português primeiro, japonês depois, sempre pelo i18n e nunca escritos direto no template ([ADR 0009](docs/adr/0009-portuguese-ui-first-then-japanese.md)) | Códigos de erro e de estado que a API devolve (`queue_full`), que o frontend transforma em texto |
 
 Vale também quando o conteúdo técnico (log, erro, documentação de biblioteca) vier em inglês e depois de a conversa ser resumida. Termo técnico fica em inglês, sem tradução forçada (use case, port, adapter, worker, job, Top-5). O `README.md` é em inglês e tem a tradução `README.pt-BR.md`: **mudou um, muda o outro no mesmo PR**.
 

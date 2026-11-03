@@ -16,7 +16,7 @@ Abra a tela num viewport de celular (360×800, com touch) e num de computador **
 4. **Teclado:** tudo menos o traço funciona por teclado: limpar, reconhecer, escolher um candidato, abrir opções; foco visível (WCAG 2.1.1 e 1.4.11).
 5. **Gestos:** nenhum comando só por gesto ou arrasto fora do desenho; botões agem no soltar (WCAG 2.5.1, 2.5.2 e 2.5.7).
 6. **Alvo** de toque ≥ 1 cm (Harley, NN/g), nunca abaixo de 24×24 px (WCAG 2.5.8); **contraste** de texto ≥ 4,5:1 e de borda, traço e foco ≥ 3:1 (WCAG 1.4.3 e 1.4.11).
-7. **Candidatos:** texto de verdade, do mais provável ao menos, confiança em porcentagem e sem jargão de ML (WCAG 1.1.1; Nielsen 2 e 6).
+7. **Candidatos:** texto de verdade com `lang="ja"`, do mais provável ao menos, confiança em porcentagem e sem jargão de ML (WCAG 1.1.1 e 3.1.2; Nielsen 2 e 6).
 8. **Controle e erro:** dá para desfazer o último traço e limpar tudo; "Reconhecer" não manda canvas vazio (Nielsen 3 e 5).
 9. **Dica e balão:** nada só em `title=`; o balão some com Esc e funciona no toque (WCAG 1.4.13).
 10. **Celular:** nada rola para o lado em 320 px, funciona em pé e deitado (WCAG 1.4.10 e 1.3.4).
@@ -53,4 +53,7 @@ Separe o que viu na tela do que leu no código, e diga o que não deu para ver (
 - [ ] Padrão novo de UI: na lista de padrões de `docs/UI-UX.md` e, se mudar decisão, ADR.
 
 **Idioma (`CLAUDE.md`, "Idioma")**
-- [ ] Código, nomes de arquivos e comentários em inglês. O idioma dos textos da tela ainda está em aberto (ARCHITECTURE.md, "Decisões em resumo"): não o escolha num PR de tela.
+- [ ] Código, nomes de arquivos e comentários em inglês.
+- [ ] Nenhum texto de interface escrito direto no template ou no código: tudo pelo i18n, em português (ADR 0009).
+- [ ] Todo kanji na tela com `lang="ja"`; `<html lang>` certo; fonte japonesa do sistema ou empacotada, nunca de CDN (ADR 0009, WCAG 3.1.1 e 3.1.2).
+- [ ] Erro da API mostrado a partir do código (`queue_full`), não da mensagem do backend.
