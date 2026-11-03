@@ -33,6 +33,25 @@ gh pr create --base develop --fill    # na descrição: Closes #<número>
 
 Issue feita em vários PRs: crie a branch com `git switch -c feature/<topic>-part-1`. A branch criada pelo `gh issue develop` fica ligada à issue, e o merge da primeira parte a fecharia. Só a última parte leva `Closes #N`.
 
+### Tipo de merge
+
+O tipo de merge depende do destino do PR ([ADR 0008](docs/adr/0008-git-flow-and-changelog-by-release.md)). O GitHub não deixa escolher por branch, então a regra vale pelo combinado: **confira o botão antes de clicar**.
+
+| PR | Merge | Por quê |
+|---|---|---|
+| `feature/*` ou `fix/*` → `develop` | **Squash and merge** | Um commit por PR na `develop`, com o título do PR (Conventional Commits, em inglês) como mensagem |
+| `release/*` → `main` | **Create a merge commit** | A `main` passa a conter os commits da `develop`; com squash, a `main` teria um commit que a `develop` não tem, e a volta daria conflito em todo release |
+| `main` → `develop` (a volta depois do release ou do hotfix) | **Create a merge commit** | Pelo mesmo motivo: as duas branches continuam com o mesmo histórico |
+| `hotfix/*` → `main` | **Create a merge commit**, e depois a volta `main` → `develop` | A correção chega à `develop` pela volta, sem um segundo PR com o mesmo conteúdo |
+
+**Rebase and merge** fica desligado. O título do PR de release e o da volta também seguem Conventional Commits, porque viram a mensagem do merge commit: `chore(release): v0.1.0` e `chore(release): merge v0.1.0 back into develop`.
+
+**Configuração do repositório** (Settings → General → Pull Requests), que faz o título do PR virar a mensagem nos dois tipos e mantém o corpo em português fora do histórico:
+- *Allow squash merging*: ligado, com a mensagem padrão **"Pull request title and commit details"**;
+- *Allow merge commits*: ligado, com a mensagem padrão **"Pull request title"**;
+- *Allow rebase merging*: desligado;
+- *Automatically delete head branches*: ligado.
+
 ## Issues
 
 Não há issue? Crie uma antes, já no nome de quem pediu (`gh issue create --assignee @me`): todo PR fecha a issue dele. Ao começar a trabalhar numa issue, atribua-a a você e ponha a etiqueta `in progress` (`gh issue edit <número> --add-assignee @me --add-label "in progress"`); tire a etiqueta ao fechar.
@@ -132,9 +151,9 @@ Para publicar uma versão:
    | Quebra (`!`) | o primeiro (o do meio enquanto estiver em `0.x`) | 1.2.0 → 2.0.0 |
 
 2. Atualize o `VERSION` (e `pyproject.toml`/`package.json`, quando existirem); troque `## [Não publicado]` por `## [X.Y.Z] — AAAA-MM-DD` e crie um `## [Não publicado]` vazio acima.
-3. PR de `release/<version>` para `main`, e merge.
+3. PR de `release/<version>` para `main`, com o título `chore(release): vX.Y.Z`, e merge com **merge commit** (nunca squash).
 4. Tag na `main`: `git tag vX.Y.Z && git push --tags`.
-5. **Faça o merge da `main` de volta no `develop`**, para o CHANGELOG do `develop` ficar igual ao publicado.
+5. **Faça o merge da `main` de volta no `develop`**, por um PR `main` → `develop` com **merge commit**, para o CHANGELOG do `develop` ficar igual ao publicado.
 
 ## Checklist do pull request
 
