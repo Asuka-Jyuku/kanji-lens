@@ -1,0 +1,57 @@
+---
+name: fastapi-conventions
+description: Como se escreve o backend do KanjiLens (backend/, Python + FastAPI) — use case, port, adapter inbound (rota HTTP, SSE, consumidor da fila), adapter outbound (recognizer, fila, armazenamento dos jobs, notifier), composition root, e revisão de PR com backend, seguindo Clean Architecture / ports and adapters, com a fonte de cada regra. Usar ao pedirem "endpoint novo", "use case", "port", "adapter", "worker", "fila", "SSE", "status do job", "revisa o backend", e ao pegar issue com a etiqueta backend ou que mexe em backend/.
+model: sonnet
+---
+
+# FastAPI no KanjiLens
+
+Você escreve e revisa o backend do projeto (`backend/`). O que vale **sempre** está aqui.
+
+**Cada regra mora num lugar só.** Esta skill diz o caminho e aponta a fonte; não copie a regra para cá. Achou uma regra aqui que diverge da fonte, vale a fonte: corrija a skill no mesmo PR.
+
+> **Fase:** ainda não há código de backend (etapa 2). O gerenciador de pacotes, o linter, o type checker e o test runner são escolhidos na ADR de ferramentas da etapa; até lá, os comandos de "Antes de dizer que terminou" são provisórios. Quando o primeiro código entrar, crie `references/examples.md` apontando o use case e o adapter que servem de modelo.
+
+| Assunto | Fonte (a regra está lá) |
+|---|---|
+| Camadas `domain` → `application` (`use_cases`, `ports`) → `adapters` (`inbound`, `outbound`) → `bootstrap`; o que cada uma pode importar | [ADR 0004](../../../docs/adr/0004-clean-and-hexagonal-architecture.md) e [ARCHITECTURE.md, seção 3.1](../../../docs/ARCHITECTURE.md#31-backend-backendsrckanjilens) |
+| Fluxo do job, `job_id`, estados, um modelo por worker, um processo do Uvicorn só com `asyncio.Queue`, inferência fora do event loop | [ADR 0005](../../../docs/adr/0005-asynchronous-recognition-with-queue-and-workers.md) e [ARCHITECTURE.md, seção 4](../../../docs/ARCHITECTURE.md#4-processamento-assíncrono-e-concorrência) |
+| Endpoints e SSE × WebSocket (em aberto) | [ARCHITECTURE.md, seção 5](../../../docs/ARCHITECTURE.md#5-comunicação-entre-frontend-e-backend) |
+| Limite de entrada, fila limitada, CORS, nenhuma saída de rede | `CLAUDE.md`, "Segurança", e [ADR 0007](../../../docs/adr/0007-local-execution-over-the-lan.md) |
+| O adapter do recognizer e o `kanjilens_ml` | skill `ml-conventions`, "Inferência" |
+| Idioma: código em inglês, documentação em português | `CLAUDE.md`, "Idioma" |
+| Testes, branches, commits, CHANGELOG | `CLAUDE.md`, "Testes" e "Git / commits"; `CONTRIBUTING.md` |
+
+## Referências (leia quando o passo pedir)
+
+| Arquivo | Quando ler |
+|---|---|
+| [`references/style.md`](references/style.md) | antes de escrever código, e sempre que um tutorial de FastAPI ou um revisor parecer dizer outra coisa |
+| [`references/review.md`](references/review.md) | ao revisar um PR com backend, e no fim do seu próprio trabalho |
+
+## Funcionalidade nova
+
+1. **Issue e branch** como em todo PR (`CLAUDE.md`, "Git / commits").
+2. **ADR antes do código** quando a funcionalidade trouxer dependência, fechar uma decisão em aberto (fila, notificação) ou criar um padrão novo (`CLAUDE.md`, "Decisões de arquitetura").
+3. **Domínio:** entidade ou value object em `domain/`, com as regras dele (ex.: as transições permitidas de `JobStatus`) em Python puro, testado sozinho.
+4. **Port** em `application/ports/` como `typing.Protocol`, com nome de papel (`KanjiRecognizer`, `JobQueue`), usando só tipos do domínio.
+5. **Use case** em `application/use_cases/`: uma classe, dependências (ports) pelo construtor, um método público. Testado com adapters falsos.
+6. **Adapters:** inbound em `adapters/inbound/` (rota + Pydantic `XxxRequest`/`XxxResponse` + mapeamento de e para o domínio; erros de domínio viram status HTTP aqui); outbound em `adapters/outbound/`, implementando o port.
+7. **Ligação** só em `bootstrap/`: monta os adapters, injeta nos use cases e expõe os use cases às rotas.
+8. **Testes:** unitários do domínio e do use case; integração dos adapters (test client do FastAPI, fila real no mesmo processo); os casos de erro do endpoint (`400`/`413`/`404`/`503`).
+
+## Mudança em código que já existe
+
+- Leia o módulo inteiro e os testes dele antes de mexer; siga a forma dele.
+- Não aproveite para refatorar: o que achar fora do pedido, liste.
+- Bug corrigido ganha teste que falha antes da correção.
+
+## Antes de dizer que terminou
+
+Rode em `backend/` o formatter, o linter, o type checker e os testes definidos na ADR de ferramentas da etapa 2 (vão estar listados no `CLAUDE.md`, "Comandos"), e o teste de arquitetura (regras de import) quando existir.
+
+- **Python ou dependências não disponíveis:** diga isso e não afirme que passou.
+
+## Como entregar
+
+Separe o que conferiu no código (com `arquivo:linha`) do que é julgamento seu, diga o que rodou e o resultado (inclusive o que falhou ou não rodou), e o que ficou de fora, com o motivo. PR: o checklist do `CONTRIBUTING.md` e do template de PR; merge só com o "pode" de quem pediu, para aquele PR.

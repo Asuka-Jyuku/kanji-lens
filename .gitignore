@@ -1,0 +1,41 @@
+# Claude Code: agent worktrees and local plans
+.claude/worktrees/
+.claude/settings.local.json
+
+# ML: datasets and trained weights are never committed (CLAUDE.md, "Convenções de código")
+ml/datasets/
+ml/artifacts/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.ipynb_checkpoints/
+
+# Node / Angular
+node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
