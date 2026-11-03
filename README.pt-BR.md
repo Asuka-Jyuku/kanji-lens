@@ -143,4 +143,6 @@ Visão Computacional, Deep Learning e CNN, processamento assíncrono, arquitetur
 
 ## Licença
 
-A definir.
+O código-fonte está sob a [licença MIT](LICENSE).
+
+A licença cobre só o código deste repositório. Os datasets usados no treino e os pesos treinados não fazem parte do repositório e não são cobertos por ela: cada dataset mantém os próprios termos, e pesos treinados com ele podem herdá-los.
