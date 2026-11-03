@@ -1,6 +1,6 @@
 ---
 name: angular-conventions
-description: Como se escreve Angular no KanjiLens (frontend/) — tela nova, mudança, canvas, tela de resultados, adapters da API e do SSE, e revisão de PR com frontend, com as camadas do projeto e a fonte de cada regra. Usar ao pedirem "tela nova", "mexe na tela", "componente", "canvas", "touch", "resultados", "chamar a API", "SSE no frontend", "revisa o frontend", e ao pegar issue com a etiqueta frontend ou que mexe em frontend/.
+description: Como se escreve Angular no KanjiLens (frontend/) — tela nova, mudança, canvas, tela de resultados, adapters da API e do SSE, avaliação de UI/UX e revisão de PR com frontend, com as camadas do projeto e a fonte de cada regra. Usar ao pedirem "tela nova", "mexe na tela", "componente", "canvas", "touch", "resultados", "chamar a API", "SSE no frontend", "UX", "acessibilidade", "avalia a tela", "revisa o frontend", e ao pegar issue com a etiqueta frontend ou que mexe em frontend/.
 model: sonnet
 ---
 
@@ -14,6 +14,7 @@ Você escreve e revisa o frontend do projeto (`frontend/`). O que vale **sempre*
 
 | Assunto | Fonte (a regra está lá) |
 |---|---|
+| UI/UX: as referências obrigatórias (Nielsen, NN/g, WCAG 2.2, WAI-ARIA, Shneiderman) e os padrões propostos | [`docs/UI-UX.md`](../../../docs/UI-UX.md): leia antes de propor, avaliar ou desenhar |
 | Camadas `domain` → `application` → `infrastructure` / `presentation`; ports como classes abstratas usadas como token de DI; componente nunca injeta `HttpClient` | [ADR 0004](../../../docs/adr/0004-clean-and-hexagonal-architecture.md) e [ARCHITECTURE.md, seção 3.2](../../../docs/ARCHITECTURE.md#32-frontend-frontendsrcapp) |
 | Angular + TypeScript, REST, SSE ou WebSocket (em aberto) | [ADR 0003](../../../docs/adr/0003-angular-frontend-and-fastapi-backend.md) e [ARCHITECTURE.md, seção 5](../../../docs/ARCHITECTURE.md#5-comunicação-entre-frontend-e-backend) |
 | URL da API a partir do celular, `0.0.0.0`, proxy × CORS | [ADR 0007](../../../docs/adr/0007-local-execution-over-the-lan.md) e [ARCHITECTURE.md, seção 6.1](../../../docs/ARCHITECTURE.md#61-configuração-necessária) |
@@ -26,7 +27,7 @@ Você escreve e revisa o frontend do projeto (`frontend/`). O que vale **sempre*
 | Arquivo | Quando ler |
 |---|---|
 | [`references/style.md`](references/style.md) | antes de escrever código, e sempre que o angular.dev, um guia da comunidade ou um revisor parecer dizer outra coisa |
-| [`references/review.md`](references/review.md) | ao revisar um PR com frontend, e no fim do seu próprio trabalho |
+| [`references/review.md`](references/review.md) | ao avaliar uma tela (UI/UX), ao revisar um PR com frontend, e no fim do seu próprio trabalho |
 
 ## Funcionalidade nova
 
@@ -36,7 +37,8 @@ Você escreve e revisa o frontend do projeto (`frontend/`). O que vale **sempre*
 4. **Port e use case** em `application/`: o port como classe abstrata (`RecognitionGateway`, `ResultStream`), o use case/facade expondo signals para a tela.
 5. **Adapter** em `infrastructure/` implementando o port (`HttpRecognitionGateway`, `SseResultStream`), ligado nos providers de `app.config.ts`.
 6. **Componente** em `presentation/`, falando só com o use case, na forma de `references/style.md`.
-7. **Testes:** domínio e use case com um port falso; o adapter contra um backend HTTP simulado; o componente para o que só o DOM mostra.
+7. **UI/UX:** cada decisão de desenho cita o princípio de `docs/UI-UX.md` que a sustenta, separando o que vem da fonte do que é julgamento seu; padrão novo de UI entra na lista de padrões de lá no mesmo PR.
+8. **Testes:** domínio e use case com um port falso; o adapter contra um backend HTTP simulado; o componente para o que só o DOM mostra.
 
 ## Mudança em código que já existe
 
@@ -52,4 +54,4 @@ Rode em `frontend/` o build, os testes e o linter definidos na ADR de ferramenta
 
 ## Como entregar
 
-Separe o que conferiu no código ou no navegador (com `arquivo:linha` ou o print) do que é julgamento seu, diga o que rodou e o resultado (inclusive o que falhou ou não rodou), e o que ficou de fora, com o motivo. PR: o checklist do `CONTRIBUTING.md` e do template de PR; merge só com o "pode" de quem pediu, para aquele PR.
+Separe o que conferiu no código ou no navegador (com `arquivo:linha` ou o print) do que é julgamento seu, cite o princípio de UI/UX de cada decisão de desenho, diga o que rodou e o resultado (inclusive o que falhou ou não rodou), e o que ficou de fora, com o motivo. PR: o checklist do `CONTRIBUTING.md` e do template de PR; merge só com o "pode" de quem pediu, para aquele PR.

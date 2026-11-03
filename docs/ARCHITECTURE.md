@@ -45,7 +45,7 @@ flowchart LR
 
 ### 2.1 Frontend
 
-**Stack:** Angular, TypeScript, HTML, CSS, HTML Canvas API ([ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md)).
+**Stack:** Angular, TypeScript, HTML, CSS, HTML Canvas API ([ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md)). As referências e os padrões de UI/UX estão em [UI-UX.md](UI-UX.md).
 
 Funcionalidades:
 
@@ -438,6 +438,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Dataset | A definir | Em aberto |
 | Quantidade de classes | Centenas → 2.136 (Jōyō) | Em aberto |
 | Ferramentas de cada stack | Gerenciador de pacotes, linter, test runner | Em aberto — uma ADR no começo de cada etapa |
+| Idioma da interface | Inglês, português ou os dois (i18n) | Em aberto — o esboço da seção 2.1 está em inglês; decidir antes da primeira tela (etapa 3) |
 
 Quando uma decisão em aberto for fechada, ela vira ADR em `docs/adr/` e a linha dela aqui passa a apontar para a ADR.
 

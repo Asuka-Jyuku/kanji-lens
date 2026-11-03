@@ -81,9 +81,13 @@ Não crie documento vazio. Cada um nasce no primeiro PR que precisa dele e, daí
 | `docs/architecture/domain.md` | o primeiro código de domínio: glossário e diagrama de estados do job | termo novo do domínio ou estado novo |
 | `docs/RUNNING.md` | a primeira parte que roda: como rodar localmente e na rede local | qualquer mudança em portas, variáveis de ambiente ou partida |
 
+## UI/UX
+
+**Mexeu em tela, canvas, resultado, navegação ou controle? Leia [docs/UI-UX.md](docs/UI-UX.md) antes de propor, avaliar, revisar ou implementar:** as referências obrigatórias (Nielsen, NN/g, WCAG 2.2, WAI-ARIA, Shneiderman) e os padrões propostos. Cite o princípio que sustenta cada decisão, separe o que vem das fontes do que é julgamento próprio e diga quando algo não foi validado com uso real num celular.
+
 ## Skills e agentes do projeto (`.claude/`)
 
-- **Angular:** a skill `angular-conventions` é o roteiro de todo trabalho no frontend (tela nova, mudança, revisão). O agente `dev-angular` a carrega, para implementar ou revisar telas em paralelo.
+- **Angular:** a skill `angular-conventions` é o roteiro de todo trabalho no frontend (tela nova, mudança, avaliação de UI/UX, revisão). O agente `dev-angular` a carrega, para avaliar telas em paralelo (um agente por tela), implementar ou revisar.
 - **FastAPI:** a skill `fastapi-conventions` é o roteiro de todo trabalho no backend (use case, adapter, endpoint, worker, revisão). O agente `dev-backend` a carrega.
 - **ML:** a skill `ml-conventions` é o roteiro de dataset, pré-processamento, treino, avaliação e do adapter do recognizer. O agente `dev-ml` a carrega.
 - Os agentes compartilham um hook (`.claude/hooks/block-merge-in-agent.sh`) que barra `gh pr merge` e `git push` forçado.
