@@ -49,7 +49,7 @@ Para testar pelo celular na rede local, troque o endereço por `--host 0.0.0.0` 
 - **ML** (`ml/src/kanjilens_ml/`): é uma biblioteca, não uma camada do backend. O backend a usa **só dentro dos adapters outbound do recognizer e do avaliador da ordem**; o PyTorch, só no do recognizer.
 - **Pré-processamento sempre junto:** existe **um** módulo de pré-processamento (`ml/src/kanjilens_ml/preprocessing/`), importado pelo treino e pelos adapters do backend. Ele gera, a partir da mesma lista de traços, a imagem da CNN e os traços normalizados da avaliação da ordem; o frontend envia os traços como foram desenhados. Mudou o pré-processamento, o tamanho da entrada, a normalização ou a lista de classes? Treino, inferência e versão do modelo mudam **no mesmo PR**. Duas cópias que divergem fazem o modelo errar calado em produção (*train/serve skew*): nenhum erro, só previsão errada.
 
-As decisões em aberto (fila, SSE × WebSocket, dataset, quantidade de classes, algoritmo de avaliação da ordem, runtime de inferência) estão em [docs/ARCHITECTURE.md, "Decisões em resumo"](docs/ARCHITECTURE.md#10-decisões-em-resumo). **Não implemente uma decisão em aberto como se estivesse fechada:** feche-a com uma ADR antes.
+As decisões em aberto (fila, SSE × WebSocket, dataset, quantidade de classes, runtime de inferência) estão em [docs/ARCHITECTURE.md, "Decisões em resumo"](docs/ARCHITECTURE.md#10-decisões-em-resumo). **Não implemente uma decisão em aberto como se estivesse fechada:** feche-a com uma ADR antes.
 
 ## Testes
 
@@ -74,12 +74,12 @@ Não precisa de ADR: bugfix, refatoração local, ajuste visual, tela ou endpoin
 
 - Nomes em inglês, no vocabulário das camadas: `XxxUseCase`, `XxxPort` (ou um nome de papel, como `KanjiRecognizer`, `JobQueue`), `XxxAdapter`, `XxxRequest`/`XxxResponse` (só nos schemas HTTP).
 - As regras de cada stack estão nas skills (`angular-conventions`, `fastapi-conventions`, `ml-conventions`), não aqui.
-- **Nunca suba dataset, pesos do modelo nem binário grande.** `ml/datasets/` e `ml/artifacts/` estão no `.gitignore`; como obter cada um fica documentado junto do código que usa. Confira a licença do dataset antes de usar ou descrever: alguns datasets de kanji manuscrito (o ETL, por exemplo) exigem cadastro e podem proibir redistribuição (*a confirmar* quando o dataset for escolhido). Os dados de referência do KanjiVG (CC BY-SA 3.0, *a confirmar*) seguem a mesma regra até a escolha de como empacotá-los (#28): versão e licença registradas, atribuição mantida.
+- **Nunca suba dataset, pesos do modelo nem binário grande.** `ml/datasets/` e `ml/artifacts/` estão no `.gitignore`; como obter cada um fica documentado junto do código que usa. Confira a licença do dataset antes de usar ou descrever: alguns datasets de kanji manuscrito (o ETL, por exemplo) exigem cadastro e podem proibir redistribuição (*a confirmar* quando o dataset for escolhido). Os dados de referência do KanjiVG (CC BY-SA 3.0) seguem a mesma regra: versão fixada com checksum, gerados por um script de preparação, fora do git, com a atribuição mantida, inclusive na interface ([ADR 0016](docs/adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
 
 ## Segurança (específico deste projeto — não genérico)
 
 Diferente de um app só em `localhost`, o KanjiLens fica **acessível a qualquer um na rede local, sem login**. Pontos que afetam como escrever código aqui:
-- **Entrada limitada:** o desenho enviado (traços e modo) tem formato e tamanho máximos, em quantidade de traços e de pontos, conferidos no adapter HTTP antes de qualquer coisa chegar à fila. Um `POST` sem limite pode esgotar a memória ou travar os workers.
+- **Entrada limitada:** o desenho enviado (traços e modo) tem formato e tamanho máximos, conferidos no adapter HTTP antes de qualquer coisa chegar à fila. Os valores iniciais são até 40 traços, 1.000 pontos por traço e 10.000 no total ([ADR 0016](docs/adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)). Um `POST` sem limite pode esgotar a memória ou travar os workers.
 - **Fila limitada:** a fila tem tamanho máximo; cheia, a API responde `503` com `Retry-After` em vez de aceitar mais trabalho.
 - **CORS** só libera a origem do frontend, nunca `*`. Se o frontend fizer proxy de `/api`, o CORS fica desligado.
 - **Nenhuma saída de rede** do app em execução. Chamada nova para fora (telemetria, download de modelo em tempo de execução, CDN) precisa de ADR.

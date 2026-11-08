@@ -5,6 +5,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Publicação e documentação
+- **Como a ordem dos traços é avaliada** ([ADR 0016](docs/adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md); spike em [docs/spikes/stroke-order-evaluation.md](docs/spikes/stroke-order-evaluation.md), #28):
+  - **algoritmo:** correspondência bipartite contra o KanjiVG, que também trata traços unidos ou quebrados;
+  - **candidatos:** a avaliação vale para todos os candidatos e não muda o ranking;
+  - **requisição:** o canvas manda os pontos como desenhados (`[x, y, t]`), com limites de tamanho;
+  - **resposta:** diz, por candidato, que traço está fora de ordem ou na direção errada;
+  - **KanjiVG:** licença confirmada (CC BY-SA 3.0) e versão fixada.
 - **A estrutura do backend existe** ([ADR 0015](docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md)): API FastAPI com Uvicorn, no mesmo workspace do ML. O backend usa o `kanjilens_ml` com as mesmas versões do treino. Por enquanto, a API só responde a `GET /api/health`. Seis contratos de arquitetura falham quando um import quebra as camadas. Os comandos, inclusive o de subir a API, estão no `CLAUDE.md` (#18).
 - **A estrutura de `ml/` existe, com as ferramentas do ML** ([ADR 0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md)): Python 3.15 instalado pelo uv, um lock só para as partes Python e o PyTorch só-CPU. Ruff, mypy e pytest cuidam de lint, tipos e testes, e um teste de arquitetura (Import Linter) falha quando um import quebra as regras de dependência. Os comandos estão no `CLAUDE.md` (#12).
 - **O KanjiLens roda direto no notebook da escola, sem Docker** ([ADR 0013](docs/adr/0013-run-directly-on-the-school-notebook-without-docker.md)): ambiente Python isolado, frontend como build estático e os processos como serviço do sistema. Sobra mais memória para o modelo. A instalação passo a passo vai para o `docs/RUNNING.md` (#33).

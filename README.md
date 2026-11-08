@@ -131,7 +131,6 @@ See the full checklist in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-escopo-d
 | Job queue | `asyncio.Queue` / Redis + Celery or RQ | Start with `asyncio.Queue`, move to Redis when needed |
 | Result notification | SSE / WebSocket | Leaning SSE (server → client only) |
 | Dataset | ETL8G / ETL9G | Public offline handwritten kanji images (license to be confirmed) |
-| Stroke-order check | DP matching / bipartite matching / incremental evaluation | Compare against KanjiVG (license to be confirmed); no training data needed |
 | Inference runtime | PyTorch / OpenVINO / ONNX Runtime (CPU), FP32 or INT8 | Decided by benchmarks on the school laptop |
 | Number of classes | A few hundred → 2,136 Jōyō kanji | Start small, then expand |
 
@@ -147,4 +146,4 @@ Computer Vision, Deep Learning and CNNs, stroke matching for stroke-order checki
 
 The source code is licensed under the [MIT License](LICENSE).
 
-The license covers the code in this repository only. Datasets used for training and trained model weights are not part of the repository and are not covered by it: each dataset keeps its own terms, and weights trained on it may inherit them. The KanjiVG stroke-order reference data shipped with the app keeps its own license (CC BY-SA 3.0, to be confirmed), with attribution.
+The license covers the code in this repository only. Datasets used for training and trained model weights are not part of the repository and are not covered by it: each dataset keeps its own terms, and weights trained on it may inherit them. The KanjiVG stroke-order reference data shipped with the app keeps its own license (CC BY-SA 3.0, © Ulrich Apel, [kanjivg.tagaini.net](https://kanjivg.tagaini.net)), with attribution.
