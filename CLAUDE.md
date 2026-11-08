@@ -19,7 +19,7 @@ Vale também quando o conteúdo técnico (log, erro, documentação de bibliotec
 
 O KanjiLens reconhece kanjis manuscritos: a pessoa escolhe se a ordem dos traços importa, desenha num canvas e recebe os top-K candidatos, ordenados por confiança. O reconhecimento é uma CNN 2D compacta, treinada em PyTorch, que não depende da ordem; no modo `ordered`, os traços também são comparados com a ordem e a direção do KanjiVG, e a resposta diz quais estão fora de ordem ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md)). É um **monorepo** ([ADR 0002](docs/adr/0002-monorepo-for-frontend-backend-and-ml.md)) com três partes: `frontend/` (Angular), `backend/` (Python, FastAPI, fila de jobs e workers) e `ml/` (dataset, treino, avaliação e o pré-processamento compartilhado). Tudo roda numa máquina só e é acessado pela rede local, sem nuvem ([ADR 0007](docs/adr/0007-local-execution-over-the-lan.md)). Essa máquina é o notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB, sem GPU dedicada), então a inferência é **CPU-first** e todo número de desempenho é medido nele ([ADR 0011](docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md)). Veja o [README.pt-BR.md](README.pt-BR.md) para a visão geral e o [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para o desenho. O porquê das decisões está nas ADRs em [docs/adr/](docs/adr/README.md).
 
-**Fase:** as estruturas de `ml/` e `backend/` existem, com as ferramentas das ADRs [0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) e [0015](docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md); o backend só responde ao `GET /api/health`. Ainda não há código de produto. O roteiro do MVP está em [docs/ARCHITECTURE.md, "Escopo do MVP"](docs/ARCHITECTURE.md#9-escopo-do-mvp).
+**Fase:** as estruturas de `ml/`, `backend/` e `frontend/` existem, com as ferramentas das ADRs [0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md), [0015](docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) e [0017](docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md). O backend só responde ao `GET /api/health`, e o frontend só tem a página inicial com o texto pelo i18n. Ainda não há código de produto. O roteiro do MVP está em [docs/ARCHITECTURE.md, "Escopo do MVP"](docs/ARCHITECTURE.md#9-escopo-do-mvp).
 
 ## Comandos
 
@@ -39,6 +39,18 @@ uv run --directory backend uvicorn kanjilens.bootstrap.app:create_app --factory 
 ```
 
 Para testar pelo celular na rede local, troque o endereço por `--host 0.0.0.0` (ARCHITECTURE.md, seção 6.1). Com a fila em memória, o Uvicorn roda com **um processo só** (sem `--workers`; ADR 0005).
+
+**Frontend (Angular)** — [ADR 0017](docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md). Pré-requisito: Node 26 LTS (`frontend/.nvmrc`; com o nvm, `nvm use`). Tudo dentro de `frontend/`:
+
+```bash
+npm ci                     # instala as dependências do package-lock.json
+npm start                  # servidor de desenvolvimento em http://localhost:4200 (--host 0.0.0.0 para o celular)
+npm run lint               # ESLint, inclusive o teste de arquitetura (boundaries) e a regra de i18n
+npm run test:ci            # testes (Vitest), uma vez; npm test para o modo watch
+npm run build              # build de produção em dist/
+npm run format:check       # Prettier (npm run format para corrigir)
+npm run extract-i18n       # gera src/locale/messages.xlf com os textos marcados com i18n
+```
 
 ## Arquitetura (detalhes em docs/ARCHITECTURE.md)
 

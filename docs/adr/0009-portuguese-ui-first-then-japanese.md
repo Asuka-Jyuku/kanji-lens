@@ -16,7 +16,7 @@ O idioma dos textos da tela estava em aberto: o esboço do ARCHITECTURE.md estav
 
 ## Decisão
 
-A interface nasce em **português do Brasil (`pt-BR`)**, e o **japonês (`ja`)** entra depois. Desde a primeira tela, **todo texto visível passa pelo mecanismo de i18n**, mesmo com um idioma só: nenhum texto de interface fica escrito direto no template ou no código. O mecanismo (o `@angular/localize`, oficial e resolvido no build, uma versão do app por idioma; ou uma biblioteca de tradução em tempo de execução, como o Transloco, que troca de idioma sem recarregar) é escolhido na ADR de ferramentas da etapa 3.
+A interface nasce em **português do Brasil (`pt-BR`)**, e o **japonês (`ja`)** entra depois. Desde a primeira tela, **todo texto visível passa pelo mecanismo de i18n**, mesmo com um idioma só: nenhum texto de interface fica escrito direto no template ou no código. O mecanismo (o `@angular/localize`, oficial e resolvido no build, uma versão do app por idioma; ou uma biblioteca de tradução em tempo de execução, como o Transloco, que troca de idioma sem recarregar) é escolhido na ADR de ferramentas da etapa 3. *Atualização de 2026-11-08:* o escolhido é o **`@angular/localize`** ([ADR 0017](0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)), com um build por idioma; trocar de idioma recarrega a página.
 
 ## Consequências
 

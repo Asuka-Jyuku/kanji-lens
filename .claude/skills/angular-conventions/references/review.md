@@ -4,7 +4,7 @@ Use ao avaliar uma tela, ao revisar um PR com frontend e no fim do seu próprio 
 
 ## O que a CI já pega (não gaste a revisão nisso)
 
-Build, checagem de tipos, testes, linter e o teste de arquitetura, quando existirem (ADR de ferramentas da etapa 3). Se um deles falhou na CI, a revisão aponta o job; não reexplica a regra.
+Build, checagem de tipos, testes, linter, a regra de i18n e o teste de arquitetura (`eslint-plugin-boundaries`; ADR 0017). Se um deles falhou na CI, a revisão aponta o job; não reexplica a regra.
 
 ## Avaliar uma tela (UI/UX)
 
