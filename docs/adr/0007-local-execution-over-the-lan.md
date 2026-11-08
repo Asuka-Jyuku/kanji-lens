@@ -2,7 +2,7 @@
 
 - **Status:** Aceita
 - **Data:** 2026-11-03
-- **Relacionadas:** [0003](0003-angular-frontend-and-fastapi-backend.md), [0005](0005-asynchronous-recognition-with-queue-and-workers.md), [0011](0011-school-notebook-as-server-with-cpu-first-inference.md)
+- **Relacionadas:** [0003](0003-angular-frontend-and-fastapi-backend.md), [0005](0005-asynchronous-recognition-with-queue-and-workers.md), [0011](0011-school-notebook-as-server-with-cpu-first-inference.md), [0013](0013-run-directly-on-the-school-notebook-without-docker.md)
 
 ## Contexto
 
@@ -27,3 +27,4 @@ Rodamos tudo numa máquina local que faz o papel de servidor, e os clientes a ac
   - a máquina local é o notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB, sem GPU dedicada);
   - o `ng serve --host 0.0.0.0` vale só no desenvolvimento;
   - em produção, o frontend é servido como build estático.
+- **Atualização de 2026-11-08 ([ADR 0013](0013-run-directly-on-the-school-notebook-without-docker.md)):** no notebook, o KanjiLens roda direto, sem Docker, com os processos como serviço do sistema.

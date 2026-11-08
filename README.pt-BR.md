@@ -63,7 +63,7 @@ O reconhecimento usa uma CNN 2D compacta treinada em PyTorch, que não depende d
 | Backend | Python, FastAPI, REST, SSE ou WebSocket |
 | Machine Learning | PyTorch (treino), CNN 2D; avaliação da ordem contra o KanjiVG; runtime de inferência em CPU escolhido por benchmark (PyTorch / OpenVINO / ONNX Runtime) |
 | Fila | `asyncio.Queue` no início; Redis + Celery/RQ se necessário |
-| Execução | Notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB), acessado pela LAN |
+| Execução | Notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB), direto, sem Docker, acessado pela LAN |
 
 ## API (planejada)
 
@@ -112,10 +112,7 @@ kanji-lens/
 │   ├── notebooks/           # Só exploração
 │   ├── datasets/            # Fora do git
 │   └── artifacts/           # Pesos treinados, fora do git
-├── infrastructure/
-│   └── docker/
-├── docs/
-└── docker-compose.yml
+└── docs/
 ```
 
 ## Roadmap

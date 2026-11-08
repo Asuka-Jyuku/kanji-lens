@@ -58,7 +58,7 @@ Funcionalidades:
 - Botão para enviar o desenho.
 - Indicador de processamento.
 - Lista dos kanjis previstos, com a confiança de cada um.
-- Verbete do kanji escolhido (leituras, significados). Ainda em aberto (seção 10).
+- Verbete do kanji escolhido: por ora, um link que abre um dicionário externo em nova aba; o dicionário próprio fica para depois (seção 10).
 
 ```text
 ┌──────────────────────────────┐
@@ -344,7 +344,7 @@ O `GET /api/recognitions/{id}` serve de fallback: se a conexão SSE cair, o fron
 
 ## 6. Infraestrutura e execução local
 
-O projeto roda inteiramente em uma máquina local. Não são necessários domínio público, hospedagem em nuvem, servidor externo nem exposição à internet ([ADR 0007](adr/0007-local-execution-over-the-lan.md)).
+O projeto roda inteiramente em uma máquina local. Não são necessários domínio público, hospedagem em nuvem, servidor externo nem exposição à internet ([ADR 0007](adr/0007-local-execution-over-the-lan.md)). No notebook, ele roda **direto, sem Docker**: ambiente Python isolado, build estático do frontend e os processos como serviço do sistema operacional ([ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md)). O passo a passo vai para o `docs/RUNNING.md`.
 
 O notebook da escola hospeda a aplicação e funciona como servidor (seção 6.3). Dispositivos na mesma rede Wi-Fi acessam pelo IP local:
 
@@ -506,10 +506,7 @@ kanji-lens/
 │   ├── notebooks/           # só exploração; nada importa daqui
 │   ├── datasets/            # fora do git
 │   └── artifacts/           # pesos treinados, fora do git
-├── infrastructure/
-│   └── docker/
 ├── docs/
-├── docker-compose.yml
 └── README.md
 ```
 
@@ -577,13 +574,14 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Modos e modelo | `ordered` / `unordered`, escolhido por solicitação; uma CNN 2D compacta nos dois; no `ordered`, avaliação da ordem contra o KanjiVG | Decidido — [ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md) (substitui a [0010](adr/0010-two-recognition-modes-with-specialized-models.md)) |
 | Servidor e carga | Notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB), inferência CPU-first; 3–5 envios numa janela curta, 10 clientes como estresse | Decidido — [ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md) |
 | Execução | Local / rede local, sem nuvem | Decidido — [ADR 0007](adr/0007-local-execution-over-the-lan.md) |
+| Como roda no notebook | Direto, sem Docker: ambiente Python isolado, build estático e serviço do sistema (SO *a confirmar*) | Decidido — [ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md) |
 | Branches e releases | `main` + `develop`, CHANGELOG por release | Decidido — [ADR 0008](adr/0008-git-flow-and-changelog-by-release.md) |
 | Notificação do resultado | SSE ou WebSocket | Em aberto (tendência: SSE) |
 | Fila | `asyncio.Queue` ou Redis + Celery/RQ | Em aberto (começar com `asyncio.Queue`) |
 | Dataset do reconhecimento | ETL8G / ETL9G em avaliação (licença a confirmar) | Em aberto |
 | Algoritmo de avaliação da ordem | *DP matching*, bipartite matching / cube search ou avaliação incremental com contexto; quantos candidatos avaliar; se só anota ou também reordena | Em aberto |
 | Modo padrão da interface | `ordered` ou `unordered` | Em aberto |
-| Verbete do kanji escolhido | Dicionário com dados abertos locais (KANJIDIC2 / JMdict, licença a confirmar) e um link externo como ação secundária, ou só o link | Em aberto (proposta: dados locais, porque não há saída de rede) |
+| Verbete do kanji escolhido | Link externo (nova aba) ou dicionário próprio com dados abertos locais (KANJIDIC2 / JMdict, licença a confirmar) | Em aberto (por ora: link externo; o dicionário próprio fica para depois. O site do link ainda está a definir) |
 | Runtime, resolução, precisão e concorrência de produção | PyTorch / OpenVINO / ONNX Runtime CPU; 64–128 px; FP32 / INT8; 1 ou 2 execuções | Em aberto (benchmark no notebook) |
 | Quantidade de classes | Centenas → 2.136 (Jōyō) | Em aberto |
 | Ferramentas de cada stack | Gerenciador de pacotes, linter, test runner | Em aberto — uma ADR no começo de cada etapa |
