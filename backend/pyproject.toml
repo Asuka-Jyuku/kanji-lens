@@ -1,0 +1,97 @@
+[project]
+name = "kanjilens"
+version = "0.0.0"
+description = "KanjiLens backend: FastAPI app, recognition jobs, queue and workers"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.15,<3.16"
+dependencies = [
+    "fastapi>=0.162",
+    "kanjilens-ml",
+    "pydantic>=2.14",
+    "uvicorn[standard]>=0.54",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.16",
+    "import-linter>=2.16",
+    "mypy>=2.4",
+    "pytest>=9.2",
+    "ruff>=0.17",
+]
+
+[build-system]
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"
+
+# kanjilens_ml comes from the workspace, with the same locked versions (ADR 0014 and 0015).
+[tool.uv.sources]
+kanjilens-ml = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers", "--strict-config"]
+
+[tool.mypy]
+python_version = "3.15"
+strict = true
+files = ["src", "tests"]
+plugins = ["pydantic.mypy"]
+
+# Architecture test (CLAUDE.md, "Testes"; ADR 0004). Run with `lint-imports`.
+[tool.importlinter]
+root_packages = ["kanjilens"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layers: dependencies point inwards (bootstrap -> adapters -> application -> domain)"
+type = "layers"
+layers = [
+    "kanjilens.bootstrap",
+    "kanjilens.adapters",
+    "kanjilens.application",
+    "kanjilens.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Application: use cases depend on ports, never the other way around"
+type = "layers"
+layers = [
+    "kanjilens.application.use_cases",
+    "kanjilens.application.ports",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain and application know no framework, no ML and no queue"
+type = "forbidden"
+source_modules = ["kanjilens.domain", "kanjilens.application"]
+forbidden_modules = [
+    "fastapi",
+    "starlette",
+    "pydantic",
+    "uvicorn",
+    "httpx",
+    "httpx2",
+    "torch",
+    "numpy",
+    "kanjilens_ml",
+]
+
+[[tool.importlinter.contracts]]
+name = "Inbound and outbound adapters do not know each other; bootstrap wires them"
+type = "independence"
+modules = ["kanjilens.adapters.inbound", "kanjilens.adapters.outbound"]
+
+[[tool.importlinter.contracts]]
+name = "PyTorch and kanjilens_ml only in the outbound adapters (ADR 0004 and 0012)"
+type = "forbidden"
+source_modules = ["kanjilens.adapters.inbound", "kanjilens.bootstrap"]
+forbidden_modules = ["torch", "kanjilens_ml"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Pydantic only in the HTTP adapter (ADR 0004)"
+type = "forbidden"
+source_modules = ["kanjilens.adapters.outbound"]
+forbidden_modules = ["pydantic", "fastapi"]

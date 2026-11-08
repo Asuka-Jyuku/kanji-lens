@@ -53,3 +53,4 @@ As ADRs 0002, 0003 e 0005 a 0007 foram escritas depois das decisões, a partir d
 | [0012](0012-ordered-mode-as-stroke-order-evaluation.md) | Modo `ordered` como avaliação da ordem dos traços contra uma referência | Aceita |
 | [0013](0013-run-directly-on-the-school-notebook-without-docker.md) | Execução direta no notebook da escola, sem Docker | Aceita |
 | [0014](0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) | Ferramentas do ML: Python 3.15, uv, Ruff, mypy, pytest e Import Linter | Aceita |
+| [0015](0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) | Ferramentas do backend: FastAPI e Uvicorn no workspace do uv | Aceita |
