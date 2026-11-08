@@ -63,7 +63,7 @@ Templates de issue (`.github/ISSUE_TEMPLATE/`):
 | Problema | `bug` | Algo não funciona como deveria |
 | Melhoria | `enhancement` | Funcionalidade ou ajuste que o usuário vê |
 | Manutenção (chore) | `chore` | Tarefa interna que o usuário não vê: dependência, CI, script, documentação, limpeza |
-| Investigação (spike) | `spike` | Pergunta a responder antes de decidir ou estimar; termina numa resposta, numa ADR ou em issues novas, não em código de produção |
+| Investigação (spike) | `spike` | Pergunta a responder antes de decidir ou estimar; termina numa resposta, numa ADR ou em issues novas, não em código de produção. Resposta longa (pesquisa, plano de experimentos) vira um documento em `docs/spikes/` |
 | Épico | `epic` | Um grupo de issues (veja abaixo) |
 
 ### Dependências entre issues

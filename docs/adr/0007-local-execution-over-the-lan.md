@@ -2,7 +2,7 @@
 
 - **Status:** Aceita
 - **Data:** 2026-11-03
-- **Relacionadas:** [0003](0003-angular-frontend-and-fastapi-backend.md), [0005](0005-asynchronous-recognition-with-queue-and-workers.md)
+- **Relacionadas:** [0003](0003-angular-frontend-and-fastapi-backend.md), [0005](0005-asynchronous-recognition-with-queue-and-workers.md), [0011](0011-school-notebook-as-server-with-cpu-first-inference.md)
 
 ## Contexto
 
@@ -23,3 +23,7 @@ Rodamos tudo numa máquina local que faz o papel de servidor, e os clientes a ac
 - **Positivas:** sem custo de hospedagem; sem superfície de ataque na internet; a CPU/GPU do servidor é o único limite de recursos, medido na etapa 4.
 - **Negativas:** **qualquer um na rede local alcança a API, sem login**, então limite de entrada, fila limitada e CORS restrito são obrigatórios (`CLAUDE.md`, "Segurança"); os serviços precisam escutar em `0.0.0.0`; o firewall precisa liberar as portas; o IP do servidor deve ser reservado no DHCP do roteador; o frontend não pode chamar `localhost` a partir do celular.
 - **Na prática:** `ng serve --host 0.0.0.0` e `uvicorn --host 0.0.0.0`; a URL da API usa o IP do servidor, ou o servidor de desenvolvimento do Angular faz proxy de `/api`; nenhuma saída de rede do app em execução sem ADR; os passos de configuração vão para o `docs/RUNNING.md` quando a primeira parte rodar.
+- **Atualização de 2026-11-08 ([ADR 0011](0011-school-notebook-as-server-with-cpu-first-inference.md)):**
+  - a máquina local é o notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB, sem GPU dedicada);
+  - o `ng serve --host 0.0.0.0` vale só no desenvolvimento;
+  - em produção, o frontend é servido como build estático.

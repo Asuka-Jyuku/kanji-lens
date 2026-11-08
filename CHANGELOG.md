@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Publicação e documentação
+- **Dois modos de reconhecimento: a ordem dos traços importa ou não** ([ADR 0010](docs/adr/0010-two-recognition-modes-with-specialized-models.md)). O aluno escolhe o modo a cada reconhecimento, e o canvas envia a lista de traços, não uma imagem.
+  - Cada modo tem o seu modelo compacto: uma CNN 2D sobre a imagem final quando a ordem não importa, e uma 1D-CNN temporal sobre a sequência de traços quando importa.
+  - A investigação que levou a essa escolha está em [docs/spikes/model-and-runtime-evaluation.md](docs/spikes/model-and-runtime-evaluation.md) (#23). Ela traz candidatos, runtimes, plano de benchmark e projetos do GitHub para estudo.
+- **O notebook da escola é o servidor** ([ADR 0011](docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md)): Dell Inspiron 3501 (i7-1165G7, 16 GB).
+  - A inferência roda só na CPU, e o frontend é servido como build estático.
+  - O dimensionamento é para 3–5 alunos enviando desenhos ao mesmo tempo, com 10 clientes como teste de estresse.
+  - O treino roda noutra máquina. Os números de desempenho valem só quando medidos no notebook (#24).
 - **Referências de UI/UX para o frontend** ([docs/UI-UX.md](docs/UI-UX.md)): as fontes obrigatórias (heurísticas de Nielsen, NN/g, WCAG 2.2, WAI-ARIA) aplicadas ao canvas e ao toque, e os padrões propostos para a tela de reconhecimento. O agente `dev-angular` ganha o modo de avaliação de tela, com o checklist na skill `angular-conventions`.
 - **A interface vai ser em português, com o japonês depois** ([ADR 0009](docs/adr/0009-portuguese-ui-first-then-japanese.md)). Todo texto da tela passa pelo i18n desde a primeira tela, para o japonês ser só uma tradução, e os kanjis aparecem sempre marcados como japonês, para o leitor de tela pronunciar certo e o navegador usar a forma japonesa do caractere.
 - **Fluxo de trabalho e documentação do projeto organizados.** O documento de design passa a ser o [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), com as camadas de Clean Architecture / ports and adapters do backend, do frontend e do ML. As decisões já tomadas estão registradas nas ADRs 0001 a 0008, em [docs/adr/](docs/adr/README.md). O [CONTRIBUTING.md](CONTRIBUTING.md) descreve as branches `main` + `develop`, as issues, os épicos, o Project, as etiquetas, os commits e os releases. Os templates de issue e de PR estão em `.github/`. A configuração do Claude Code está em `.claude/`: uma skill e um agente por stack.

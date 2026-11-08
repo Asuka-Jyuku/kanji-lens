@@ -21,12 +21,12 @@ Formatter, linter, type checker, testes e o teste de arquitetura, quando existir
 
 **Assíncrono e concorrência (ADR 0005)**
 - [ ] A inferência roda fora do event loop; nada CPU-bound num caminho `async def`.
-- [ ] O modelo é carregado uma vez por worker (no `lifespan`), não por requisição.
-- [ ] `torch.set_num_threads` ajustado quando vários workers dividem um processo.
+- [ ] Os dois modelos são carregados uma vez no processo de inferência, não por requisição, e o job escolhe o modelo pelo `stroke_order_mode` (ADRs 0010 e 0011).
+- [ ] Threads do runtime configuradas explicitamente (`torch.set_num_threads` ou equivalente); mais de uma inferência simultânea só com medição no notebook da escola (ADR 0011).
 - [ ] Nada supõe mais de um processo do Uvicorn enquanto a fila estiver em memória.
 
 **Segurança na rede local (`CLAUDE.md`, "Segurança")**
-- [ ] Tamanho e formato do desenho conferidos antes de ir para a fila (`413` / `400`).
+- [ ] Tamanho e formato do desenho (quantidade de traços e de pontos) e o `stroke_order_mode` conferidos antes de ir para a fila (`413` / `400`).
 - [ ] A fila é limitada; fila cheia → `503` com `Retry-After`.
 - [ ] O CORS só lista a origem do frontend, nunca `*`.
 - [ ] Nenhuma saída de rede nova; resultados dos jobs e desenhos expiram.
