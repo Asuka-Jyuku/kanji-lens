@@ -5,6 +5,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Publicação e documentação
+- **O KanjiLens roda direto no notebook da escola, sem Docker** ([ADR 0013](docs/adr/0013-run-directly-on-the-school-notebook-without-docker.md)): ambiente Python isolado, frontend como build estático e os processos como serviço do sistema. Sobra mais memória para o modelo. A instalação passo a passo vai para o `docs/RUNNING.md` (#33).
+- **O notebook da escola roda Windows**, e a instalação passo a passo no `docs/RUNNING.md` vai ser para ele (#33).
+- **O modo padrão é "ordem dos traços não importa".** Quem quer treinar a ordem troca a opção antes de desenhar ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
+- **O verbete do kanji escolhido abre num dicionário externo, em nova aba.** O padrão é o Takoboto, e o aluno pode escolher outro numa configuração guardada no aparelho (#35). O dicionário próprio fica para depois (#33).
 - **Documentação revisada depois das ADRs 0010–0012** (#30):
   - **Avaliação da ordem nas regras de qualidade:** erros detectados × falsos alarmes passam a ser medidos como o Top-1/Top-5, com item próprio no checklist do PR.
   - **Padrões de tela para o seletor de modo e para o resultado da avaliação da ordem**, este em texto, e não só em cor ([docs/UI-UX.md](docs/UI-UX.md)).

@@ -73,7 +73,7 @@ A Intel informa também suporte a Intel Deep Learning Boost, AVX2 e AVX-512 para
 **Implicações para o projeto:**
 
 - Não há necessidade inicial de um modelo grande.
-- A RAM de 16 GB é suficiente para experimentar modelos compactos, mas o orçamento deve incluir SO, Docker, FastAPI, fila, workers e cache do runtime.
+- A RAM de 16 GB é suficiente para experimentar modelos compactos, mas o orçamento deve incluir SO, FastAPI, fila, workers e cache do runtime (sem Docker, pela ADR 0013).
 - O i7 tem quatro núcleos físicos. Não iniciar com oito workers apenas porque existem oito threads lógicas.
 - O notebook também hospedará o frontend Angular (servido como build estático), FastAPI, fila e os dois modelos; o benchmark deve medir o consumo agregado do sistema, não apenas o processo do modelo.
 - Notebook pode sofrer limitação térmica e de energia em carga prolongada. Medir após aquecimento, não apenas em uma execução curta.

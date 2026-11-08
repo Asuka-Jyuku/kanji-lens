@@ -43,7 +43,7 @@ Recognition uses a compact 2D CNN trained with PyTorch, which does not depend on
 3. The API creates a `job_id`, queues the job, and replies right away. The HTTP request does not stay open while the model runs.
 4. The inference worker picks up the job and runs the model; in the stroke-order mode it also checks the strokes against the KanjiVG reference. The model and the references are loaded once, not once per request.
 5. The backend pushes the result to the frontend (SSE or WebSocket).
-6. The frontend shows the top-K predictions with their confidence and, in the stroke-order mode, which strokes are out of order.
+6. The frontend shows the top-K predictions with their confidence and, in the stroke-order mode, which strokes are out of order. Tapping a candidate opens it in an external dictionary (Takoboto by default; the user can pick another one).
 
 ```text
  Phone / Desktop
@@ -63,7 +63,7 @@ Recognition uses a compact 2D CNN trained with PyTorch, which does not depend on
 | Backend | Python, FastAPI, REST, SSE or WebSocket |
 | Machine Learning | PyTorch (training), 2D CNN; stroke-order check against KanjiVG; CPU inference runtime chosen by benchmark (PyTorch / OpenVINO / ONNX Runtime) |
 | Queue | `asyncio.Queue` first; Redis + Celery/RQ if needed |
-| Deployment | The school's laptop (Dell Inspiron 3501, i7-1165G7, 16 GB), accessed over the LAN |
+| Deployment | The school's laptop (Dell Inspiron 3501, i7-1165G7, 16 GB, Windows), run directly without Docker, accessed over the LAN |
 
 ## API (planned)
 
@@ -112,10 +112,7 @@ kanji-lens/
 │   ├── notebooks/           # Exploration only
 │   ├── datasets/            # Not in git
 │   └── artifacts/           # Trained weights, not in git
-├── infrastructure/
-│   └── docker/
-├── docs/
-└── docker-compose.yml
+└── docs/
 ```
 
 ## Roadmap
@@ -135,7 +132,6 @@ See the full checklist in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-escopo-d
 | Result notification | SSE / WebSocket | Leaning SSE (server → client only) |
 | Dataset | ETL8G / ETL9G | Public offline handwritten kanji images (license to be confirmed) |
 | Stroke-order check | DP matching / bipartite matching / incremental evaluation | Compare against KanjiVG (license to be confirmed); no training data needed |
-| Default mode in the UI | Stroke order matters / doesn't | To be decided |
 | Inference runtime | PyTorch / OpenVINO / ONNX Runtime (CPU), FP32 or INT8 | Decided by benchmarks on the school laptop |
 | Number of classes | A few hundred → 2,136 Jōyō kanji | Start small, then expand |
 

@@ -51,3 +51,4 @@ As ADRs 0002, 0003 e 0005 a 0007 foram escritas depois das decisões, a partir d
 | [0010](0010-two-recognition-modes-with-specialized-models.md) | Dois modos de reconhecimento com modelos especializados (Opção C) | Substituída por 0012 |
 | [0011](0011-school-notebook-as-server-with-cpu-first-inference.md) | Notebook da escola como servidor, com inferência CPU-first | Aceita |
 | [0012](0012-ordered-mode-as-stroke-order-evaluation.md) | Modo `ordered` como avaliação da ordem dos traços contra uma referência | Aceita |
+| [0013](0013-run-directly-on-the-school-notebook-without-docker.md) | Execução direta no notebook da escola, sem Docker | Aceita |
