@@ -29,10 +29,10 @@ Ainda não há. Cada etapa acrescenta os seus aqui (build, testes, lint, rodar) 
 
 **Clean Architecture com ports and adapters (hexagonal), em camadas** ([ADR 0004](docs/adr/0004-clean-and-hexagonal-architecture.md)). A regra de dependência é a única que nunca se dobra: **as dependências apontam para dentro**. O domínio não conhece framework nenhum, a camada de aplicação só conhece o domínio e os próprios ports, e só os adapters tocam em FastAPI, PyTorch, `HttpClient` do Angular, fila ou APIs do navegador.
 
-- **Backend** (`backend/src/kanjilens/`): `domain/` → `application/` (use cases + ports) → `adapters/inbound` (HTTP, SSE, consumidor da fila) e `adapters/outbound` (recognizer, fila, armazenamento dos jobs, notifier) → `bootstrap/` (composition root, o único lugar que liga adapters a ports). Os schemas do Pydantic ficam no adapter HTTP, nunca no domínio.
+- **Backend** (`backend/src/kanjilens/`): `domain/` → `application/` (use cases + ports) → `adapters/inbound` (HTTP, SSE, consumidor da fila) e `adapters/outbound` (recognizer, avaliador da ordem, fila, armazenamento dos jobs, notifier) → `bootstrap/` (composition root, o único lugar que liga adapters a ports). Os schemas do Pydantic ficam no adapter HTTP, nunca no domínio.
 - **Frontend** (`frontend/src/app/`): `domain/` → `application/` (use cases, ports como classes abstratas usadas como token de DI) → `infrastructure/` (adapters HTTP e SSE) e `presentation/` (componentes, páginas, rotas). **Componente nunca injeta `HttpClient`**: só fala com a camada de aplicação.
-- **ML** (`ml/src/kanjilens_ml/`): é uma biblioteca, não uma camada do backend. O backend a usa **só dentro do adapter outbound do recognizer**.
-- **Pré-processamento sempre junto:** existe **um** módulo de pré-processamento (`ml/src/kanjilens_ml/preprocessing/`), importado pelo treino e pelo adapter do recognizer no backend. Ele gera, a partir da mesma lista de traços, a imagem da CNN e os traços normalizados da avaliação da ordem; o frontend envia os traços como foram desenhados. Mudou o pré-processamento, o tamanho da entrada, a normalização ou a lista de classes? Treino, inferência e versão do modelo mudam **no mesmo PR**. Duas cópias que divergem fazem o modelo errar calado em produção (*train/serve skew*): nenhum erro, só previsão errada.
+- **ML** (`ml/src/kanjilens_ml/`): é uma biblioteca, não uma camada do backend. O backend a usa **só dentro dos adapters outbound do recognizer e do avaliador da ordem**; o PyTorch, só no do recognizer.
+- **Pré-processamento sempre junto:** existe **um** módulo de pré-processamento (`ml/src/kanjilens_ml/preprocessing/`), importado pelo treino e pelos adapters do backend. Ele gera, a partir da mesma lista de traços, a imagem da CNN e os traços normalizados da avaliação da ordem; o frontend envia os traços como foram desenhados. Mudou o pré-processamento, o tamanho da entrada, a normalização ou a lista de classes? Treino, inferência e versão do modelo mudam **no mesmo PR**. Duas cópias que divergem fazem o modelo errar calado em produção (*train/serve skew*): nenhum erro, só previsão errada.
 
 As decisões em aberto (fila, SSE × WebSocket, dataset, quantidade de classes, algoritmo de avaliação da ordem, modo padrão da interface, runtime de inferência) estão em [docs/ARCHITECTURE.md, "Decisões em resumo"](docs/ARCHITECTURE.md#10-decisões-em-resumo). **Não implemente uma decisão em aberto como se estivesse fechada:** feche-a com uma ADR antes.
 
@@ -40,7 +40,7 @@ As decisões em aberto (fila, SSE × WebSocket, dataset, quantidade de classes, 
 
 - **Toda regra nasce com teste.** Domínio e use cases são testados sem framework, com adapters falsos implementando os ports: é para isso que serve o desenho hexagonal. Bug corrigido ganha teste que falha antes da correção.
 - **Adapters ganham teste de integração** contra a coisa real quando for barato (test client do FastAPI, fila real no mesmo processo, o modelo real num conjunto fixo de desenhos).
-- **Qualidade do modelo se mede, não se afirma:** Top-1 e Top-5 no **mesmo split de teste fixo**, antes e depois, em todo PR que muda modelo, pré-processamento ou dados de treino. Queda precisa de um "aceito porque..." explícito no PR.
+- **Qualidade do modelo se mede, não se afirma:** Top-1 e Top-5 no **mesmo split de teste fixo**, antes e depois, em todo PR que muda modelo, pré-processamento ou dados de treino. O mesmo vale para a avaliação da ordem: erros detectados × falsos alarmes no mesmo conjunto fixo de desenhos com ordem certa e errada, em todo PR que muda o algoritmo, a normalização dos traços ou os dados do KanjiVG. Queda precisa de um "aceito porque..." explícito no PR.
 - **Teste de arquitetura** (quando cada parte tiver código): um teste que falha quando um import quebra a regra de dependência. Entra com o primeiro código de cada parte, e a ferramenta é escolhida na ADR de ferramentas da etapa.
 
 ## Decisões de arquitetura (ADRs) — obrigatório
@@ -59,7 +59,7 @@ Não precisa de ADR: bugfix, refatoração local, ajuste visual, tela ou endpoin
 
 - Nomes em inglês, no vocabulário das camadas: `XxxUseCase`, `XxxPort` (ou um nome de papel, como `KanjiRecognizer`, `JobQueue`), `XxxAdapter`, `XxxRequest`/`XxxResponse` (só nos schemas HTTP).
 - As regras de cada stack estão nas skills (`angular-conventions`, `fastapi-conventions`, `ml-conventions`), não aqui.
-- **Nunca suba dataset, pesos do modelo nem binário grande.** `ml/datasets/` e `ml/artifacts/` estão no `.gitignore`; como obter cada um fica documentado junto do código que usa. Confira a licença do dataset antes de usar ou descrever: alguns datasets de kanji manuscrito (o ETL, por exemplo) exigem cadastro e podem proibir redistribuição (*a confirmar* quando o dataset for escolhido).
+- **Nunca suba dataset, pesos do modelo nem binário grande.** `ml/datasets/` e `ml/artifacts/` estão no `.gitignore`; como obter cada um fica documentado junto do código que usa. Confira a licença do dataset antes de usar ou descrever: alguns datasets de kanji manuscrito (o ETL, por exemplo) exigem cadastro e podem proibir redistribuição (*a confirmar* quando o dataset for escolhido). Os dados de referência do KanjiVG (CC BY-SA 3.0, *a confirmar*) seguem a mesma regra até a escolha de como empacotá-los (#28): versão e licença registradas, atribuição mantida.
 
 ## Segurança (específico deste projeto — não genérico)
 

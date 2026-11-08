@@ -5,6 +5,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Publicação e documentação
+- **Documentação revisada depois das ADRs 0010–0012** (#30):
+  - **Avaliação da ordem nas regras de qualidade:** erros detectados × falsos alarmes passam a ser medidos como o Top-1/Top-5, com item próprio no checklist do PR.
+  - **Padrões de tela para o seletor de modo e para o resultado da avaliação da ordem**, este em texto, e não só em cor ([docs/UI-UX.md](docs/UI-UX.md)).
+  - **Produção separada do desenvolvimento na execução local:** o build estático na mesma origem da API dispensa CORS; a proposta de QR Code na parede foi registrada.
+  - **Licença do KanjiVG nos READMEs.**
+  - **O verbete do kanji escolhido** entra como decisão em aberto.
 - **Dois modos de reconhecimento: a ordem dos traços importa ou não** ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a [ADR 0010](docs/adr/0010-two-recognition-modes-with-specialized-models.md)). O aluno escolhe o modo a cada reconhecimento, e o canvas envia a lista de traços, não uma imagem.
   - Os dois modos reconhecem o kanji com a mesma CNN 2D compacta, que não depende da ordem.
   - Quando a ordem importa, o KanjiLens também confere a ordem e a direção dos traços contra a referência do KanjiVG e diz quais traços estão fora de ordem, como se faz em sistemas de ensino de kanji. Não há modelo temporal, nem dataset de escrita *online* para treinar.

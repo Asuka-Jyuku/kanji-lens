@@ -169,6 +169,7 @@ O template em `.github/pull_request_template.md` tem a lista completa. Os pontos
 - Entrada em `[Não publicado]` no `CHANGELOG.md`.
 - Regra sem teste não está pronta; bug corrigido ganha teste que falhava antes.
 - Mudou pré-processamento, tamanho da entrada ou lista de classes? Treino, inferência e versão do modelo no mesmo PR, com Top-1/Top-5 antes e depois.
+- Mudou a avaliação da ordem? Erros detectados × falsos alarmes antes e depois, no mesmo conjunto fixo de desenhos.
 - Mudou tela, canvas ou controle? As decisões de desenho citam o princípio de [docs/UI-UX.md](docs/UI-UX.md).
 - Mudou o `README.md`? O `README.pt-BR.md` também, e vice-versa.
 - Decisão de arquitetura? ADR no mesmo PR, ou o motivo de não precisar.

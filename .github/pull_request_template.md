@@ -22,6 +22,7 @@ Closes #<!-- número da issue -->
 - [ ] Regra de dependência mantida (ADR 0004): nenhum import de framework em `domain/` ou `application/`; componente não injeta `HttpClient`; teste de arquitetura passa (quando existir)
 - [ ] Mudou pré-processamento, tamanho da entrada, normalização ou lista de classes? Treino, inferência e versão do modelo neste PR, com Top-1/Top-5 no mesmo split de teste, antes e depois
 - [ ] Mudou o modelo ou o treino? Top-1/Top-5 antes e depois, e a configuração usada
+- [ ] Mudou a avaliação da ordem (algoritmo, normalização dos traços, dados do KanjiVG)? Erros detectados × falsos alarmes antes e depois, no mesmo conjunto fixo de desenhos
 - [ ] Decisão de arquitetura (dependência, ferramenta, modelo/dataset, segurança, infraestrutura, decisão em aberto, padrão de código)? ADR criada ou atualizada neste PR, ou o motivo de não precisar
 - [ ] Mudou tela, canvas ou controle? Cada decisão de desenho cita o princípio de `docs/UI-UX.md` (fonte × julgamento) e diz o que não foi validado num celular de verdade
 - [ ] Mudou portas, CORS, limites de entrada ou o tamanho da fila? O `CLAUDE.md`, "Segurança" (ou o `docs/SECURITY.md`, quando existir) continua batendo

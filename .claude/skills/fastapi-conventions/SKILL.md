@@ -1,6 +1,6 @@
 ---
 name: fastapi-conventions
-description: Como se escreve o backend do KanjiLens (backend/, Python + FastAPI) — use case, port, adapter inbound (rota HTTP, SSE, consumidor da fila), adapter outbound (recognizer, fila, armazenamento dos jobs, notifier), composition root, e revisão de PR com backend, seguindo Clean Architecture / ports and adapters, com a fonte de cada regra. Usar ao pedirem "endpoint novo", "use case", "port", "adapter", "worker", "fila", "SSE", "status do job", "revisa o backend", e ao pegar issue com a etiqueta backend ou que mexe em backend/.
+description: Como se escreve o backend do KanjiLens (backend/, Python + FastAPI) — use case, port, adapter inbound (rota HTTP, SSE, consumidor da fila), adapter outbound (recognizer, avaliador da ordem, fila, armazenamento dos jobs, notifier), composition root, e revisão de PR com backend, seguindo Clean Architecture / ports and adapters, com a fonte de cada regra. Usar ao pedirem "endpoint novo", "use case", "port", "adapter", "worker", "fila", "SSE", "status do job", "revisa o backend", e ao pegar issue com a etiqueta backend ou que mexe em backend/.
 model: sonnet
 ---
 
@@ -15,10 +15,10 @@ Você escreve e revisa o backend do projeto (`backend/`). O que vale **sempre** 
 | Assunto | Fonte (a regra está lá) |
 |---|---|
 | Camadas `domain` → `application` (`use_cases`, `ports`) → `adapters` (`inbound`, `outbound`) → `bootstrap`; o que cada uma pode importar | [ADR 0004](../../../docs/adr/0004-clean-and-hexagonal-architecture.md) e [ARCHITECTURE.md, seção 3.1](../../../docs/ARCHITECTURE.md#31-backend-backendsrckanjilens) |
-| Fluxo do job, `job_id`, estados, um modelo por worker, um processo do Uvicorn só com `asyncio.Queue`, inferência fora do event loop | [ADR 0005](../../../docs/adr/0005-asynchronous-recognition-with-queue-and-workers.md) e [ARCHITECTURE.md, seção 4](../../../docs/ARCHITECTURE.md#4-processamento-assíncrono-e-concorrência) |
+| Fluxo do job, `job_id`, estados, o modelo e as referências do KanjiVG carregados uma vez no processo de inferência, uma inferência ativa por vez no início, um processo do Uvicorn só com `asyncio.Queue`, inferência fora do event loop | [ADR 0005](../../../docs/adr/0005-asynchronous-recognition-with-queue-and-workers.md), [ADR 0011](../../../docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md) e [ARCHITECTURE.md, seção 4](../../../docs/ARCHITECTURE.md#4-processamento-assíncrono-e-concorrência) |
 | Endpoints e SSE × WebSocket (em aberto) | [ARCHITECTURE.md, seção 5](../../../docs/ARCHITECTURE.md#5-comunicação-entre-frontend-e-backend) |
 | Limite de entrada, fila limitada, CORS, nenhuma saída de rede | `CLAUDE.md`, "Segurança", e [ADR 0007](../../../docs/adr/0007-local-execution-over-the-lan.md) |
-| O adapter do recognizer e o `kanjilens_ml` | skill `ml-conventions`, "Inferência" |
+| O adapter do recognizer, o do avaliador da ordem e o `kanjilens_ml` | skill `ml-conventions`, "Inferência"; [ADR 0012](../../../docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md) |
 | Idioma: código em inglês, documentação em português | `CLAUDE.md`, "Idioma" |
 | Testes, branches, commits, CHANGELOG | `CLAUDE.md`, "Testes" e "Git / commits"; `CONTRIBUTING.md` |
 

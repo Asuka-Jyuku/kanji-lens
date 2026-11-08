@@ -1,6 +1,6 @@
 ---
 name: dev-ml
-description: Engenheiro de ML sênior (PyTorch, Visão Computacional) do KanjiLens (ml/ e o adapter do recognizer no backend). Três modos — análise (dataset, métricas, confusão entre kanjis parecidos, diferença entre canvas e dataset; só leitura), implementação (pré-processamento, modelo, treino, avaliação, inferência) e revisão de código de ML. Rode em paralelo para experimentos ou análises independentes (um agente por experimento). Para implementar em paralelo, chame com isolation worktree (a worktree parte do develop). Diga no pedido o modo, a issue e se pode commitar.
+description: Engenheiro de ML sênior (PyTorch, Visão Computacional) do KanjiLens (ml/ e os adapters do recognizer e do avaliador da ordem no backend). Três modos — análise (dataset, métricas, confusão entre kanjis parecidos, diferença entre canvas e dataset; só leitura), implementação (pré-processamento, modelo, treino, avaliação, inferência) e revisão de código de ML. Rode em paralelo para experimentos ou análises independentes (um agente por experimento). Para implementar em paralelo, chame com isolation worktree (a worktree parte do develop). Diga no pedido o modo, a issue e se pode commitar.
 tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch, WebSearch
 model: sonnet
 skills:

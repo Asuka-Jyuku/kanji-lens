@@ -8,7 +8,7 @@
 
 ---
 
-> **Revisão de 2026-11-08: o modo `ordered` mudou.** Depois da pesquisa da seção 5.3, o projeto escolheu o caminho (b): **avaliar a ordem e a direção dos traços contra a referência do KanjiVG**, sem 1D-CNN ([ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a ADR 0010). Os dois modos usam a mesma CNN 2D. Nas seções 1, 5.2, 7, 10 e 13, o que fala de 1D-CNN, GRU ou dados *online* para treinar o `ordered` fica como registro da investigação, não como plano.
+> **Revisão de 2026-11-08: o modo `ordered` mudou.** Depois da pesquisa da seção 5.3, o projeto escolheu o caminho (b): **avaliar a ordem e a direção dos traços contra a referência do KanjiVG**, sem 1D-CNN ([ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a ADR 0010). Os dois modos usam a mesma CNN 2D. Nas seções 1, 2, 5.2, 7, 8, 10, 12 e 13, o que fala de 1D-CNN, GRU, "reconhecimento condicionado à informação temporal" ou dados *online* para treinar o `ordered` fica como registro da investigação, não como plano.
 
 ## 1. Resumo executivo
 

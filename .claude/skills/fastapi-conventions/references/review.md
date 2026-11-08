@@ -10,7 +10,7 @@ Formatter, linter, type checker, testes e o teste de arquitetura, quando existir
 
 **Camadas (ADR 0004)**
 - [ ] `domain/` só importa a biblioteca padrão; `application/` só importa `domain/` e os próprios ports.
-- [ ] Pydantic só em `adapters/inbound/http/`; PyTorch e `kanjilens_ml` só em `adapters/outbound/recognizer/`.
+- [ ] Pydantic só em `adapters/inbound/http/`; PyTorch só em `adapters/outbound/recognizer/`; `kanjilens_ml` só nesse adapter e no do avaliador da ordem (ADRs 0004 e 0012).
 - [ ] Adapters concretos só são citados em `bootstrap/`.
 - [ ] Port novo tem um fake usado nos testes do use case.
 
