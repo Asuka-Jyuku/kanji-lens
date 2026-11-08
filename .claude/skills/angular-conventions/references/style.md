@@ -12,7 +12,7 @@ O que se espera de Angular idiomático aqui, com a fonte de cada ponto. As regra
 | Change detection | `OnPush` (ou o padrão do CLI, se já for OnPush/zoneless); estado por signals, para a tela atualizar sem truque de zone | [Angular: change detection](https://angular.dev/best-practices/skipping-subtrees) |
 | Templates | Control flow embutido (`@if`, `@for` com `track`) | [Angular control flow](https://angular.dev/guide/templates/control-flow) |
 | Ciclo de vida e limpeza | `DestroyRef` / `takeUntilDestroyed` para assinaturas e `EventSource.close()` | [Angular: DestroyRef](https://angular.dev/api/core/DestroyRef) |
-| Nomes | Em inglês; um arquivo por classe; `xxx.use-case.ts`, `xxx.gateway.ts` (port), `http-xxx.gateway.ts` (adapter), `xxx.component.ts` | ADR 0004, [Angular style guide](https://angular.dev/style-guide) |
+| Nomes | Em inglês; um arquivo por classe; `xxx.use-case.ts`, `xxx.gateway.ts` (port), `http-xxx.gateway.ts` (adapter); componentes no guia de nomes de 2025 do CLI (`canvas.ts`, classe `Canvas`, sem o sufixo `.component`; ADR 0017) | ADR 0004, [Angular style guide](https://angular.dev/style-guide) |
 
 ## Canvas e touch (o produto)
 
@@ -30,7 +30,7 @@ O que se espera de Angular idiomático aqui, com a fonte de cada ponto. As regra
 
 | Ponto | Como fica aqui | Fonte |
 |---|---|---|
-| Textos | Todos pelo mecanismo de i18n escolhido na ADR de ferramentas da etapa 3, em português; nenhum texto direto no template ou no código, nem com um idioma só | ADR 0009 |
+| Textos | Todos pelo `@angular/localize`, em português (origem `pt-BR`): `i18n="@@id"` com id estável no template e `$localize` no código; o lint falha com texto sem marcação | ADR 0009, ADR 0017 |
 | Kanji na tela | `lang="ja"` em todo candidato e kanji mostrado, em qualquer idioma da interface | [WCAG 3.1.2](https://www.w3.org/WAI/WCAG22/Understanding/language-of-parts), [W3C i18n](https://www.w3.org/International/questions/qa-lang-why) |
 | Fonte japonesa | Do sistema (`"Hiragino Sans"`, `"Yu Gothic"`, `"Noto Sans JP"`, `sans-serif`) ou empacotada no build; nunca de CDN | ADRs 0007 e 0009 |
 | Erros da API | O adapter recebe o código (`queue_full`) e a tela mostra o texto traduzido; a mensagem do backend nunca aparece para o usuário | ADR 0009 |

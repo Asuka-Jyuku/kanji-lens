@@ -55,3 +55,4 @@ As ADRs 0002, 0003 e 0005 a 0007 foram escritas depois das decisões, a partir d
 | [0014](0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) | Ferramentas do ML: Python 3.15, uv, Ruff, mypy, pytest e Import Linter | Aceita |
 | [0015](0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) | Ferramentas do backend: FastAPI e Uvicorn no workspace do uv | Aceita |
 | [0016](0016-stroke-order-check-by-bipartite-matching-and-capture-format.md) | Avaliação da ordem por correspondência bipartite, formato dos traços e uso do KanjiVG | Aceita |
+| [0017](0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md) | Ferramentas do frontend: Angular 22, @angular/localize, Vitest, ESLint com boundaries | Aceita |

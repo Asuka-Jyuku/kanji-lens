@@ -279,7 +279,7 @@ As duas decisões em aberto do backend (fila e notificação) são **adapters ou
 | Camada | O que contém | Pode importar |
 |---|---|---|
 | `domain/` | Modelos (`Drawing` feito de traços, `StrokeOrderMode`, `Prediction`, `StrokeOrderEvaluation`, `RecognitionJob`) e funções puras | nada do Angular |
-| `application/` | Use cases / facades (`RecognizeDrawing`) e ports como classes abstratas usadas como token de DI (`RecognitionGateway`, `ResultStream`) | `domain` |
+| `application/` | Use cases / facades (`RecognizeDrawing`) e ports como classes abstratas usadas como token de DI (`RecognitionGateway`, `ResultStream`) | `domain`, e só o `@angular/core` (signals e DI; [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
 | `infrastructure/` | Implementações dos ports: `HttpRecognitionGateway` (`HttpClient`), `SseResultStream` (`EventSource`) | `application`, `domain`, Angular |
 | `presentation/` | Componentes, páginas e rotas: o canvas e a tela de resultados | `application`, `domain`, Angular |
 
@@ -497,8 +497,12 @@ kanji-lens/
 │   │   ├── domain/
 │   │   ├── application/
 │   │   ├── infrastructure/
-│   │   └── presentation/
+│   │   ├── presentation/
+│   │   └── app.ts, app.config.ts, app.routes.ts   # shell: composition root
+│   ├── src/locale/          # messages.xlf (gerado por extract-i18n) e as traduções
 │   ├── angular.json
+│   ├── eslint.config.js     # lint, regra de i18n e o teste de arquitetura (ADR 0017)
+│   ├── .nvmrc               # Node 26
 │   └── package.json
 ├── backend/
 │   ├── src/kanjilens/
@@ -609,8 +613,8 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Quantidade de classes | Centenas → 2.136 (Jōyō) | Em aberto |
 | Ferramentas do ML | Python 3.15, uv (workspace com lock único), Ruff, mypy, pytest, Import Linter, PyTorch só-CPU | Decidido — [ADR 0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) |
 | Ferramentas do backend | FastAPI + Uvicorn, membro do workspace do uv, com o `kanjilens_ml` pelo workspace; httpx2 nos testes; seis contratos de arquitetura | Decidido — [ADR 0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) |
-| Ferramentas do frontend | Versão do Angular, gerenciador de pacotes, linter, test runner, i18n | Em aberto — ADR no começo da etapa 3 (#21) |
-| Idioma da interface | Português primeiro, japonês depois, com i18n desde a primeira tela | Decidido — [ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md) (o mecanismo de i18n sai na ADR de ferramentas da etapa 3) |
+| Ferramentas do frontend | Node 26 LTS, npm, Angular 22 (zoneless, standalone), TypeScript 6.0, `@angular/localize` (`pt-BR`), Vitest, ESLint + Prettier, `eslint-plugin-boundaries` como teste de arquitetura | Decidido — [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md) |
+| Idioma da interface | Português primeiro, japonês depois, com i18n desde a primeira tela | Decidido — [ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md); mecanismo `@angular/localize`, um build por idioma ([ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
 
 Quando uma decisão em aberto for fechada, ela vira ADR em `docs/adr/` e a linha dela aqui passa a apontar para a ADR.
 

@@ -5,6 +5,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Publicação e documentação
+- **A estrutura do frontend existe** ([ADR 0017](docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)):
+  - **plataforma:** Angular 22 com Node 26 LTS;
+  - **textos:** pelo `@angular/localize`, em português; o lint falha com texto sem marcação, e o japonês vai virar um segundo build;
+  - **testes e lint:** Vitest, ESLint e Prettier;
+  - **teste de arquitetura:** falha quando um componente usa `HttpClient` ou quando o domínio importa o Angular;
+  - **comandos:** no `CLAUDE.md` (#21).
 - **Como a ordem dos traços é avaliada** ([ADR 0016](docs/adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md); spike em [docs/spikes/stroke-order-evaluation.md](docs/spikes/stroke-order-evaluation.md), #28):
   - **algoritmo:** correspondência bipartite contra o KanjiVG, que também trata traços unidos ou quebrados;
   - **candidatos:** a avaliação vale para todos os candidatos e não muda o ranking;

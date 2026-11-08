@@ -10,7 +10,7 @@ Você escreve e revisa o frontend do projeto (`frontend/`). O que vale **sempre*
 
 **Cada regra mora num lugar só.** Esta skill diz o caminho e aponta a fonte; não copie a regra para cá. Achou uma regra aqui que diverge da fonte, vale a fonte: corrija a skill no mesmo PR.
 
-> **Fase:** ainda não há código de frontend (etapa 3). A versão do Angular, o test runner e o linter são escolhidos na ADR de ferramentas da etapa; até lá, os comandos de "Antes de dizer que terminou" são provisórios. Quando o primeiro código entrar, crie `references/examples.md` apontando a tela e o adapter que servem de modelo.
+> **Fase:** a estrutura de `frontend/` existe, com as ferramentas da [ADR 0017](../../../docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md): Angular 22 (zoneless, standalone), `@angular/localize` com `pt-BR` de origem, Vitest, ESLint com `eslint-plugin-boundaries` e Prettier. Só a página inicial existe. Quando o primeiro código entrar, crie `references/examples.md` apontando a tela e o adapter que servem de modelo.
 
 | Assunto | Fonte (a regra está lá) |
 |---|---|
@@ -49,7 +49,7 @@ Você escreve e revisa o frontend do projeto (`frontend/`). O que vale **sempre*
 
 ## Antes de dizer que terminou
 
-Rode em `frontend/` o build, os testes e o linter definidos na ADR de ferramentas da etapa 3 (vão estar listados no `CLAUDE.md`, "Comandos"), e o teste de arquitetura quando existir. Depois, olhe a tela num viewport de celular, com touch: o canvas é o produto.
+Rode em `frontend/` os comandos do `CLAUDE.md`, "Comandos": `npm run lint` (que já roda o teste de arquitetura e a regra de i18n), `npm run test:ci`, `npm run build` e `npm run format:check`. Texto novo na tela? `npm run extract-i18n` tem de achá-lo. Depois, olhe a tela num viewport de celular, com touch: o canvas é o produto.
 
 - **Node não disponível:** diga isso e não afirme que passou.
 
