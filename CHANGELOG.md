@@ -5,6 +5,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Publicação e documentação
+- **CI no GitHub Actions** ([ADR 0018](docs/adr/0018-ci-with-github-actions-and-a-single-required-check.md)), em todo PR para o `develop` ou a `main`:
+  - **Python:** lint, tipos, testes e arquitetura do ML e do backend, no Linux e no Windows;
+  - **frontend:** lint, formatação, testes e build;
+  - **documentação:** links dos `.md`;
+  - **filtro por parte:** cada uma roda só quando muda;
+  - **merge:** um único check, `CI`, decide (#32).
 - **A estrutura do frontend existe** ([ADR 0017](docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)):
   - **plataforma:** Angular 22 com Node 26 LTS;
   - **textos:** pelo `@angular/localize`, em português; o lint falha com texto sem marcação, e o japonês vai virar um segundo build;

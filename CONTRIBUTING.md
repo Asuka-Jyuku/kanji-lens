@@ -162,9 +162,22 @@ Para publicar uma versão:
 4. Tag na `main`: `git tag vX.Y.Z && git push --tags`.
 5. **Faça o merge da `main` de volta no `develop`**, por um PR `main` → `develop` com **merge commit**, para o CHANGELOG do `develop` ficar igual ao publicado.
 
+## CI
+
+Todo PR para o `develop` ou a `main`, e todo push nessas branches, roda o workflow `CI` (`.github/workflows/ci.yml`; [ADR 0018](docs/adr/0018-ci-with-github-actions-and-a-single-required-check.md)):
+
+| Job | Roda quando o PR mexe em | O que confere |
+|---|---|---|
+| Python (Linux e Windows) | `ml/`, `backend/`, `pyproject.toml`, `uv.lock`, `.python-version` | Ruff, mypy, pytest e os contratos de arquitetura do ML e do backend |
+| Frontend | `frontend/` | lint (com arquitetura e i18n), Prettier, testes e build |
+| Docs links | qualquer `.md` | links relativos e âncoras |
+| **CI** | sempre | passa se todos os jobs passaram ou foram pulados; **é o único check obrigatório** |
+
+Os comandos são os do `CLAUDE.md`, "Comandos": se passam na sua máquina, passam no CI, exceto por alguma diferença do Windows. O merge exige o check `CI` verde. Isso é configurado na proteção do `develop` e da `main` (Settings → Branches), com "Require status checks to pass" e o check `CI`.
+
 ## Checklist do pull request
 
-O template em `.github/pull_request_template.md` tem a lista completa. Os pontos que mais escapam:
+O template em `.github/pull_request_template.md` tem a lista completa. O check `CI` verde é pré-requisito. Os pontos que mais escapam:
 - `Closes #N` na descrição.
 - Entrada em `[Não publicado]` no `CHANGELOG.md`.
 - Regra sem teste não está pronta; bug corrigido ganha teste que falhava antes.

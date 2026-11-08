@@ -613,6 +613,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Quantidade de classes | Centenas → 2.136 (Jōyō) | Em aberto |
 | Ferramentas do ML | Python 3.15, uv (workspace com lock único), Ruff, mypy, pytest, Import Linter, PyTorch só-CPU | Decidido — [ADR 0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) |
 | Ferramentas do backend | FastAPI + Uvicorn, membro do workspace do uv, com o `kanjilens_ml` pelo workspace; httpx2 nos testes; seis contratos de arquitetura | Decidido — [ADR 0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) |
+| CI | GitHub Actions, um workflow só: Python em Linux e Windows, frontend e links dos `.md`, cada um só quando a parte muda; um check obrigatório, `CI` | Decidido — [ADR 0018](adr/0018-ci-with-github-actions-and-a-single-required-check.md) |
 | Ferramentas do frontend | Node 26 LTS, npm, Angular 22 (zoneless, standalone), TypeScript 6.0, `@angular/localize` (`pt-BR`), Vitest, ESLint + Prettier, `eslint-plugin-boundaries` como teste de arquitetura | Decidido — [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md) |
 | Idioma da interface | Português primeiro, japonês depois, com i18n desde a primeira tela | Decidido — [ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md); mecanismo `@angular/localize`, um build por idioma ([ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
 
