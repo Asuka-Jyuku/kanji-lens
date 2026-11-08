@@ -1,6 +1,6 @@
 # 0010. Dois modos de reconhecimento com modelos especializados (Opção C)
 
-- **Status:** Aceita
+- **Status:** Substituída por [0012](0012-ordered-mode-as-stroke-order-evaluation.md)
 - **Data:** 2026-11-08
 - **Relacionadas:** [0004](0004-clean-and-hexagonal-architecture.md), [0005](0005-asynchronous-recognition-with-queue-and-workers.md), [0006](0006-cnn-with-pytorch.md), [0011](0011-school-notebook-as-server-with-cpu-first-inference.md)
 

@@ -21,7 +21,7 @@ Formatter, linter, type checker, testes e o teste de arquitetura, quando existir
 
 **Assíncrono e concorrência (ADR 0005)**
 - [ ] A inferência roda fora do event loop; nada CPU-bound num caminho `async def`.
-- [ ] Os dois modelos são carregados uma vez no processo de inferência, não por requisição, e o job escolhe o modelo pelo `stroke_order_mode` (ADRs 0010 e 0011).
+- [ ] O modelo e as referências do KanjiVG são carregados uma vez no processo de inferência, não por requisição; o job `ordered` também passa pela avaliação da ordem (ADRs 0011 e 0012).
 - [ ] Threads do runtime configuradas explicitamente (`torch.set_num_threads` ou equivalente); mais de uma inferência simultânea só com medição no notebook da escola (ADR 0011).
 - [ ] Nada supõe mais de um processo do Uvicorn enquanto a fila estiver em memória.
 

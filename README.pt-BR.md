@@ -14,7 +14,7 @@ O KanjiLens é uma aplicação web na qual você desenha um kanji em um canvas e
 
 O objetivo não é acertar o caractere exato toda vez. É apresentar os **principais candidatos ordenados por confiança**, para que você identifique qual pretendia escrever.
 
-O reconhecimento usa dois modelos compactos treinados em PyTorch, um por modo: uma CNN 2D sobre a imagem final, quando a ordem dos traços não importa, e uma 1D-CNN temporal sobre a sequência de traços, quando importa. Todo o sistema roda em uma única máquina na rede local (o notebook da escola, com inferência só na CPU): o acesso é feito pelo celular ou pelo computador via Wi-Fi, sem hospedagem em nuvem nem domínio público.
+O reconhecimento usa uma CNN 2D compacta treinada em PyTorch, que não depende da ordem dos traços. Quando a ordem importa, o KanjiLens também confere a ordem e a direção dos seus traços contra a referência do KanjiVG e diz quais traços estão fora de ordem. Todo o sistema roda em uma única máquina na rede local (o notebook da escola, com inferência só na CPU): o acesso é feito pelo celular ou pelo computador via Wi-Fi, sem hospedagem em nuvem nem domínio público.
 
 ```text
 ┌──────────────────────────────┐
@@ -42,16 +42,16 @@ O reconhecimento usa dois modelos compactos treinados em PyTorch, um por modo: u
 1. Você escolhe se a ordem dos traços importa e desenha o kanji no canvas (mouse ou touch).
 2. O frontend envia os traços (cada um uma lista de pontos, na ordem do desenho) e o modo escolhido para a API.
 3. A API gera um `job_id`, coloca a tarefa na fila e responde na hora. A requisição HTTP não fica aberta enquanto o modelo executa.
-4. O worker de inferência consome a tarefa e executa o modelo do modo escolhido. Os dois modelos são carregados uma vez, e não a cada requisição.
+4. O worker de inferência consome a tarefa e executa o modelo; no modo com ordem, também confere os traços contra a referência do KanjiVG. O modelo e as referências são carregados uma vez, e não a cada requisição.
 5. O backend notifica o frontend com o resultado (SSE ou WebSocket).
-6. O frontend exibe as previsões top-K com a confiança de cada uma.
+6. O frontend exibe as previsões top-K com a confiança de cada uma e, no modo com ordem, quais traços estão fora de ordem.
 
 ```text
  Celular / Desktop
        │
        ▼
- Angular frontend ──REST──▶ FastAPI ──▶ Fila ──▶ Worker ──▶ CNN 2D (unordered)
-       ▲                                           1D-CNN (ordered)
+ Angular frontend ──REST──▶ FastAPI ──▶ Fila ──▶ Worker ──▶ CNN 2D
+       ▲                            (+ avaliação da ordem contra o KanjiVG)
        │                                                 │
        └──────────── SSE / WebSocket ◀── Resultados ◀────┘
 ```
@@ -62,7 +62,7 @@ O reconhecimento usa dois modelos compactos treinados em PyTorch, um por modo: u
 |---|---|
 | Frontend | Angular, TypeScript, HTML Canvas API |
 | Backend | Python, FastAPI, REST, SSE ou WebSocket |
-| Machine Learning | PyTorch (treino), CNN 2D + 1D-CNN temporal; runtime de inferência em CPU escolhido por benchmark (PyTorch / OpenVINO / ONNX Runtime) |
+| Machine Learning | PyTorch (treino), CNN 2D; avaliação da ordem contra o KanjiVG; runtime de inferência em CPU escolhido por benchmark (PyTorch / OpenVINO / ONNX Runtime) |
 | Fila | `asyncio.Queue` no início; Redis + Celery/RQ se necessário |
 | Execução | Notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB), acessado pela LAN |
 
@@ -120,7 +120,7 @@ kanji-lens/
 
 ## Roadmap
 
-- [ ] **Machine Learning:** escolher os dados (imagens *offline* e traços *online*), pré-processamento compartilhado, treinar a CNN 2D e a 1D-CNN temporal, avaliar por modo (Top-1/Top-5), medir no notebook da escola, inferência top-K
+- [ ] **Machine Learning:** escolher o dataset, pré-processamento compartilhado, treinar a CNN 2D, avaliação da ordem contra o KanjiVG, avaliar (Top-1/Top-5 e acerto da avaliação da ordem), inferência top-K e, depois, medir no notebook da escola
 - [ ] **Backend:** projeto FastAPI, endpoint de reconhecimento, processamento assíncrono, integração com o modelo, notificação
 - [ ] **Frontend:** app Angular, escolha do modo (ordem dos traços), canvas responsivo com mouse e touch que captura os traços, tela de resultados
 - [ ] **Infraestrutura:** acesso pela LAN, CORS e firewall, frontend em build estático, teste com 3–5 alunos (10 clientes como estresse), consumo de CPU/memória/temperatura no notebook da escola
@@ -133,8 +133,8 @@ O checklist completo está em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-esco
 |---|---|---|
 | Fila de tarefas | `asyncio.Queue` / Redis + Celery ou RQ | Começar com `asyncio.Queue` e migrar para Redis quando necessário |
 | Notificação do resultado | SSE / WebSocket | Tendência para SSE (só servidor → cliente) |
-| Dataset (`unordered`) | ETL8G / ETL9G | Imagens públicas de kanjis manuscritos (*offline*; licença a confirmar) |
-| Dados de traços (`ordered`) | Coleta própria no canvas / dataset *online* público / KanjiVG (sintético) | Precisa de sequências reais de traços; o ETL não tem |
+| Dataset | ETL8G / ETL9G | Imagens públicas de kanjis manuscritos (*offline*; licença a confirmar) |
+| Avaliação da ordem | *DP matching* / bipartite matching / avaliação incremental | Comparar com o KanjiVG (licença a confirmar); sem dados de treino |
 | Modo padrão da interface | Ordem importa / não importa | A definir |
 | Runtime de inferência | PyTorch / OpenVINO / ONNX Runtime (CPU), FP32 ou INT8 | Definido por benchmark no notebook da escola |
 | Quantidade de classes | Algumas centenas → 2.136 kanjis Jōyō | Começar pequeno e expandir |

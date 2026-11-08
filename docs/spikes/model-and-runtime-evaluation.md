@@ -1,12 +1,14 @@
 # Spike: avaliação de modelos e do runtime de inferência
 
-> **Issue:** [#23](https://github.com/Asuka-Jyuku/kanji-lens/issues/23)  
+> **Issues:** [#23](https://github.com/Asuka-Jyuku/kanji-lens/issues/23) (modelos e runtime), [#26](https://github.com/Asuka-Jyuku/kanji-lens/issues/26) (modo `ordered`, seção 5.3)  
 > **Tipo:** spike técnico (pesquisa e plano de experimentos)  
-> **Status:** estratégia decidida, a Opção C ([ADR 0010](../adr/0010-two-recognition-modes-with-specialized-models.md)), com o hardware e a carga na [ADR 0011](../adr/0011-school-notebook-as-server-with-cpu-first-inference.md). Ainda não há números medidos: variantes, resolução, runtime, quantização e workers dependem dos benchmarks no notebook.  
+> **Status:** estratégia decidida: uma CNN 2D nos dois modos e, no `ordered`, avaliação da ordem contra o KanjiVG ([ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substituiu a Opção C da ADR 0010), com o hardware e a carga na [ADR 0011](../adr/0011-school-notebook-as-server-with-cpu-first-inference.md). Ainda não há números medidos: variantes, resolução, runtime, quantização e workers dependem dos benchmarks no notebook.  
 > **Data:** 2026-11-07 (projetos de referência revistos em 2026-11-08)  
 > **Hardware-alvo:** Dell Inspiron 3501 (Intel Core i7-1165G7, 16 GB de RAM)
 
 ---
+
+> **Revisão de 2026-11-08: o modo `ordered` mudou.** Depois da pesquisa da seção 5.3, o projeto escolheu o caminho (b): **avaliar a ordem e a direção dos traços contra a referência do KanjiVG**, sem 1D-CNN ([ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a ADR 0010). Os dois modos usam a mesma CNN 2D. Nas seções 1, 5.2, 7, 10 e 13, o que fala de 1D-CNN, GRU ou dados *online* para treinar o `ordered` fica como registro da investigação, não como plano.
 
 ## 1. Resumo executivo
 
@@ -230,7 +232,99 @@ Há duas tarefas diferentes que não devem ser confundidas:
 1. **Reconhecimento com informação de ordem:** usar a sequência de escrita como mais uma evidência para identificar o kanji.
 2. **Validação da ordem correta:** verificar se o aluno seguiu a sequência convencional de traços.
 
-A primeira é o escopo deste spike. A segunda pode ser construída depois, usando KanjiVG como referência geométrica e um algoritmo de alinhamento/comparação de traços.
+A primeira é o escopo deste spike (mas veja a seção 5.3: qual das duas o produto quer ainda precisa ser confirmado). A segunda pode ser construída depois, usando KanjiVG como referência geométrica e um algoritmo de alinhamento/comparação de traços.
+
+### 5.3 Como o modo `ordered` costuma ser feito (pesquisa de 2026-11-08)
+
+Na literatura, "usar a ordem dos traços" aparece em **duas tarefas diferentes**, com técnicas, dados e custos diferentes. O que o modo `ordered` quer dizer para a escola decide qual das duas (ou a combinação) o KanjiLens implementa.
+
+#### a) Reconhecimento *online*: a trajetória como evidência
+
+É o problema clássico de *online handwritten character recognition*, muito estudado para chinês (OLHCCR) e japonês. As abordagens mais comuns:
+
+| Abordagem | Como funciona | Exemplos |
+|---|---|---|
+| Sequência direto numa rede sequencial | Pontos com `x`, `y`, deslocamentos e estado da caneta entram numa RNN (LSTM/GRU) | Zhang, Yin, Zhang, Liu e Bengio, *Drawing and Recognizing Chinese Characters with RNN* (TPAMI 2018) |
+| Sequência numa 1D-CNN | Convolução temporal sobre a trajetória. É mais rápida que a RNN em sequências longas, mas precisa de mais camadas para captar dependências longas | Liu et al. (2019), citado em Gan et al. (2020) |
+| Trajetória convertida em mapas 2D | A trajetória vira mapas de direção ou de *path signature* (integrais iteradas do caminho), e uma CNN 2D classifica. É a família que dominou os benchmarks (ICDAR 2013) | Graham (2013); Lai et al. (2017) |
+| Mapas na ordem dos traços | Os traços viram mapas de características em ordem, e o modelo depende da sequência | Hu et al., SSDCNN |
+
+**Ponto importante:** quase todos esses reconhecedores são feitos para **tolerar** variação de ordem e de quantidade de traços. Na escrita real, mesmo quem é fluente varia a ordem e une traços. Um exemplo do grupo de Nakagawa (TUAT) é o motor de Wang, Zhu e Nakagawa (ICDAR 2011), que é *stroke-order free*. Usar a trajetória melhora o reconhecimento, mas **não faz o modelo exigir a ordem correta**. Uma 1D-CNN treinada com escrita real aprende a ordem que as pessoas usam, inclusive as "erradas".
+
+#### b) Avaliação da ordem: comparar com uma referência
+
+Para ensinar a escrever, o padrão é outro: comparar o desenho com o **padrão de referência** do kanji (a ordem e a direção convencionais), traço a traço:
+
+- **Correspondência entre traços por *DP matching*** ou por busca de correspondência. Cai, Uchida e Sakoe compararam cube search, bipartite weighted matching e outras buscas, com cerca de 99% de acerto (cube search e bipartite matching em 99,17%). Ido (IEICE, 2015) aplica *DP matching* a sub-traços para corrigir a escrita automaticamente.
+- **Avaliação incremental, traço a traço.** Mita e Nakagawa (2016) usam características direcionais e relatam 97,5% em 1.005 kanjis, com até 0,05 s por caractere. Nguyen, Nguyen, Mita e Nakagawa (*Pattern Recognition Letters*, 2019) julgam ordem e direção a cada traço novo, comparando o desenho parcial com a referência de mesma quantidade de traços. Relatam 98,5% de avaliação correta e até 0,12 s por caractere num desktop.
+
+Esse caminho **não precisa de rede neural nem de dataset grande de escrita**: precisa da referência (o KanjiVG tem a ordem e a direção de cada traço) e roda leve na CPU. O arranjo comum em sistemas de ensino:
+1. reconhecer o caractere sem depender da ordem;
+2. comparar a ordem do desenho com a referência dos candidatos;
+3. apontar o traço fora de ordem.
+
+O `asdfjkl/kanjicanvas` (seção 11.1) também é *matching* geométrico contra referências.
+
+#### Dados *online* disponíveis
+
+| Fonte | O que é | Cuidados |
+|---|---|---|
+| **TUAT Kuchibue e Nakayosi** (laboratório Nakagawa) | Escrita japonesa *online*: Kuchibue com 120 pessoas e cerca de 12 mil padrões cada; Nakayosi com 163 pessoas e cerca de 10 mil padrões cada | Distribuição pela TUAT: parte livre para pesquisa, o conjunto completo pela universidade. **Termos de uso a confirmar** com o laboratório. Não presumir redistribuição |
+| **CASIA-OLHWDB 1.0–1.2** (CASIA/NLPR) | Escrita chinesa *online*; o 1.1 tem 3.755 classes e 300 pessoas | Livre para pesquisa acadêmica, segundo os artigos; **licença a confirmar** na NLPR. Muitos caracteres coincidem com kanjis, mas a forma (simplificado × japonês) e a ordem convencional diferem em parte deles |
+| **Tomoe / Zinnia** | O Zinnia é um reconhecedor *online* com SVM; o modelo japonês vem do projeto Tomoe | Formato e licença dos dados do Tomoe não confirmados nesta pesquisa |
+| **KanjiVG** | Vetores e ordem de referência de cada kanji | Serve de referência para a avaliação (b) e para gerar dados sintéticos com perturbação. Dado sintético desloca a distribuição em relação à escrita real, então não prova generalização |
+| **Coleta própria pelo canvas** | Desenhos reais dos alunos, com a ordem verdadeira | É o único conjunto que representa o público do KanjiLens; **pelo menos o teste deveria vir daqui**. Exige consentimento, anonimização e uma ADR (os desenhos hoje não são guardados) |
+
+Na prática, quem treina reconhecedores *online* combina três coisas:
+- um dataset público grande, para o pré-treino;
+- dados próprios, para o ajuste e o teste;
+- *augmentation*: perturbação de traços ou geração sintética, como o modelo sigma-lognormal.
+
+#### Captura no navegador
+
+- **Pointer Events:**
+  - `pointerdown` abre um traço e `pointerup` o fecha (é daí que sai o estado da caneta);
+  - cada `pointermove` dá `x`, `y` e `timeStamp`;
+  - `pressure` e `pointerType` vêm de graça.
+- **`getCoalescedEvents()`** devolve os pontos intermediários que o navegador agrupou, e deixa o traço mais fiel. **Atenção:** a API não é Baseline (o Safari só a tem desde a 18.2) e, em parte dos navegadores, **só funciona em contexto seguro (HTTPS)**. O KanjiLens roda por HTTP na rede local, então o código precisa funcionar sem ela.
+- **Formato de troca:** o W3C InkML é o padrão para tinta digital: *traces* de pontos, com canais como X, Y, tempo e pressão. Não é preciso adotar o XML, mas convém seguir o mesmo modelo (lista de traços com canais nomeados).
+- **No pré-processamento, como de costume:**
+  - remover pontos redundantes;
+  - reamostrar a distâncias iguais;
+  - normalizar tamanho e posição;
+  - limitar a quantidade de traços e de pontos.
+
+#### O que isso muda para o KanjiLens
+
+1. **Decisão de produto antes do modelo.** "Ordem importa" pode querer dizer duas coisas:
+   - **(a) reconhecer melhor usando a trajetória:** é o que a [ADR 0010](../adr/0010-two-recognition-modes-with-specialized-models.md) descreve, com a 1D-CNN;
+   - **(b) cobrar a ordem correta da escrita japonesa:** é avaliação por referência, um problema diferente.
+
+   Uma escola de japonês tende a querer (b). **Decidido em 2026-11-08: caminho (b)** ([ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a ADR 0010). O `ordered` usa o reconhecedor do `unordered` mais *matching* com o KanjiVG, sem dados *online* para treinar.
+2. **O caminho (a), descartado:**
+   - a 1D-CNN precisa de dados *online*: TUAT ou CASIA para o pré-treino, coleta própria para o teste, com termos de uso confirmados;
+   - o modelo aprende a tolerar variações de ordem, em vez de cobrá-las.
+3. **Nos dois casos,** a captura no canvas é a mesma (traços com `x`, `y` e `t`), e o KanjiVG entra como referência.
+
+Fontes desta seção:
+- Zhang et al., [arXiv 1606.06539](https://arxiv.org/abs/1606.06539)
+- Gan et al., [arXiv 2004.09412](https://arxiv.org/pdf/2004.09412.pdf)
+- Hu et al., [arXiv 1610.04057](https://arxiv.org/pdf/1610.04057)
+- Graham, [arXiv 1308.0371](https://arxiv.org/pdf/1308.0371)
+- Lai et al., [DeepAI](https://api.deepai.org/publication/toward-high-performance-online-hccr-a-cnn-approach-with-dropdistortion-path-signature-and-spatial-stochastic-max-pooling)
+- Wang, Zhu e Nakagawa, [ICDAR 2011](https://meilu.jpshuntong.com/url-687474703a2f2f7765622e747561742e61632e6a70/~nakagawa/pub/2011/pdf/Wang_ICDAR2011.pdf)
+- Mita e Nakagawa, [IEICE 2016](https://ken.ieice.org/ken/paper/20160905VbKW/eng/)
+- Nguyen et al., [PRL 2019](https://ntuanhung.github.io/publication/2019-01-01-Robust-and-real-time-stroke-order-evaluation-using-incremental-stroke-context-for-learners-to-write-Kanji-characters-correctly)
+- Cai, Uchida e Sakoe, [Frontiers of Computer Science](https://journal.hep.com.cn/fcs/EN/10.1007/s11704-014-3207-6)
+- Ido, [IEICE 2015](https://www.ieice.org/ken/paper/20150320mBXP/eng/)
+- TUAT, [Kuchibue/Nakayosi](https://web.tuat.ac.jp/~nakagawa/database/en/about_kuchibue.html)
+- CASIA-OLHWDB, [ICDAR 2009](https://bibtex.github.io/ICDAR-2009-WangLYZ.html)
+- Zinnia/Tomoe, [FreshPorts](https://freshports.org/japanese/zinnia-tomoe)
+- Sigma-lognormal, [ISI](https://digitalcommons.isical.ac.in/journal-articles/2438)
+- MDN, [getCoalescedEvents](https://developer.mozilla.org/docs/Web/API/PointerEvent/getCoalescedEvents)
+- W3C, [InkML](https://www.w3.org/TR/InkML)
+
+Números e termos de uso vêm dos resumos e páginas citados. Os artigos completos não foram lidos.
 
 ---
 
@@ -436,7 +530,7 @@ Os limites numéricos de aceitação devem ser definidos depois de uma primeira 
 7. Comparar runtimes e quantização com o melhor checkpoint de cada modo.
 8. Registrar resultados em tabela e fechar runtime, resolução, precisão e concorrência numa ADR.
 
-**Decisão registrada:** adotar a Opção C como arquitetura inicial do KanjiLens: CNN 2D compacta para `unordered` e 1D-CNN temporal compacta para `ordered`. A decisão sobre variantes concretas, hiperparâmetros, runtime e quantização permanece condicionada aos benchmarks no Inspiron 3501.
+**Decisão registrada (substituída em 2026-11-08 pela [ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md)):** adotar a Opção C como arquitetura inicial do KanjiLens: CNN 2D compacta para `unordered` e 1D-CNN temporal compacta para `ordered`. A decisão sobre variantes concretas, hiperparâmetros, runtime e quantização permanece condicionada aos benchmarks no Inspiron 3501.
 
 ---
 
@@ -515,7 +609,23 @@ Para evitar que hipótese seja confundida com resultado experimental:
 
 ---
 
-## 13. Decisão arquitetural registrada — Opção C
+## 13. Decisão arquitetural registrada
+
+### 13.1 Decisão atual: avaliação da ordem contra uma referência (2026-11-08)
+
+Registrada na [ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md).
+
+- **Reconhecimento, nos dois modos:** uma CNN 2D compacta sobre a imagem rasterizada, que não depende da ordem. Continuam valendo os candidatos, comparadores, resoluções e o plano de benchmark de `unordered` deste spike.
+- **`ordered`:** depois do reconhecimento, os traços desenhados são comparados com a ordem e a direção do KanjiVG dos candidatos, por correspondência entre traços. Os algoritmos estão na seção 5.3 (b). A resposta diz se a ordem está correta e quais traços estão fora de ordem ou na direção errada.
+- **Sem 1D-CNN, GRU ou dataset *online* para treinar.**
+- **Fica em aberto:**
+  - o algoritmo de correspondência;
+  - quantos candidatos avaliar;
+  - se a avaliação só anota ou também reordena;
+  - o formato da resposta;
+  - o conjunto de teste com ordem certa e errada.
+
+### 13.2 Decisão anterior: Opção C (substituída)
 
 O projeto decidiu seguir com duas estratégias/modelos especializados:
 

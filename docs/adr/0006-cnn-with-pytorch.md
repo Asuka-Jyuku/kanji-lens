@@ -2,7 +2,7 @@
 
 - **Status:** Aceita
 - **Data:** 2026-11-03
-- **Relacionadas:** [0002](0002-monorepo-for-frontend-backend-and-ml.md), [0005](0005-asynchronous-recognition-with-queue-and-workers.md), [0010](0010-two-recognition-modes-with-specialized-models.md)
+- **Relacionadas:** [0002](0002-monorepo-for-frontend-backend-and-ml.md), [0005](0005-asynchronous-recognition-with-queue-and-workers.md), [0010](0010-two-recognition-modes-with-specialized-models.md), [0012](0012-ordered-mode-as-stroke-order-evaluation.md)
 
 ## Contexto
 
@@ -19,9 +19,9 @@ Reconhecer kanji manuscrito é um problema de classificação de imagem com cent
 
 Treinamos uma CNN em PyTorch, começando por uma arquitetura simples (dois blocos Conv2D + ReLU + MaxPooling, depois Dense + Softmax) e evoluindo conforme os resultados. O modelo devolve as top-K classes com as probabilidades do Softmax.
 
-> **Detalhada pela [ADR 0010](0010-two-recognition-modes-with-specialized-models.md)** (2026-11-08): continuam valendo o PyTorch e as CNNs. Mudam duas coisas:
-> - **Dois modelos especializados:** uma CNN 2D compacta sobre a imagem (`unordered`) e uma 1D-CNN temporal compacta sobre a sequência de traços (`ordered`).
-> - **Arquitetura inicial da CNN 2D:** pooling global em vez de achatar os mapas numa camada densa grande.
+> **Detalhada pela [ADR 0012](0012-ordered-mode-as-stroke-order-evaluation.md)** (2026-11-08, que substitui a 0010): continuam valendo o PyTorch e a CNN. Mudam duas coisas:
+> - **Um modelo só:** uma CNN 2D compacta sobre a imagem, nos dois modos. O modo `ordered` acrescenta a avaliação da ordem dos traços contra o KanjiVG, sem outro modelo.
+> - **Arquitetura inicial:** pooling global em vez de achatar os mapas numa camada densa grande.
 >
 > O treino pode usar GPU. A inferência é CPU-first ([ADR 0011](0011-school-notebook-as-server-with-cpu-first-inference.md)).
 
