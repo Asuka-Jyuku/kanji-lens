@@ -65,7 +65,7 @@ Recognition uses a compact 2D CNN trained with PyTorch, which does not depend on
 | Queue | Bounded in-memory `asyncio.Queue` and one inference process (no Redis on the Windows laptop) |
 | Deployment | The school's laptop (Dell Inspiron 3501, i7-1165G7, 16 GB, Windows), run directly without Docker, accessed over the LAN |
 
-## API (planned)
+## API
 
 | Method | Endpoint | Purpose |
 |---|---|---|
@@ -73,6 +73,8 @@ Recognition uses a compact 2D CNN trained with PyTorch, which does not depend on
 | `GET` | `/api/recognitions/{id}` | Get the status and result of a job (SSE fallback) |
 | `GET` | `/api/recognitions/{id}/events` | Stream the job's status changes over SSE |
 | `GET` | `/api/health` | Health check |
+
+Today the `POST` accepts the drawing and queues its job. Processing ([#46](https://github.com/Asuka-Jyuku/kanji-lens/issues/46)) and reading the result ([#47](https://github.com/Asuka-Jyuku/kanji-lens/issues/47)) come next. Errors always carry a stable code ([ARCHITECTURE.md, section 5.3](docs/ARCHITECTURE.md#53-erros), pt-BR).
 
 Example of a completed job:
 

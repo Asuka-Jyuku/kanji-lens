@@ -10,7 +10,7 @@ Você escreve e revisa o backend do projeto (`backend/`). O que vale **sempre** 
 
 **Cada regra mora num lugar só.** Esta skill diz o caminho e aponta a fonte; não copie a regra para cá. Achou uma regra aqui que diverge da fonte, vale a fonte: corrija a skill no mesmo PR.
 
-> **Fase:** a estrutura de `backend/` existe, com as ferramentas da [ADR 0015](../../../docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md): FastAPI, Uvicorn, uv, Ruff, mypy, pytest com `httpx2` e Import Linter. O domínio do reconhecimento existe ([docs/architecture/domain.md](../../../docs/architecture/domain.md)); a aplicação é criada por `create_app()` em `bootstrap/app.py`, e só o `GET /api/health` existe. Os modelos a seguir estão em [`references/examples.md`](references/examples.md).
+> **Fase:** a estrutura de `backend/` existe, com as ferramentas da [ADR 0015](../../../docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md): FastAPI, Uvicorn, uv, Ruff, mypy, pytest com `httpx2` e Import Linter. O domínio do reconhecimento existe ([docs/architecture/domain.md](../../../docs/architecture/domain.md)); a aplicação é criada por `create_app()` em `bootstrap/app.py`, com o `GET /api/health` e o `POST /api/recognitions` (use case `SubmitRecognition`, fila e repositório em memória). Os modelos a seguir estão em [`references/examples.md`](references/examples.md).
 
 | Assunto | Fonte (a regra está lá) |
 |---|---|

@@ -31,12 +31,14 @@ kanjilens-ml = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["tests"]  # tests/fakes.py, shared by the tests
 addopts = ["--strict-markers", "--strict-config"]
 
 [tool.mypy]
 python_version = "3.15"
 strict = true
 files = ["src", "tests"]
+mypy_path = "tests"
 plugins = ["pydantic.mypy"]
 
 # Architecture test (CLAUDE.md, "Testes"; ADR 0004). Run with `lint-imports`.

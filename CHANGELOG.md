@@ -5,6 +5,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Funcionalidades
+- **A API recebe o desenho** em `POST /api/recognitions` e responde na hora com o `job_id` (#45):
+  - **limites:** corpo de até 1 MiB e os limites de traços e pontos;
+  - **erros:** desenho inválido ou modo desconhecido → `400`, desenho grande demais → `413`, sempre com um código estável no corpo (`{"error": "..."}`) para o frontend traduzir;
+  - **fila:** até 16 jobs esperando; cheia, `503` com `Retry-After` e `queue_full`;
+  - **expiração:** o job e o desenho somem 5 minutos depois de terminados;
+  - ainda não há quem processe a fila: isso entra na #46.
 - **O domínio do reconhecimento existe no backend** (#44):
   - **regras:** o desenho, o modo, o job com os estados, os candidatos e a avaliação da ordem, cada um com as próprias regras;
   - **desenho fora dos limites:** é recusado com um código estável, `drawing_too_large` (muito grande) ou `invalid_drawing` (formato errado), que o frontend vai traduzir;

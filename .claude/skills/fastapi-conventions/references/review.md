@@ -28,14 +28,14 @@ Ruff (lint e formatação), mypy strict, pytest e o teste de arquitetura (os sei
 - [ ] O stream SSE manda o estado completo a cada mudança, termina no estado final e não deixa tarefa nem espera pendurada quando o cliente desconecta (ADR 0020).
 
 **Segurança na rede local (`CLAUDE.md`, "Segurança")**
-- [ ] Tamanho e formato do desenho (quantidade de traços e de pontos) e o `stroke_order_mode` conferidos antes de ir para a fila (`413` / `400`).
+- [ ] Tamanho e formato do desenho (quantidade de traços e de pontos) e o `stroke_order_mode` conferidos antes de ir para a fila (`413` / `400`); o corpo continua limitado pelo `BodySizeLimitMiddleware` (1 MiB).
 - [ ] A fila é limitada; fila cheia → `503` com `Retry-After`.
 - [ ] O CORS só lista a origem do frontend, nunca `*`.
 - [ ] Nenhuma saída de rede nova; resultados dos jobs e desenhos expiram.
 
 **Contrato**
 - [ ] O formato da resposta bate com o ARCHITECTURE.md, seções 2.2 e 5 (`job_id`, `status`, `predictions[].kanji`, `predictions[].confidence`, `stroke_order`, nomes dos eventos SSE); o SSE e o `GET` usam o mesmo schema; uma mudança atualiza o documento e o frontend no mesmo PR.
-- [ ] Erro devolve um código estável (`queue_full`), não um texto para o usuário; código novo entra no frontend, com a tradução, no mesmo PR (ADR 0009).
+- [ ] Erro devolve `{"error": "<código>"}` com código estável (`queue_full`), nunca texto para o usuário nem o `422` do FastAPI; código novo entra no frontend, com a tradução, no mesmo PR (ADR 0009).
 
 **Idioma (`CLAUDE.md`, "Idioma")**
 - [ ] Código, nomes de arquivos, comentários e mensagens de log e de erro em inglês.

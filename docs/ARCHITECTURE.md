@@ -119,7 +119,7 @@ Requisição (`POST /api/recognitions`):
 > - **limites iniciais**, conferidos no adapter HTTP: até 40 traços, 1.000 pontos por traço, 10.000 pontos no total, coordenadas dentro do canvas com 10% de folga e `canvas` entre 64 e 4.096 px por lado;
 > - **modo:** `stroke_order_mode` aceita `ordered` ou `unordered`; outro valor é rejeitado.
 
-Resposta inicial:
+Resposta inicial (`202 Accepted`):
 
 ```json
 {
@@ -247,7 +247,7 @@ flowchart TB
     end
     subgraph application["Application"]
         usecases["Use cases<br/>SubmitRecognition, GetRecognition,<br/>ProcessRecognition"]
-        ports["Ports<br/>KanjiRecognizer, StrokeOrderEvaluator,<br/>JobQueue, JobRepository, ResultNotifier"]
+        ports["Ports<br/>KanjiRecognizer, StrokeOrderEvaluator,<br/>JobQueue, JobRepository, ResultNotifier, Clock"]
     end
     subgraph domain["Domain"]
         entities["RecognitionJob, JobStatus, Prediction,<br/>Drawing, StrokeOrderMode, StrokeOrderEvaluation"]
@@ -267,9 +267,9 @@ flowchart TB
 |---|---|---|
 | `domain/` | Entidades e value objects (`RecognitionJob`, `JobStatus`, `JobFailure`, `Prediction`, `RecognitionResult`, `Drawing` feito de `Stroke`s e `Point`s, `StrokeOrderMode`, `StrokeOrderEvaluation`) e as regras deles, em Python puro. Glossário, estados do job e regras em [architecture/domain.md](architecture/domain.md) | só a biblioteca padrão |
 | `application/use_cases/` | Um use case por ação (`SubmitRecognition`, `GetRecognition`, `ProcessRecognition`) | `domain`, `application/ports` |
-| `application/ports/` | As interfaces de que os use cases precisam (`KanjiRecognizer`, `StrokeOrderEvaluator`, `JobQueue`, `JobRepository`, `ResultNotifier`) | `domain` |
-| `adapters/inbound/` | Rotas do FastAPI e schemas Pydantic de request/response, o endpoint SSE, o consumidor da fila que chama `ProcessRecognition` | `application`, `domain`, FastAPI |
-| `adapters/outbound/` | Implementações dos ports: recognizer em PyTorch (rodando no processo de inferência), avaliador da ordem com o KanjiVG, `asyncio.Queue`, armazenamento dos jobs em memória, notifier SSE | `application/ports`, `domain`, `kanjilens_ml`, PyTorch |
+| `application/ports/` | As interfaces de que os use cases precisam (`KanjiRecognizer`, `StrokeOrderEvaluator`, `JobQueue`, `JobRepository`, `ResultNotifier`, `Clock`) | `domain` |
+| `adapters/inbound/` | Rotas do FastAPI e schemas Pydantic de request/response, o limite de tamanho do corpo, o mapeamento dos erros para `{"error": "<código>"}`, o endpoint SSE, o consumidor da fila que chama `ProcessRecognition` | `application`, `domain`, FastAPI |
+| `adapters/outbound/` | Implementações dos ports: recognizer em PyTorch (rodando no processo de inferência), avaliador da ordem com o KanjiVG, `asyncio.Queue`, armazenamento dos jobs em memória, notifier SSE, relógio do sistema | `application/ports`, `domain`, `kanjilens_ml`, PyTorch |
 | `bootstrap/` | Composition root: monta os adapters, injeta nos use cases e cria o app FastAPI | tudo |
 
 A fila e a notificação são **adapters atrás de um port** ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md), [ADR 0020](adr/0020-result-notification-by-server-sent-events.md)): trocar a fila em memória por uma persistente, ou o SSE por outro canal, substitui um adapter e a ligação em `bootstrap/`, sem mexer nos use cases.
@@ -306,7 +306,7 @@ flowchart TB
 
 Decidida na [ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md) ([spike](spikes/queue-and-notification.md)):
 
-- **Fila:** `asyncio.Queue` **limitada** (tamanho inicial 16) no processo da API. Cheia, o `POST /api/recognitions` responde `503` com `Retry-After` e o código `queue_full`.
+- **Fila:** `asyncio.Queue` **limitada** (tamanho inicial 16) no processo da API. Cheia, o `POST /api/recognitions` responde `503` com `Retry-After: 5` (valor inicial, a rever com o tempo real do modelo) e o código `queue_full`.
 - **Consumo:** uma tarefa consumidora pega **um job por vez** e o executa no **processo de inferência**: um `ProcessPoolExecutor(max_workers=1)` com contexto `spawn`, cujo `initializer` carrega o modelo e o KanjiVG uma vez.
 - **Estado dos jobs:** em memória. Os resultados (e os traços) expiram 5 minutos depois de terminados, e o Uvicorn roda com um processo só.
 - **Por que não Redis, RQ ou Celery:**
@@ -361,6 +361,19 @@ Decidida na [ADR 0020](adr/0020-result-notification-by-server-sent-events.md). O
 - **Reconexão:** como cada evento é completo, quem reconecta recebe o estado atual, sem `Last-Event-ID`.
 - **Frontend:** o adapter `SseResultStream` usa o `EventSource` nativo e fecha no estado final. Se o SSE falhar repetidamente, o frontend consulta o `GET /api/recognitions/{id}` por polling.
 - **Ports:** `ResultNotifier` (backend) e `ResultStream` (frontend).
+
+### 5.3 Erros
+
+Toda resposta de erro tem o corpo `{"error": "<código>"}`, com um código estável que o frontend traduz ([ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md)). Texto para o usuário nunca sai do backend, e o erro de validação do schema nunca é o `422` padrão do FastAPI.
+
+| Status | Código | Quando |
+|---|---|---|
+| `400` | `invalid_drawing` | O desenho quebra uma regra de formato (do schema ou do domínio; [docs/architecture/domain.md](architecture/domain.md)) |
+| `400` | `invalid_stroke_order_mode` | O `stroke_order_mode` não é `ordered` nem `unordered` |
+| `400` | `invalid_request` | Corpo que não é JSON, ou campo desconhecido |
+| `413` | `drawing_too_large` | Corpo acima de **1 MiB** (conferido antes de qualquer parsing, inclusive em envio *chunked*), ou traços e pontos acima dos limites da [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md) |
+| `503` | `queue_full` | A fila tem 16 jobs esperando; vem com `Retry-After` ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md)) |
+| outros | derivado do status (`not_found`, `method_not_allowed`) | Rota ou método que não existe |
 
 ---
 
@@ -568,7 +581,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [x] Configurar o projeto FastAPI ([ADR 0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md)).
 - [x] Escolher a fila e a notificação ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md), [ADR 0020](adr/0020-result-notification-by-server-sent-events.md)).
 - [x] Criar o domínio: desenho, modo, job e estados ([#44](https://github.com/Asuka-Jyuku/kanji-lens/issues/44); [architecture/domain.md](architecture/domain.md)).
-- [ ] Criar o endpoint de reconhecimento, gerar o `job_id` e pôr o job na fila ([#45](https://github.com/Asuka-Jyuku/kanji-lens/issues/45)).
+- [x] Criar o endpoint de reconhecimento, gerar o `job_id` e pôr o job na fila ([#45](https://github.com/Asuka-Jyuku/kanji-lens/issues/45)).
 - [ ] Processar os jobs no processo de inferência e armazenar os resultados, com um reconhecedor falso ([#46](https://github.com/Asuka-Jyuku/kanji-lens/issues/46)).
 - [ ] Implementar a notificação por SSE, com o polling de reserva ([#47](https://github.com/Asuka-Jyuku/kanji-lens/issues/47)).
 - [ ] Integrar o modelo e a avaliação da ordem no processo de inferência ([#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48)).
