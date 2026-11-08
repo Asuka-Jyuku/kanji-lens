@@ -48,3 +48,5 @@ As ADRs 0002, 0003 e 0005 a 0007 foram escritas depois das decisões, a partir d
 | [0007](0007-local-execution-over-the-lan.md) | Execução local, acessada pela rede local, sem nuvem | Aceita |
 | [0008](0008-git-flow-and-changelog-by-release.md) | Branches `main` + `develop` e CHANGELOG por release | Aceita |
 | [0009](0009-portuguese-ui-first-then-japanese.md) | Interface em português primeiro, japonês depois, com i18n desde a primeira tela | Aceita |
+| [0010](0010-two-recognition-modes-with-specialized-models.md) | Dois modos de reconhecimento com modelos especializados (Opção C) | Aceita |
+| [0011](0011-school-notebook-as-server-with-cpu-first-inference.md) | Notebook da escola como servidor, com inferência CPU-first | Aceita |

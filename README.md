@@ -10,11 +10,11 @@
 
 ## Overview
 
-KanjiLens is a web application where you draw a kanji on a canvas and get back a ranked list of the characters it most likely represents.
+KanjiLens is a web application where you draw a kanji on a canvas and get back a ranked list of the characters it most likely represents. Before recognizing, you choose whether stroke order should matter.
 
 The goal is not to guess the exact character every time. The goal is to show the **top candidates ranked by confidence**, so you can pick the one you meant to write.
 
-Recognition runs on a convolutional neural network (CNN) built with PyTorch. The whole system runs on a single machine on your local network: open it from your phone or desktop over Wi-Fi, with no cloud hosting or public domain required.
+Recognition uses two compact models trained with PyTorch, one per mode: a 2D CNN on the final image when stroke order does not matter, and a temporal 1D CNN on the stroke sequence when it does. The whole system runs on a single machine on your local network (the school's laptop, with CPU-only inference): open it from your phone or desktop over Wi-Fi, with no cloud hosting or public domain required.
 
 ```text
 ┌──────────────────────────────┐
@@ -25,6 +25,8 @@ Recognition runs on a convolutional neural network (CNN) built with PyTorch. The
 │   │          日          │   │
 │   │                      │   │
 │   └──────────────────────┘   │
+│   Stroke order:              │
+│   [ matters | doesn't ]      │
 │                              │
 │   [Clear]       [Recognize]  │
 │                              │
@@ -37,10 +39,10 @@ Recognition runs on a convolutional neural network (CNN) built with PyTorch. The
 
 ## How it works
 
-1. You draw a kanji on the canvas (mouse or touch).
-2. The frontend sends the drawing to the API.
+1. You choose whether stroke order matters, then draw a kanji on the canvas (mouse or touch).
+2. The frontend sends the strokes (each one a list of points, in drawing order) and the chosen mode to the API.
 3. The API creates a `job_id`, queues the job, and replies right away. The HTTP request does not stay open while the model runs.
-4. A worker picks up the job and runs CNN inference. The model is loaded once per worker, not once per request.
+4. The inference worker picks up the job and runs the model for its mode. Both models are loaded once, not once per request.
 5. The backend pushes the result to the frontend (SSE or WebSocket).
 6. The frontend shows the top-K predictions with their confidence.
 
@@ -48,9 +50,10 @@ Recognition runs on a convolutional neural network (CNN) built with PyTorch. The
  Phone / Desktop
        │
        ▼
- Angular frontend ──REST──▶ FastAPI ──▶ Queue ──▶ Worker(s) ──▶ PyTorch CNN
-       ▲                                                            │
-       └──────────────── SSE / WebSocket ◀── Job results ◀──────────┘
+ Angular frontend ──REST──▶ FastAPI ──▶ Queue ──▶ Worker ──▶ 2D CNN (unordered)
+       ▲                                            1D CNN (ordered)
+       │                                                  │
+       └──────────── SSE / WebSocket ◀── Job results ◀────┘
 ```
 
 ## Tech stack
@@ -59,15 +62,15 @@ Recognition runs on a convolutional neural network (CNN) built with PyTorch. The
 |---|---|
 | Frontend | Angular, TypeScript, HTML Canvas API |
 | Backend | Python, FastAPI, REST, SSE or WebSocket |
-| Machine Learning | PyTorch, NumPy, OpenCV (optional) |
+| Machine Learning | PyTorch (training), 2D CNN + temporal 1D CNN; CPU inference runtime chosen by benchmark (PyTorch / OpenVINO / ONNX Runtime) |
 | Queue | `asyncio.Queue` first; Redis + Celery/RQ if needed |
-| Deployment | Local machine, accessed over the LAN |
+| Deployment | The school's laptop (Dell Inspiron 3501, i7-1165G7, 16 GB), accessed over the LAN |
 
 ## API (planned)
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| `POST` | `/api/recognitions` | Submit a drawing for recognition |
+| `POST` | `/api/recognitions` | Submit the strokes and the mode (`ordered` / `unordered`) for recognition |
 | `GET` | `/api/recognitions/{id}` | Get the status and result of a job |
 | `GET` | `/api/health` | Health check |
 
@@ -117,10 +120,10 @@ kanji-lens/
 
 ## Roadmap
 
-- [ ] **Machine Learning:** pick a dataset, preprocess, train a baseline CNN, evaluate (Top-1/Top-5), top-K inference
+- [ ] **Machine Learning:** pick the datasets (offline images and online strokes), shared preprocessing, train the 2D CNN and the temporal 1D CNN, evaluate per mode (Top-1/Top-5), benchmark on the school laptop, top-K inference
 - [ ] **Backend:** FastAPI project, recognition endpoint, async job processing, model integration, push notifications
-- [ ] **Frontend:** Angular app, responsive canvas with mouse and touch, results view
-- [ ] **Infrastructure:** LAN access, CORS and firewall setup, load test with ~10 concurrent users, CPU/memory/GPU profiling
+- [ ] **Frontend:** Angular app, stroke-order mode switch, responsive canvas with mouse and touch that captures strokes, results view
+- [ ] **Infrastructure:** LAN access, CORS and firewall setup, static frontend build, load test with 3–5 students (10 clients as a stress test), CPU/memory/temperature profiling on the school laptop
 
 See the full checklist in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-escopo-do-mvp).
 
@@ -130,7 +133,10 @@ See the full checklist in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-escopo-d
 |---|---|---|
 | Job queue | `asyncio.Queue` / Redis + Celery or RQ | Start with `asyncio.Queue`, move to Redis when needed |
 | Result notification | SSE / WebSocket | Leaning SSE (server → client only) |
-| Dataset | To be defined | Public handwritten kanji dataset |
+| Dataset (`unordered`) | ETL8G / ETL9G | Public offline handwritten kanji images (license to be confirmed) |
+| Stroke data (`ordered`) | Own collection on the canvas / public online dataset / KanjiVG (synthetic) | Real stroke sequences are needed; ETL has none |
+| Default mode in the UI | Stroke order matters / doesn't | To be decided |
+| Inference runtime | PyTorch / OpenVINO / ONNX Runtime (CPU), FP32 or INT8 | Decided by benchmarks on the school laptop |
 | Number of classes | A few hundred → 2,136 Jōyō kanji | Start small, then expand |
 
 ## Running locally

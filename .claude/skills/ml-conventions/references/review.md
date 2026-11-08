@@ -14,7 +14,7 @@ Formatter, linter, testes e o teste de arquitetura, quando existirem (ADR de fer
 - [ ] O adapter recusa pesos cuja lista de classes ou versão de pré-processamento não bate.
 
 **Números (`references/experiments.md`)**
-- [ ] Top-1/Top-5 antes e depois, no mesmo split de teste fixo, e no conjunto do canvas.
+- [ ] Top-1/Top-5 antes e depois, no mesmo split de teste fixo, e no conjunto do canvas, **separados por modo** (`ordered` / `unordered`).
 - [ ] Todo número com o split, a versão do modelo, a configuração e a seed.
 - [ ] O split é por pessoa que escreveu, quando o dataset permite; o split de teste não foi usado para ajuste.
 - [ ] Uma queda tem um "aceito porque..." explícito.
@@ -23,7 +23,9 @@ Formatter, linter, testes e o teste de arquitetura, quando existirem (ADR de fer
 - [ ] `model.eval()` e `torch.inference_mode()` (ou `no_grad`) na avaliação e na inferência.
 - [ ] Seeds vindas da configuração; nenhuma aleatoriedade escondida (augmentation sem seed, workers do `DataLoader`).
 - [ ] Nada importa de `notebooks/`.
-- [ ] Funciona só com CPU (o servidor pode não ter GPU).
+- [ ] Funciona só com CPU: o servidor é o notebook da escola, sem GPU dedicada (ADR 0011). Número de desempenho medido nele, com hardware e versões registrados.
+- [ ] Os pesos levam o modo nos metadados, e o adapter recusa pesos do modo errado (ADR 0010).
+- [ ] Código copiado de um projeto de referência? A licença permite, e há ADR (spike, seção 11.1).
 
 **Repositório e licença**
 - [ ] Nenhum dataset, peso ou binário grande no commit; como obtê-los está documentado.
