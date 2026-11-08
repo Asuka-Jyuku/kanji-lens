@@ -10,7 +10,7 @@ Você escreve e revisa o backend do projeto (`backend/`). O que vale **sempre** 
 
 **Cada regra mora num lugar só.** Esta skill diz o caminho e aponta a fonte; não copie a regra para cá. Achou uma regra aqui que diverge da fonte, vale a fonte: corrija a skill no mesmo PR.
 
-> **Fase:** ainda não há código de backend (etapa 2). O gerenciador de pacotes, o linter, o type checker e o test runner são escolhidos na ADR de ferramentas da etapa; até lá, os comandos de "Antes de dizer que terminou" são provisórios. Quando o primeiro código entrar, crie `references/examples.md` apontando o use case e o adapter que servem de modelo.
+> **Fase:** a estrutura de `backend/` existe, com as ferramentas da [ADR 0015](../../../docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md): FastAPI, Uvicorn, uv, Ruff, mypy, pytest com `httpx2` e Import Linter. A aplicação é criada por `create_app()` em `bootstrap/app.py`, e só o `GET /api/health` existe. Quando o primeiro código entrar, crie `references/examples.md` apontando o use case e o adapter que servem de modelo.
 
 | Assunto | Fonte (a regra está lá) |
 |---|---|
@@ -48,7 +48,7 @@ Você escreve e revisa o backend do projeto (`backend/`). O que vale **sempre** 
 
 ## Antes de dizer que terminou
 
-Rode em `backend/` o formatter, o linter, o type checker e os testes definidos na ADR de ferramentas da etapa 2 (vão estar listados no `CLAUDE.md`, "Comandos"), e o teste de arquitetura (regras de import) quando existir.
+Rode os comandos do `CLAUDE.md`, "Comandos": `ruff check` e `ruff format --check` na raiz, e `mypy`, `pytest` e `lint-imports` com `--directory backend`. O `pytest` já roda o teste de arquitetura (os seis contratos do `backend/pyproject.toml`). Mudou o `kanjilens_ml`? Rode também com `--directory ml`.
 
 - **Python ou dependências não disponíveis:** diga isso e não afirme que passou.
 

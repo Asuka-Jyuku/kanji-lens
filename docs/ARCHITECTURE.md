@@ -493,8 +493,8 @@ kanji-lens/
 │   │   │   ├── inbound/
 │   │   │   └── outbound/
 │   │   └── bootstrap/
-│   ├── tests/
-│   └── pyproject.toml
+│   ├── tests/               # pytest, inclusive o teste de arquitetura
+│   └── pyproject.toml       # membro do workspace do uv (ADR 0015)
 ├── ml/
 │   ├── pyproject.toml       # membro do workspace do uv (ADR 0014)
 │   ├── tests/               # pytest, inclusive o teste de arquitetura
@@ -591,7 +591,8 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Runtime, resolução, precisão e concorrência de produção | PyTorch / OpenVINO / ONNX Runtime CPU; 64–128 px; FP32 / INT8; 1 ou 2 execuções | Em aberto (benchmark no notebook) |
 | Quantidade de classes | Centenas → 2.136 (Jōyō) | Em aberto |
 | Ferramentas do ML | Python 3.15, uv (workspace com lock único), Ruff, mypy, pytest, Import Linter, PyTorch só-CPU | Decidido — [ADR 0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) |
-| Ferramentas do backend e do frontend | Gerenciador de pacotes, linter, test runner | Em aberto — uma ADR no começo de cada etapa (#18, #21) |
+| Ferramentas do backend | FastAPI + Uvicorn, membro do workspace do uv, com o `kanjilens_ml` pelo workspace; httpx2 nos testes; seis contratos de arquitetura | Decidido — [ADR 0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) |
+| Ferramentas do frontend | Versão do Angular, gerenciador de pacotes, linter, test runner, i18n | Em aberto — ADR no começo da etapa 3 (#21) |
 | Idioma da interface | Português primeiro, japonês depois, com i18n desde a primeira tela | Decidido — [ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md) (o mecanismo de i18n sai na ADR de ferramentas da etapa 3) |
 
 Quando uma decisão em aberto for fechada, ela vira ADR em `docs/adr/` e a linha dela aqui passa a apontar para a ADR.
