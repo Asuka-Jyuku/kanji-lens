@@ -1,0 +1,69 @@
+[project]
+name = "kanjilens-ml"
+version = "0.0.0"
+description = "KanjiLens machine learning library: preprocessing, model, training, evaluation and stroke-order check"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.15,<3.16"
+dependencies = [
+    "numpy>=2.5",
+    "torch>=2.15",
+]
+
+[dependency-groups]
+dev = [
+    "import-linter>=2.16",
+    "mypy>=2.4",
+    "pytest>=9.2",
+    "ruff>=0.17",
+]
+
+[build-system]
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"
+
+# CPU-only PyTorch wheels (ADR 0011 and 0014): the school notebook has no GPU,
+# and the default PyPI wheels for Linux pull several GB of CUDA libraries.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers", "--strict-config"]
+
+[tool.mypy]
+python_version = "3.15"
+strict = true
+files = ["src", "tests"]
+
+# Architecture test (CLAUDE.md, "Testes"; ADR 0004 and 0012). Run with `lint-imports`.
+[tool.importlinter]
+root_packages = ["kanjilens_ml"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "kanjilens_ml is a library: it never imports the backend or a web framework"
+type = "forbidden"
+source_modules = ["kanjilens_ml"]
+forbidden_modules = ["kanjilens", "fastapi", "starlette", "uvicorn", "pydantic"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "The stroke-order check does not use PyTorch (ADR 0012)"
+type = "forbidden"
+source_modules = ["kanjilens_ml.stroke_order"]
+forbidden_modules = ["torch"]
+
+[[tool.importlinter.contracts]]
+name = "Layers inside kanjilens_ml: preprocessing is the base, training and evaluation are on top"
+type = "layers"
+layers = [
+    "kanjilens_ml.training | kanjilens_ml.evaluation",
+    "kanjilens_ml.models | kanjilens_ml.data | kanjilens_ml.stroke_order",
+    "kanjilens_ml.preprocessing",
+]

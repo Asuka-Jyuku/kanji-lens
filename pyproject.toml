@@ -1,0 +1,24 @@
+# Root of the uv workspace (ADR 0014). It is not a package: each part keeps its
+# own manifest (ADR 0002), and this file only groups the Python members so that
+# they share one lock file and the same dependency versions.
+
+[tool.uv.workspace]
+members = ["ml"]
+
+[tool.ruff]
+target-version = "py315"
+line-length = 100
+src = ["ml/src", "ml/tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "PTH", # use pathlib
+    "RUF", # ruff-specific rules
+]

@@ -5,6 +5,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Publicação e documentação
+- **A estrutura de `ml/` existe, com as ferramentas do ML** ([ADR 0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md)): Python 3.15 instalado pelo uv, um lock só para as partes Python e o PyTorch só-CPU. Ruff, mypy e pytest cuidam de lint, tipos e testes, e um teste de arquitetura (Import Linter) falha quando um import quebra as regras de dependência. Os comandos estão no `CLAUDE.md` (#12).
 - **O KanjiLens roda direto no notebook da escola, sem Docker** ([ADR 0013](docs/adr/0013-run-directly-on-the-school-notebook-without-docker.md)): ambiente Python isolado, frontend como build estático e os processos como serviço do sistema. Sobra mais memória para o modelo. A instalação passo a passo vai para o `docs/RUNNING.md` (#33).
 - **O notebook da escola roda Windows**, e a instalação passo a passo no `docs/RUNNING.md` vai ser para ele (#33).
 - **O modo padrão é "ordem dos traços não importa".** Quem quer treinar a ordem troca a opção antes de desenhar ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
