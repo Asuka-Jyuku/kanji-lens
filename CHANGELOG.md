@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Publicação e documentação
+- **Documentação alinhada com a fila, o SSE e as ferramentas**:
+  - as ADRs 0003 e 0004, as skills e o `CLAUDE.md` deixam de tratar a fila e a notificação como decisões em aberto e descrevem o processo de inferência no lugar dos "workers";
+  - as skills do backend e do ML ganham as regras da fronteira entre processos (só dados serializáveis, falha do processo vira `failed`) e do SSE;
+  - o README mostra o endpoint `/events` e aponta os comandos de desenvolvimento;
+  - o escopo do MVP marca o que já foi feito e liga as etapas do backend às histórias #44–#48;
+  - o `CONTRIBUTING.md` explica que o PR precisa estar atualizado com o `develop` antes do merge.
+- **Todo desenvolvimento termina com os documentos em dia:** a regra está no `CLAUDE.md`, nas skills e no checklist do PR.
 - **Fila e notificação decididas** (spike em [docs/spikes/queue-and-notification.md](docs/spikes/queue-and-notification.md), #19, #20):
   - **fila** ([ADR 0019](docs/adr/0019-in-memory-job-queue-with-one-inference-process.md)): `asyncio.Queue` limitada; os jobs rodam um por vez num processo de inferência separado, e a API segue respondendo enquanto o modelo trabalha. Sem Redis, que não roda nativo no Windows;
   - **notificação** ([ADR 0020](docs/adr/0020-result-notification-by-server-sent-events.md)): o resultado chega por SSE, com consulta periódica (polling) de reserva.

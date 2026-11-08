@@ -95,9 +95,9 @@ Fluxo:
 3. O backend gera um `job_id`.
 4. O job entra na fila de processamento.
 5. O backend responde imediatamente com a confirmação de recebimento.
-6. Um worker consome o job e executa a inferência; num job `ordered`, também avalia a ordem dos traços.
-7. O resultado é armazenado.
-8. O backend notifica o frontend que o job terminou.
+6. O processo de inferência pega o job e executa a inferência; num job `ordered`, também avalia a ordem dos traços (seção 4).
+7. O resultado é armazenado em memória até expirar.
+8. O backend avisa o frontend de cada mudança de estado do job por SSE (seção 5.2).
 
 Requisição (`POST /api/recognitions`):
 
@@ -331,7 +331,7 @@ O servidor é o notebook da escola (seção 6.3), com inferência **CPU-first** 
 
 - **A inferência bloqueia o event loop.** A inferência é CPU-bound. Se o worker rodar como corrotina no mesmo event loop do FastAPI, enquanto ele executa a API para de responder, inclusive as conexões SSE. Por isso a inferência roda no processo de inferência, por `run_in_executor` ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md)).
 - **O estado em memória não é compartilhado entre processos.** Com `asyncio.Queue`, a fila e os resultados vivem na memória de um processo. Se o Uvicorn subir com `--workers > 1`, cada processo terá sua própria fila, e o cliente pode consultar ou escutar um processo que não conhece o seu `job_id`. Por isso o Uvicorn roda com um processo só. Precisar de mais de um processo de API seria o motivo para rever a fila (ADR nova).
-- **Threads do runtime.** Por padrão, o PyTorch usa todos os núcleos em cada inferência, e o notebook tem 4 núcleos físicos. Configure as threads explicitamente (`torch.set_num_threads` ou o equivalente do runtime escolhido). Dois workers com quatro threads cada disputam os mesmos núcleos, e mais workers não garantem mais throughput.
+- **Threads do runtime.** Por padrão, o PyTorch usa todos os núcleos em cada inferência, e o notebook tem 4 núcleos físicos. Configure as threads explicitamente (`torch.set_num_threads` ou o equivalente do runtime escolhido). Duas execuções com quatro threads cada disputam os mesmos núcleos, e mais execuções simultâneas não garantem mais throughput.
 - **O notebook divide a CPU com tudo:** frontend, API, fila e o modelo. Meça o consumo do conjunto, e não só o do modelo. Em carga longa, o notebook pode sofrer throttling térmico.
 
 ---
@@ -493,7 +493,7 @@ A Top-5 é a métrica mais próxima da experiência do usuário, já que a inter
 
 ## 8. Estrutura do repositório
 
-Proposta inicial, ajustável conforme o projeto evoluir:
+As pastas das três partes existem desde as ADRs [0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md), [0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) e [0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md). As de `ml/` sem código ainda (`configs/`, `notebooks/`, `datasets/`, `artifacts/`) nascem com a primeira issue que precisar delas:
 
 ```text
 kanji-lens/
@@ -553,6 +553,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 ### Etapa 1: Machine Learning
 
 - [x] Avaliar famílias de modelos e runtimes ([spike](spikes/model-and-runtime-evaluation.md)) e definir o modo `ordered` como avaliação da ordem ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
+- [x] Definir as ferramentas e criar a estrutura de `ml/` ([ADR 0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md)).
 - [ ] Pesquisar e selecionar o dataset e a quantidade de classes.
 - [x] Escolher o algoritmo de avaliação da ordem e o formato de captura dos pontos ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
 - [ ] Criar o pré-processamento compartilhado (imagem e traços normalizados).
@@ -564,17 +565,17 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 
 ### Etapa 2: Backend
 
-- [ ] Configurar o projeto FastAPI.
-- [ ] Criar o endpoint de reconhecimento.
-- [ ] Gerar o `job_id`.
-- [ ] Implementar o processamento assíncrono.
-- [ ] Integrar o modelo e a avaliação da ordem no processo de inferência.
-- [ ] Armazenar os resultados.
-- [ ] Implementar a notificação por SSE, com o polling de reserva.
+- [x] Configurar o projeto FastAPI ([ADR 0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md)).
+- [x] Escolher a fila e a notificação ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md), [ADR 0020](adr/0020-result-notification-by-server-sent-events.md)).
+- [ ] Criar o domínio: desenho, modo, job e estados ([#44](https://github.com/Asuka-Jyuku/kanji-lens/issues/44)).
+- [ ] Criar o endpoint de reconhecimento, gerar o `job_id` e pôr o job na fila ([#45](https://github.com/Asuka-Jyuku/kanji-lens/issues/45)).
+- [ ] Processar os jobs no processo de inferência e armazenar os resultados, com um reconhecedor falso ([#46](https://github.com/Asuka-Jyuku/kanji-lens/issues/46)).
+- [ ] Implementar a notificação por SSE, com o polling de reserva ([#47](https://github.com/Asuka-Jyuku/kanji-lens/issues/47)).
+- [ ] Integrar o modelo e a avaliação da ordem no processo de inferência ([#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48)).
 
 ### Etapa 3: Frontend
 
-- [ ] Criar a aplicação Angular.
+- [x] Criar a aplicação Angular ([ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)).
 - [ ] Implementar o canvas responsivo.
 - [ ] Implementar desenho com mouse e touch, capturando os traços.
 - [ ] Implementar a escolha do modo (ordem importa / não importa).
@@ -582,9 +583,11 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [ ] Integrar com a REST API.
 - [ ] Implementar o indicador de processamento.
 - [ ] Exibir as previsões.
+- [ ] Abrir o verbete do kanji escolhido no dicionário externo, com o padrão configurável ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)).
 
 ### Etapa 4: Infraestrutura
 
+- [x] Configurar o CI ([ADR 0018](adr/0018-ci-with-github-actions-and-a-single-required-check.md)).
 - [ ] Configurar a execução local no notebook da escola, com o frontend em build estático.
 - [ ] Configurar o acesso pela rede Wi-Fi.
 - [ ] Configurar a comunicação entre frontend e backend.
@@ -600,7 +603,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Repositório | Monorepo: frontend, backend e ML juntos | Decidido — [ADR 0002](adr/0002-monorepo-for-frontend-backend-and-ml.md) |
 | Frontend / backend | Angular + TypeScript / Python + FastAPI, REST | Decidido — [ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md) |
 | Arquitetura do código | Clean Architecture, ports and adapters, em camadas | Decidido — [ADR 0004](adr/0004-clean-and-hexagonal-architecture.md) |
-| Processamento | Assíncrono, com fila e workers | Decidido — [ADR 0005](adr/0005-asynchronous-recognition-with-queue-and-workers.md) |
+| Processamento | Assíncrono, com fila e um processo de inferência | Decidido — [ADR 0005](adr/0005-asynchronous-recognition-with-queue-and-workers.md) |
 | Machine Learning | PyTorch para treino e avaliação | Decidido — [ADR 0006](adr/0006-cnn-with-pytorch.md) |
 | Modos e modelo | `ordered` / `unordered`, escolhido por solicitação; uma CNN 2D compacta nos dois; no `ordered`, avaliação da ordem contra o KanjiVG | Decidido — [ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md) (substitui a [0010](adr/0010-two-recognition-modes-with-specialized-models.md)) |
 | Servidor e carga | Notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB), inferência CPU-first; 3–5 envios numa janela curta, 10 clientes como estresse | Decidido — [ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md) |

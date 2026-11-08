@@ -17,7 +17,7 @@ Vale também quando o conteúdo técnico (log, erro, documentação de bibliotec
 
 ## O que é o projeto
 
-O KanjiLens reconhece kanjis manuscritos: a pessoa escolhe se a ordem dos traços importa, desenha num canvas e recebe os top-K candidatos, ordenados por confiança. O reconhecimento é uma CNN 2D compacta, treinada em PyTorch, que não depende da ordem; no modo `ordered`, os traços também são comparados com a ordem e a direção do KanjiVG, e a resposta diz quais estão fora de ordem ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md)). É um **monorepo** ([ADR 0002](docs/adr/0002-monorepo-for-frontend-backend-and-ml.md)) com três partes: `frontend/` (Angular), `backend/` (Python, FastAPI, fila de jobs e workers) e `ml/` (dataset, treino, avaliação e o pré-processamento compartilhado). Tudo roda numa máquina só e é acessado pela rede local, sem nuvem ([ADR 0007](docs/adr/0007-local-execution-over-the-lan.md)). Essa máquina é o notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB, sem GPU dedicada), então a inferência é **CPU-first** e todo número de desempenho é medido nele ([ADR 0011](docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md)). Veja o [README.pt-BR.md](README.pt-BR.md) para a visão geral e o [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para o desenho. O porquê das decisões está nas ADRs em [docs/adr/](docs/adr/README.md).
+O KanjiLens reconhece kanjis manuscritos: a pessoa escolhe se a ordem dos traços importa, desenha num canvas e recebe os top-K candidatos, ordenados por confiança. O reconhecimento é uma CNN 2D compacta, treinada em PyTorch, que não depende da ordem; no modo `ordered`, os traços também são comparados com a ordem e a direção do KanjiVG, e a resposta diz quais estão fora de ordem ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md)). É um **monorepo** ([ADR 0002](docs/adr/0002-monorepo-for-frontend-backend-and-ml.md)) com três partes: `frontend/` (Angular), `backend/` (Python, FastAPI, fila de jobs e um processo de inferência) e `ml/` (dataset, treino, avaliação e o pré-processamento compartilhado). Tudo roda numa máquina só e é acessado pela rede local, sem nuvem ([ADR 0007](docs/adr/0007-local-execution-over-the-lan.md)). Essa máquina é o notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB, sem GPU dedicada), então a inferência é **CPU-first** e todo número de desempenho é medido nele ([ADR 0011](docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md)). Veja o [README.pt-BR.md](README.pt-BR.md) para a visão geral e o [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para o desenho. O porquê das decisões está nas ADRs em [docs/adr/](docs/adr/README.md).
 
 **Fase:** as estruturas de `ml/`, `backend/` e `frontend/` existem, com as ferramentas das ADRs [0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md), [0015](docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) e [0017](docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md). O backend só responde ao `GET /api/health`, e o frontend só tem a página inicial com o texto pelo i18n. Ainda não há código de produto. O roteiro do MVP está em [docs/ARCHITECTURE.md, "Escopo do MVP"](docs/ARCHITECTURE.md#9-escopo-do-mvp).
 
@@ -38,7 +38,7 @@ uv add --package kanjilens-ml <pacote>       # dependência nova no ML (no backe
 uv run --directory backend uvicorn kanjilens.bootstrap.app:create_app --factory --reload   # API em http://127.0.0.1:8000
 ```
 
-Para testar pelo celular na rede local, troque o endereço por `--host 0.0.0.0` (ARCHITECTURE.md, seção 6.1). Com a fila em memória, o Uvicorn roda com **um processo só** (sem `--workers`; ADR 0005).
+Para testar pelo celular na rede local, troque o endereço por `--host 0.0.0.0` (ARCHITECTURE.md, seção 6.1). Com a fila em memória, o Uvicorn roda com **um processo só** (sem `--workers`; [ADR 0019](docs/adr/0019-in-memory-job-queue-with-one-inference-process.md)).
 
 **Frontend (Angular)** — [ADR 0017](docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md). Pré-requisito: Node 26 LTS (`frontend/.nvmrc`; com o nvm, `nvm use`). Tudo dentro de `frontend/`:
 
@@ -68,7 +68,7 @@ As decisões em aberto (dataset, quantidade de classes, runtime de inferência) 
 - **Toda regra nasce com teste.** Domínio e use cases são testados sem framework, com adapters falsos implementando os ports: é para isso que serve o desenho hexagonal. Bug corrigido ganha teste que falha antes da correção.
 - **Adapters ganham teste de integração** contra a coisa real quando for barato (test client do FastAPI, fila real no mesmo processo, o modelo real num conjunto fixo de desenhos).
 - **Qualidade do modelo se mede, não se afirma:** Top-1 e Top-5 no **mesmo split de teste fixo**, antes e depois, em todo PR que muda modelo, pré-processamento ou dados de treino. O mesmo vale para a avaliação da ordem: erros detectados × falsos alarmes no mesmo conjunto fixo de desenhos com ordem certa e errada, em todo PR que muda o algoritmo, a normalização dos traços ou os dados do KanjiVG. Queda precisa de um "aceito porque..." explícito no PR.
-- **Teste de arquitetura** (quando cada parte tiver código): um teste que falha quando um import quebra a regra de dependência. Entra com o primeiro código de cada parte, e a ferramenta é escolhida na ADR de ferramentas da etapa.
+- **Teste de arquitetura:** um teste que falha quando um import quebra a regra de dependência. Já existe nas três partes: Import Linter no ML e no backend (contratos no `pyproject.toml` de cada um, rodados pelo `pytest`) e `eslint-plugin-boundaries` no frontend (no `npm run lint`). Camada ou regra nova ganha o contrato no mesmo PR.
 
 ## Decisões de arquitetura (ADRs) — obrigatório
 
@@ -91,7 +91,7 @@ Não precisa de ADR: bugfix, refatoração local, ajuste visual, tela ou endpoin
 ## Segurança (específico deste projeto — não genérico)
 
 Diferente de um app só em `localhost`, o KanjiLens fica **acessível a qualquer um na rede local, sem login**. Pontos que afetam como escrever código aqui:
-- **Entrada limitada:** o desenho enviado (traços e modo) tem formato e tamanho máximos, conferidos no adapter HTTP antes de qualquer coisa chegar à fila. Os valores iniciais são até 40 traços, 1.000 pontos por traço e 10.000 no total ([ADR 0016](docs/adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)). Um `POST` sem limite pode esgotar a memória ou travar os workers.
+- **Entrada limitada:** o desenho enviado (traços e modo) tem formato e tamanho máximos, conferidos no adapter HTTP antes de qualquer coisa chegar à fila. Os valores iniciais são até 40 traços, 1.000 pontos por traço e 10.000 no total ([ADR 0016](docs/adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)). Um `POST` sem limite pode esgotar a memória ou travar o processo de inferência.
 - **Fila limitada:** a fila tem tamanho máximo; cheia, a API responde `503` com `Retry-After` em vez de aceitar mais trabalho.
 - **CORS** só libera a origem do frontend, nunca `*`. Se o frontend fizer proxy de `/api`, o CORS fica desligado.
 - **Nenhuma saída de rede** do app em execução. Chamada nova para fora (telemetria, download de modelo em tempo de execução, CDN) precisa de ADR.
@@ -109,6 +109,15 @@ Não crie documento vazio. Cada um nasce no primeiro PR que precisa dele e, daí
 | `docs/architecture/domain.md` | o primeiro código de domínio: glossário e diagrama de estados do job | termo novo do domínio ou estado novo |
 | `docs/RUNNING.md` | a primeira parte que roda: como rodar localmente e na rede local | qualquer mudança em portas, variáveis de ambiente ou partida |
 
+**Todo desenvolvimento termina com os documentos em dia.** No fim de cada tarefa (funcionalidade, correção, spike, ferramenta ou decisão), antes de dizer que terminou, confira o que a mudança afeta e atualize **no mesmo PR**:
+- `docs/ARCHITECTURE.md` (estado atual, contrato da API, escopo do MVP marcado e decisões em resumo);
+- as ADRs do assunto (nota de atualização ou ADR nova; veja "Decisões de arquitetura");
+- `README.md` e `README.pt-BR.md`, este `CLAUDE.md` (inclusive "Fase" e "Comandos") e o `CONTRIBUTING.md`;
+- as skills e os agentes de `.claude/` que descrevem a regra que mudou;
+- os documentos da tabela acima e o `CHANGELOG.md`.
+
+Fora do repositório, atualize também o corpo do épico (caixas das issues fechadas, etapas e riscos). Nada a atualizar? Diga isso no fim, com o que foi conferido.
+
 A pesquisa de um spike com resposta longa fica em `docs/spikes/`, linkada na issue e na ADR que ela gerou (ex.: [docs/spikes/model-and-runtime-evaluation.md](docs/spikes/model-and-runtime-evaluation.md)). Os projetos do GitHub citados ali são referência de estudo: copiar código, pesos ou dados deles passa pela licença de cada um e por uma ADR.
 
 ## UI/UX
@@ -118,7 +127,7 @@ A pesquisa de um spike com resposta longa fica em `docs/spikes/`, linkada na iss
 ## Skills e agentes do projeto (`.claude/`)
 
 - **Angular:** a skill `angular-conventions` é o roteiro de todo trabalho no frontend (tela nova, mudança, avaliação de UI/UX, revisão). O agente `dev-angular` a carrega, para avaliar telas em paralelo (um agente por tela), implementar ou revisar.
-- **FastAPI:** a skill `fastapi-conventions` é o roteiro de todo trabalho no backend (use case, adapter, endpoint, worker, revisão). O agente `dev-backend` a carrega.
+- **FastAPI:** a skill `fastapi-conventions` é o roteiro de todo trabalho no backend (use case, adapter, endpoint, SSE, fila e processo de inferência, revisão). O agente `dev-backend` a carrega.
 - **ML:** a skill `ml-conventions` é o roteiro de dataset, pré-processamento, treino, avaliação e do adapter do recognizer. O agente `dev-ml` a carrega.
 - Os agentes compartilham um hook (`.claude/hooks/block-merge-in-agent.sh`) que barra `gh pr merge` e `git push` forçado.
 

@@ -24,7 +24,7 @@ Você escreve, roda e revisa o código de ML do projeto (`ml/`) e os adapters do
 | Dataset (em aberto), classes (em aberto; todas precisam existir no KanjiVG), métricas do reconhecimento e da avaliação da ordem, diferença entre canvas e dataset | [ARCHITECTURE.md, seção 7](../../../docs/ARCHITECTURE.md#7-dataset-e-treinamento) |
 | Qualidade do modelo medida num split fixo, antes e depois | `CLAUDE.md`, "Testes" |
 | Nada de dataset nem pesos no git; conferir a licença | `CLAUDE.md`, "Convenções de código" |
-| O modelo e as referências do KanjiVG carregados uma vez no processo de inferência, fora do event loop; uma inferência por vez no início; quantidade de threads | [ADR 0005](../../../docs/adr/0005-asynchronous-recognition-with-queue-and-workers.md) e [ADR 0011](../../../docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md) |
+| O modelo e as referências do KanjiVG carregados uma vez no processo de inferência (`ProcessPoolExecutor` com `spawn`, carga no `initializer`), fora do event loop; uma inferência por vez no início; quantidade de threads; o que entra e sai do processo é serializável por pickle | [ADR 0005](../../../docs/adr/0005-asynchronous-recognition-with-queue-and-workers.md), [ADR 0011](../../../docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md) e [ADR 0019](../../../docs/adr/0019-in-memory-job-queue-with-one-inference-process.md) |
 | Idioma: código em inglês, documentação (inclusive o `docs/MODEL.md`) em português | `CLAUDE.md`, "Idioma" |
 
 ## Referências (leia quando o passo pedir)
@@ -53,11 +53,13 @@ Você escreve, roda e revisa o código de ML do projeto (`ml/`) e os adapters do
 
 ## Inferência
 
-O `adapters/outbound/recognizer/` do backend implementa o port `KanjiRecognizer` com o `kanjilens_ml`: recebe o desenho (traços) e carrega a versão do modelo uma vez, em modo `eval()`, roda dentro de `torch.inference_mode()`, aplica **a mesma** função de pré-processamento do treino e devolve `Prediction`s do domínio (kanji + confiança) para o top-K. Ele se recusa a carregar pesos cuja lista de classes ou versão de pré-processamento não bate com o código. No modo `ordered`, o adapter do port de avaliação da ordem compara os traços com o KanjiVG (módulo puro, sem PyTorch; ADR 0012). Um runtime exportado (ONNX Runtime, OpenVINO) só entra depois de a ADR do benchmark escolhê-lo e com a paridade numérica conferida contra o PyTorch.
+O `adapters/outbound/recognizer/` do backend implementa o port `KanjiRecognizer` com o `kanjilens_ml`: recebe o desenho (traços) e carrega a versão do modelo uma vez, em modo `eval()`, roda dentro de `torch.inference_mode()`, aplica **a mesma** função de pré-processamento do treino e devolve `Prediction`s do domínio (kanji + confiança) para o top-K. Ele se recusa a carregar pesos cuja lista de classes ou versão de pré-processamento não bate com o código. No modo `ordered`, o adapter do port de avaliação da ordem compara os traços com o KanjiVG (módulo puro, sem PyTorch; ADR 0012). Os dois rodam **no processo de inferência** (ADR 0019): o modelo e o KanjiVG são carregados no `initializer` do pool, e o que volta ao processo da API são tipos simples, nunca tensores. Um runtime exportado (ONNX Runtime, OpenVINO) só entra depois de a ADR do benchmark escolhê-lo e com a paridade numérica conferida contra o PyTorch.
 
 ## Antes de dizer que terminou
 
-Rode os testes de ML e a avaliação definidos na ADR de ferramentas da etapa 1 (vão estar listados no `CLAUDE.md`, "Comandos").
+**Documentos em dia:** atualize no mesmo PR o que a mudança afetou (`CLAUDE.md`, "Documentos nascem com o assunto").
+
+Rode os comandos do `CLAUDE.md`, "Comandos": `ruff check` e `ruff format --check` na raiz, e `mypy`, `pytest` e `lint-imports` com `--directory ml`. O `pytest` já roda o teste de arquitetura (os contratos do `ml/pyproject.toml`). Mudou o modelo, o pré-processamento ou a avaliação da ordem? Rode também a avaliação no split de teste fixo (`CLAUDE.md`, "Testes").
 
 - **Dataset, GPU ou dependências não disponíveis:** diga isso e não afirme resultados.
 

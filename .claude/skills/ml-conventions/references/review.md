@@ -4,7 +4,7 @@ Use ao revisar um PR com código de ML (ou o adapter do recognizer no backend) e
 
 ## O que a CI já pega (não gaste a revisão nisso)
 
-Formatter, linter, testes e o teste de arquitetura, quando existirem (ADR de ferramentas da etapa 1). Se um deles falhou na CI, a revisão aponta o job; não reexplica a regra.
+Ruff (lint e formatação), mypy strict, pytest e o teste de arquitetura (os contratos do Import Linter; ADRs 0014 e 0018), no Linux e no Windows. A CI não roda a avaliação do modelo: os números vêm no PR. Se um deles falhou na CI, a revisão aponta o job; não reexplica a regra.
 
 ## O que só a revisão pega
 

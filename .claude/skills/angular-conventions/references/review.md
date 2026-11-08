@@ -8,7 +8,7 @@ Build, checagem de tipos, testes, linter, a regra de i18n e o teste de arquitetu
 
 ## Avaliar uma tela (UI/UX)
 
-Abra a tela num viewport de celular (360×800, com touch) e num de computador **e** leia o código. Prints automatizados entram quando a ferramenta de teste no navegador for escolhida na ADR de ferramentas da etapa 3; até lá, diga como olhou. Do mais grave ao menos:
+Abra a tela num viewport de celular (360×800, com touch) e num de computador **e** leia o código. Prints automatizados entram quando uma ferramenta de teste no navegador for escolhida numa ADR (a [ADR 0017](../../../../docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md) não escolheu nenhuma); até lá, diga como olhou. Do mais grave ao menos:
 
 1. **O canvas é o centro:** é o maior elemento, cabe inteiro no celular sem rolar, e "Limpar" e "Reconhecer" ficam logo abaixo, ao alcance do polegar (Nielsen 8; Harley, NN/g).
 2. **Desenhar funciona no celular:** o traço não rola nem dá zoom na página, não sai borrado e continua se o dedo sair do canvas (`style.md`, "Canvas e touch").
@@ -42,7 +42,7 @@ Separe o que viu na tela do que leu no código, e diga o que não deu para ver (
 - [ ] O canvas guarda o desenho como lista de traços (pontos na ordem do pointer) e envia isso com o `stroke_order_mode`; nada de PNG nem de normalização no frontend (ADR 0012).
 - [ ] O seletor de modo é um grupo de opções com rótulo visível, e o resultado da avaliação da ordem aparece em texto, não só em cor (`docs/UI-UX.md`, padrões propostos).
 
-**Fluxo assíncrono (ADR 0005)**
+**Fluxo assíncrono (ADRs 0005 e 0020)**
 - [ ] Todo estado do job aparece na tela: `queued`, `processing`, `completed`, `failed`, mais o `503` (fila cheia) e erro de rede.
 - [ ] A conexão SSE é fechada no destroy; o polling de `GET /api/recognitions/{id}` assume quando o SSE cai.
 - [ ] Um segundo "Recognize" com um job pendente não deixa dois streams abertos.
