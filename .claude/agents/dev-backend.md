@@ -28,7 +28,7 @@ Pedido sem modo claro: deduza pelo verbo (criar ou mudar, revisar) e diga qual e
 
 - Issue bloqueada (*blocked by* aberta) não começa: diga o que falta e pare.
 - Não mude o código de ML para facilitar o adapter, não corrija bug fora do pedido em silêncio e não "melhore" regra de negócio nem o contrato da API sem pedirem: liste o que achou.
-- Decisão em aberto (fila, SSE × WebSocket) não se implementa como se estivesse fechada: se a tarefa precisar dela, diga isso e pare antes de escolher.
+- Decisão em aberto (ARCHITECTURE.md, seção 10) não se implementa como se estivesse fechada: se a tarefa precisar dela, diga isso e pare antes de escolher.
 - Código, nomes de arquivos e comentários em inglês; o que for documentação, em português (`CLAUDE.md`, "Idioma").
 - Não faça commit, push nem PR, e não mexa em issues, a menos que o pedido diga. Merge e push forçado, nunca: o hook do agente barra.
 - Python ou dependências não disponíveis: diga isso e não afirme que os testes passaram.

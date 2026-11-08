@@ -42,7 +42,7 @@ Recognition uses a compact 2D CNN trained with PyTorch, which does not depend on
 2. The frontend sends the strokes (each one a list of points, in drawing order) and the chosen mode to the API.
 3. The API creates a `job_id`, queues the job, and replies right away. The HTTP request does not stay open while the model runs.
 4. The inference worker picks up the job and runs the model; in the stroke-order mode it also checks the strokes against the KanjiVG reference. The model and the references are loaded once, not once per request.
-5. The backend pushes the result to the frontend (SSE or WebSocket).
+5. The backend pushes each job state to the frontend over SSE (Server-Sent Events), with polling as a fallback.
 6. The frontend shows the top-K predictions with their confidence and, in the stroke-order mode, which strokes are out of order. Tapping a candidate opens it in an external dictionary (Takoboto by default; the user can pick another one).
 
 ```text
@@ -52,7 +52,7 @@ Recognition uses a compact 2D CNN trained with PyTorch, which does not depend on
  Angular frontend ──REST──▶ FastAPI ──▶ Queue ──▶ Worker ──▶ 2D CNN
        ▲                                  (+ stroke-order check vs KanjiVG)
        │                                                  │
-       └──────────── SSE / WebSocket ◀── Job results ◀────┘
+       └──────────── SSE ─────────── ◀── Job results ◀────┘
 ```
 
 ## Tech stack
@@ -60,9 +60,9 @@ Recognition uses a compact 2D CNN trained with PyTorch, which does not depend on
 | Layer | Technologies |
 |---|---|
 | Frontend | Angular, TypeScript, HTML Canvas API |
-| Backend | Python, FastAPI, REST, SSE or WebSocket |
+| Backend | Python, FastAPI, REST, SSE |
 | Machine Learning | PyTorch (training), 2D CNN; stroke-order check against KanjiVG; CPU inference runtime chosen by benchmark (PyTorch / OpenVINO / ONNX Runtime) |
-| Queue | `asyncio.Queue` first; Redis + Celery/RQ if needed |
+| Queue | Bounded in-memory `asyncio.Queue` and one inference process (no Redis on the Windows laptop) |
 | Deployment | The school's laptop (Dell Inspiron 3501, i7-1165G7, 16 GB, Windows), run directly without Docker, accessed over the LAN |
 
 ## API (planned)
@@ -128,8 +128,6 @@ See the full checklist in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-escopo-d
 
 | Topic | Options | Current direction |
 |---|---|---|
-| Job queue | `asyncio.Queue` / Redis + Celery or RQ | Start with `asyncio.Queue`, move to Redis when needed |
-| Result notification | SSE / WebSocket | Leaning SSE (server → client only) |
 | Dataset | ETL8G / ETL9G | Public offline handwritten kanji images (license to be confirmed) |
 | Inference runtime | PyTorch / OpenVINO / ONNX Runtime (CPU), FP32 or INT8 | Decided by benchmarks on the school laptop |
 | Number of classes | A few hundred → 2,136 Jōyō kanji | Start small, then expand |

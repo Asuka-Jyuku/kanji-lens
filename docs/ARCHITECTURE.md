@@ -42,7 +42,7 @@ flowchart LR
     queue --> inf["Processo de inferência"]
     inf --> model["CNN 2D<br/>+ avaliação da ordem (KanjiVG, no ordered)"]
     inf --> store[("Resultados dos jobs")]
-    store -- "SSE (ou WebSocket)" --> fe
+    store -- "SSE" --> fe
 ```
 
 ### 2.1 Frontend
@@ -84,7 +84,7 @@ Funcionalidades:
 
 ### 2.2 Backend
 
-**Stack:** Python, FastAPI, REST, SSE ou WebSocket ([ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md)).
+**Stack:** Python, FastAPI, REST e SSE ([ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md), [ADR 0020](adr/0020-result-notification-by-server-sent-events.md)).
 
 O processamento é assíncrono: o servidor não mantém a requisição HTTP original aberta enquanto o modelo executa a inferência ([ADR 0005](adr/0005-asynchronous-recognition-with-queue-and-workers.md)).
 
@@ -269,10 +269,10 @@ flowchart TB
 | `application/use_cases/` | Um use case por ação (`SubmitRecognition`, `GetRecognition`, `ProcessRecognition`) | `domain`, `application/ports` |
 | `application/ports/` | As interfaces de que os use cases precisam (`KanjiRecognizer`, `StrokeOrderEvaluator`, `JobQueue`, `JobRepository`, `ResultNotifier`) | `domain` |
 | `adapters/inbound/` | Rotas do FastAPI e schemas Pydantic de request/response, o endpoint SSE, o consumidor da fila que chama `ProcessRecognition` | `application`, `domain`, FastAPI |
-| `adapters/outbound/` | Implementações dos ports: recognizer em PyTorch, avaliador da ordem com o KanjiVG, `asyncio.Queue` (depois Redis), armazenamento dos jobs em memória, notifier SSE | `application/ports`, `domain`, `kanjilens_ml`, PyTorch, Redis… |
+| `adapters/outbound/` | Implementações dos ports: recognizer em PyTorch (rodando no processo de inferência), avaliador da ordem com o KanjiVG, `asyncio.Queue`, armazenamento dos jobs em memória, notifier SSE | `application/ports`, `domain`, `kanjilens_ml`, PyTorch |
 | `bootstrap/` | Composition root: monta os adapters, injeta nos use cases e cria o app FastAPI | tudo |
 
-As duas decisões em aberto do backend (fila e notificação) são **adapters outbound atrás de um port**: trocar `asyncio.Queue` por Redis, ou SSE por WebSocket, substitui um adapter e a ligação em `bootstrap/`, sem mexer nos use cases.
+A fila e a notificação são **adapters atrás de um port** ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md), [ADR 0020](adr/0020-result-notification-by-server-sent-events.md)): trocar a fila em memória por uma persistente, ou o SSE por outro canal, substitui um adapter e a ligação em `bootstrap/`, sem mexer nos use cases.
 
 ### 3.2 Frontend (`frontend/src/app/`)
 
@@ -302,16 +302,19 @@ flowchart TB
     inf --> results[("Resultados dos jobs")]
 ```
 
-### 4.1 Fila de jobs (em aberto)
+### 4.1 Fila de jobs
 
-| | `asyncio.Queue` | Redis + Celery ou RQ |
-|---|---|---|
-| Complexidade | Baixa, sem infraestrutura extra | Exige Redis rodando |
-| Persistência | Em memória; jobs se perdem se o processo cair | Persistente, conforme a configuração |
-| Escala | Um único processo | Workers independentes, escaláveis |
-| Uso indicado | Validar o fluxo assíncrono na primeira versão | Quando a carga ou a robustez exigirem |
+Decidida na [ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md) ([spike](spikes/queue-and-notification.md)):
 
-**Direção atual:** começar com `asyncio.Queue` e migrar para Redis + Celery/RQ quando houver necessidade. Os dois são adapters do port `JobQueue` (seção 3.1).
+- **Fila:** `asyncio.Queue` **limitada** (tamanho inicial 16) no processo da API. Cheia, o `POST /api/recognitions` responde `503` com `Retry-After` e o código `queue_full`.
+- **Consumo:** uma tarefa consumidora pega **um job por vez** e o executa no **processo de inferência**: um `ProcessPoolExecutor(max_workers=1)` com contexto `spawn`, cujo `initializer` carrega o modelo e o KanjiVG uma vez.
+- **Estado dos jobs:** em memória. Os resultados (e os traços) expiram 5 minutos depois de terminados, e o Uvicorn roda com um processo só.
+- **Por que não Redis, RQ ou Celery:**
+  - o Redis não tem versão nativa oficial no Windows;
+  - o worker padrão do RQ depende de `fork()`;
+  - o Celery não suporta Windows.
+
+  Fila persistente só volta com ADR nova.
 
 ### 4.2 Estratégia de inferência
 
@@ -326,8 +329,8 @@ O servidor é o notebook da escola (seção 6.3), com inferência **CPU-first** 
 
 ### 4.3 Pontos de atenção
 
-- **A inferência bloqueia o event loop.** A inferência é CPU-bound. Se o worker rodar como corrotina no mesmo event loop do FastAPI, enquanto ele executa a API para de responder, inclusive as conexões SSE. Com `asyncio.Queue`, a inferência precisa rodar fora do loop (`run_in_executor` com thread ou process pool).
-- **O estado em memória não é compartilhado entre processos.** Com `asyncio.Queue`, a fila e os resultados vivem na memória de um processo. Se o Uvicorn subir com `--workers > 1`, cada processo terá sua própria fila, e o cliente pode consultar ou escutar um processo que não conhece o seu `job_id`. Com `asyncio.Queue`, rode um único processo do Uvicorn. Esse é o principal motivo para migrar para Redis.
+- **A inferência bloqueia o event loop.** A inferência é CPU-bound. Se o worker rodar como corrotina no mesmo event loop do FastAPI, enquanto ele executa a API para de responder, inclusive as conexões SSE. Por isso a inferência roda no processo de inferência, por `run_in_executor` ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md)).
+- **O estado em memória não é compartilhado entre processos.** Com `asyncio.Queue`, a fila e os resultados vivem na memória de um processo. Se o Uvicorn subir com `--workers > 1`, cada processo terá sua própria fila, e o cliente pode consultar ou escutar um processo que não conhece o seu `job_id`. Por isso o Uvicorn roda com um processo só. Precisar de mais de um processo de API seria o motivo para rever a fila (ADR nova).
 - **Threads do runtime.** Por padrão, o PyTorch usa todos os núcleos em cada inferência, e o notebook tem 4 núcleos físicos. Configure as threads explicitamente (`torch.set_num_threads` ou o equivalente do runtime escolhido). Dois workers com quatro threads cada disputam os mesmos núcleos, e mais workers não garantem mais throughput.
 - **O notebook divide a CPU com tudo:** frontend, API, fila e o modelo. Meça o consumo do conjunto, e não só o do modelo. Em carga longa, o notebook pode sofrer throttling térmico.
 
@@ -342,20 +345,22 @@ A comunicação principal é REST. SOAP foi descartado por adicionar complexidad
 | Método | Endpoint | Responsabilidade |
 |---|---|---|
 | `POST` | `/api/recognitions` | Enviar os traços e o modo (`ordered` / `unordered`) para reconhecimento |
-| `GET` | `/api/recognitions/{id}` | Consultar o status de um job |
+| `GET` | `/api/recognitions/{id}` | Consultar o estado de um job (reserva do SSE) |
+| `GET` | `/api/recognitions/{id}/events` | Receber as mudanças de estado do job por SSE ([ADR 0020](adr/0020-result-notification-by-server-sent-events.md)) |
 | `GET` | `/api/health` | Verificar disponibilidade do backend |
 
-### 5.2 Notificação: SSE × WebSocket (em aberto)
+### 5.2 Notificação: SSE
 
-| | SSE | WebSocket |
-|---|---|---|
-| Direção | Servidor → cliente | Bidirecional |
-| Cliente no browser | `EventSource` nativo, reconexão automática | Reconexão manual |
-| Quando faz sentido | Avisar que o job terminou | Progresso detalhado, cancelamento de job, interação contínua |
+Decidida na [ADR 0020](adr/0020-result-notification-by-server-sent-events.md). O caso é de uma via só, uma vez por job, então o canal é o SSE, e não o WebSocket.
 
-**Direção atual:** SSE, porque o fluxo principal é o servidor avisando o cliente. WebSocket passa a valer se surgir a necessidade de comunicação bidirecional. Os dois são adapters do port `ResultNotifier` (backend) e do port `ResultStream` (frontend).
-
-O `GET /api/recognitions/{id}` serve de fallback: se a conexão SSE cair, o frontend consulta o status por polling.
+- **Backend:** `GET /api/recognitions/{id}/events` com o `EventSourceResponse` nativo do FastAPI (que já manda keep-alive a cada 15 s).
+- **Um evento por mudança de estado:**
+  - `event:` é o estado (`queued`, `processing`, `completed` ou `failed`);
+  - `data:` é o **estado completo do job**, no mesmo formato do `GET /api/recognitions/{id}`;
+  - o stream termina no estado final.
+- **Reconexão:** como cada evento é completo, quem reconecta recebe o estado atual, sem `Last-Event-ID`.
+- **Frontend:** o adapter `SseResultStream` usa o `EventSource` nativo e fecha no estado final. Se o SSE falhar repetidamente, o frontend consulta o `GET /api/recognitions/{id}` por polling.
+- **Ports:** `ResultNotifier` (backend) e `ResultStream` (frontend).
 
 ---
 
@@ -565,7 +570,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [ ] Implementar o processamento assíncrono.
 - [ ] Integrar o modelo e a avaliação da ordem no processo de inferência.
 - [ ] Armazenar os resultados.
-- [ ] Implementar a notificação via SSE ou WebSocket.
+- [ ] Implementar a notificação por SSE, com o polling de reserva.
 
 ### Etapa 3: Frontend
 
@@ -583,7 +588,6 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [ ] Configurar a execução local no notebook da escola, com o frontend em build estático.
 - [ ] Configurar o acesso pela rede Wi-Fi.
 - [ ] Configurar a comunicação entre frontend e backend.
-- [ ] Avaliar o uso de Redis.
 - [ ] Testar 3–5 alunos enviando numa janela curta e 10 clientes como estresse.
 - [ ] Medir CPU, memória, temperatura e latência p50/p95 no notebook.
 
@@ -603,8 +607,8 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Execução | Local / rede local, sem nuvem | Decidido — [ADR 0007](adr/0007-local-execution-over-the-lan.md) |
 | Como roda no notebook | Direto, sem Docker, no Windows: ambiente Python isolado, build estático e serviço do sistema | Decidido — [ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md) |
 | Branches e releases | `main` + `develop`, CHANGELOG por release | Decidido — [ADR 0008](adr/0008-git-flow-and-changelog-by-release.md) |
-| Notificação do resultado | SSE ou WebSocket | Em aberto (tendência: SSE) |
-| Fila | `asyncio.Queue` ou Redis + Celery/RQ | Em aberto (começar com `asyncio.Queue`) |
+| Notificação do resultado | SSE nativo do FastAPI, estado completo por evento, polling de reserva | Decidido — [ADR 0020](adr/0020-result-notification-by-server-sent-events.md) |
+| Fila | `asyncio.Queue` limitada (16) + um processo de inferência (`ProcessPoolExecutor`, `spawn`); jobs em memória com expiração | Decidido — [ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md) |
 | Dataset do reconhecimento | ETL8G / ETL9G em avaliação (licença a confirmar) | Em aberto |
 | Algoritmo de avaliação da ordem | Bipartite com hipóteses de união e quebra; todos os candidatos avaliados; só anota, sem reordenar; formato dos pontos `[x, y, t]` | Decidido — [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md) |
 | Modo padrão da interface | "Não importa" (`unordered`) | Decidido — [ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md) (atualização) |
