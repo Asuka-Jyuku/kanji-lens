@@ -5,6 +5,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Publicação e documentação
+- **Fila e notificação decididas** (spike em [docs/spikes/queue-and-notification.md](docs/spikes/queue-and-notification.md), #19, #20):
+  - **fila** ([ADR 0019](docs/adr/0019-in-memory-job-queue-with-one-inference-process.md)): `asyncio.Queue` limitada; os jobs rodam um por vez num processo de inferência separado, e a API segue respondendo enquanto o modelo trabalha. Sem Redis, que não roda nativo no Windows;
+  - **notificação** ([ADR 0020](docs/adr/0020-result-notification-by-server-sent-events.md)): o resultado chega por SSE, com consulta periódica (polling) de reserva.
 - **CI no GitHub Actions** ([ADR 0018](docs/adr/0018-ci-with-github-actions-and-a-single-required-check.md)), em todo PR para o `develop` ou a `main`:
   - **Python:** lint, tipos, testes e arquitetura do ML e do backend, no Linux e no Windows;
   - **frontend:** lint, formatação, testes e build;

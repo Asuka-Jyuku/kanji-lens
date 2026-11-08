@@ -57,3 +57,5 @@ As ADRs 0002, 0003 e 0005 a 0007 foram escritas depois das decisões, a partir d
 | [0016](0016-stroke-order-check-by-bipartite-matching-and-capture-format.md) | Avaliação da ordem por correspondência bipartite, formato dos traços e uso do KanjiVG | Aceita |
 | [0017](0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md) | Ferramentas do frontend: Angular 22, @angular/localize, Vitest, ESLint com boundaries | Aceita |
 | [0018](0018-ci-with-github-actions-and-a-single-required-check.md) | CI no GitHub Actions, com um check obrigatório só | Aceita |
+| [0019](0019-in-memory-job-queue-with-one-inference-process.md) | Fila em memória (`asyncio.Queue`) com um processo de inferência | Aceita |
+| [0020](0020-result-notification-by-server-sent-events.md) | Notificação do resultado por SSE, com polling como reserva | Aceita |

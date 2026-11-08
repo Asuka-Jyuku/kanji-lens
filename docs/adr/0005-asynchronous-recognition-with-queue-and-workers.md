@@ -28,3 +28,4 @@ Processamos o reconhecimento de forma assíncrona: `POST /api/recognitions` cria
   - o "modelo carregado uma vez por worker" passa a ser **o modelo e as referências do KanjiVG carregados uma vez no processo de inferência**, separado do event loop;
   - a execução começa com uma inferência ativa por vez;
   - dois processos de worker duplicam o modelo na RAM, então mais workers só entram depois de medir.
+- **Atualização de 2026-11-08 ([ADR 0019](0019-in-memory-job-queue-with-one-inference-process.md) e [ADR 0020](0020-result-notification-by-server-sent-events.md)):** a fila é `asyncio.Queue` limitada, e a inferência roda num processo separado (`ProcessPoolExecutor` de 1 processo). O resultado volta por SSE, com o `GET /api/recognitions/{id}` como reserva. Redis, RQ e Celery ficam de fora no notebook Windows.
