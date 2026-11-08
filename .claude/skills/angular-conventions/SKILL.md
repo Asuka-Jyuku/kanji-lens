@@ -34,7 +34,7 @@ Você escreve e revisa o frontend do projeto (`frontend/`). O que vale **sempre*
 
 1. **Issue e branch** como em todo PR (`CLAUDE.md`, "Git / commits").
 2. **ADR antes do código** quando a funcionalidade trouxer dependência nova, padrão de UI novo ou desvio de um padrão registrado (`CLAUDE.md`, "Decisões de arquitetura").
-3. **Domínio primeiro:** o modelo (`Prediction`, `RecognitionJob`) e qualquer regra como função pura em `domain/`, testada sem `TestBed`.
+3. **Domínio primeiro:** o modelo (`Drawing`, `StrokeOrderMode`, `Prediction`, `StrokeOrderEvaluation`, `RecognitionJob`) e qualquer regra como função pura em `domain/`, testada sem `TestBed`.
 4. **Port e use case** em `application/`: o port como classe abstrata (`RecognitionGateway`, `ResultStream`), o use case/facade expondo signals para a tela.
 5. **Adapter** em `infrastructure/` implementando o port (`HttpRecognitionGateway`, `SseResultStream`), ligado nos providers de `app.config.ts`.
 6. **Componente** em `presentation/`, falando só com o use case, na forma de `references/style.md`.

@@ -39,9 +39,9 @@ flowchart LR
     clients["Celulares / desktops<br/>(mesmo Wi-Fi)"] --> fe["Frontend Angular<br/>(build estático)"]
     fe -- "REST: POST /api/recognitions" --> api["FastAPI"]
     api --> queue[["Fila de jobs"]]
-    queue --> w1["Worker 1"] & w2["Worker 2"]
-    w1 & w2 --> model["CNN 2D<br/>+ avaliação da ordem (KanjiVG, no ordered)"]
-    w1 & w2 --> store[("Resultados dos jobs")]
+    queue --> inf["Processo de inferência"]
+    inf --> model["CNN 2D<br/>+ avaliação da ordem (KanjiVG, no ordered)"]
+    inf --> store[("Resultados dos jobs")]
     store -- "SSE (ou WebSocket)" --> fe
 ```
 
@@ -58,6 +58,7 @@ Funcionalidades:
 - Botão para enviar o desenho.
 - Indicador de processamento.
 - Lista dos kanjis previstos, com a confiança de cada um.
+- Verbete do kanji escolhido (leituras, significados). Ainda em aberto (seção 10).
 
 ```text
 ┌──────────────────────────────┐
@@ -214,6 +215,8 @@ O `ordered` só acrescenta a avaliação.
 
 Esses projetos **não são dependências aprovadas**. Copiar código, pesos ou dados deles passa pela licença de cada um (há LGPL entre eles; o KanjiLens é MIT) e por uma ADR.
 
+---
+
 ## 3. Camadas: Clean Architecture e ports and adapters
 
 Backend e frontend seguem Clean Architecture com ports and adapters (hexagonal), em camadas ([ADR 0004](adr/0004-clean-and-hexagonal-architecture.md)). **As dependências apontam para dentro**: uma camada interna nunca importa uma externa.
@@ -223,7 +226,7 @@ flowchart TB
     subgraph adapters["Adapters (código de framework)"]
         direction LR
         inbound["Inbound<br/>rotas HTTP, SSE, consumidor da fila"]
-        outbound["Outbound<br/>recognizer (PyTorch), fila,<br/>armazenamento dos jobs, notifier"]
+        outbound["Outbound<br/>recognizer (PyTorch), avaliador da ordem (KanjiVG),<br/>fila, armazenamento dos jobs, notifier"]
     end
     subgraph application["Application"]
         usecases["Use cases<br/>SubmitRecognition, GetRecognition,<br/>ProcessRecognition"]
@@ -258,7 +261,7 @@ As duas decisões em aberto do backend (fila e notificação) são **adapters ou
 
 | Camada | O que contém | Pode importar |
 |---|---|---|
-| `domain/` | Modelos (`Prediction`, `RecognitionJob`) e funções puras | nada do Angular |
+| `domain/` | Modelos (`Drawing` feito de traços, `StrokeOrderMode`, `Prediction`, `StrokeOrderEvaluation`, `RecognitionJob`) e funções puras | nada do Angular |
 | `application/` | Use cases / facades (`RecognizeDrawing`) e ports como classes abstratas usadas como token de DI (`RecognitionGateway`, `ResultStream`) | `domain` |
 | `infrastructure/` | Implementações dos ports: `HttpRecognitionGateway` (`HttpClient`), `SseResultStream` (`EventSource`) | `application`, `domain`, Angular |
 | `presentation/` | Componentes, páginas e rotas: o canvas e a tela de resultados | `application`, `domain`, Angular |
@@ -267,7 +270,7 @@ Os adapters são ligados aos ports nos providers de `app.config.ts`. Componente 
 
 ### 3.3 ML (`ml/src/kanjilens_ml/`)
 
-O código de ML é uma biblioteca usada em dois lugares: os scripts de treino em `ml/` e o adapter do recognizer no backend. **O pré-processamento existe uma vez só**, em `kanjilens_ml/preprocessing/`, e os dois lados o importam. Ele gera, a partir da mesma lista de traços, a imagem que a CNN recebe e os traços normalizados que a avaliação da ordem usa. `kanjilens_ml/models/` tem a CNN 2D. A avaliação da ordem é um módulo puro, sem PyTorch (proposta: `kanjilens_ml/stroke_order/`), que compara os traços com o KanjiVG. Duas implementações paralelas divergiriam, e o modelo erraria calado em produção (*train/serve skew*).
+O código de ML é uma biblioteca usada em dois lugares: os scripts de treino em `ml/` e os adapters outbound do backend (o recognizer e o avaliador da ordem). **O pré-processamento existe uma vez só**, em `kanjilens_ml/preprocessing/`, e os dois lados o importam. Ele gera, a partir da mesma lista de traços, a imagem que a CNN recebe e os traços normalizados que a avaliação da ordem usa. `kanjilens_ml/models/` tem a CNN 2D. A avaliação da ordem é um módulo puro, sem PyTorch (proposta: `kanjilens_ml/stroke_order/`), que compara os traços com o KanjiVG. Duas implementações paralelas divergiriam, e o modelo erraria calado em produção (*train/serve skew*).
 
 ---
 
@@ -307,7 +310,7 @@ O servidor é o notebook da escola (seção 6.3), com inferência **CPU-first** 
 ### 4.3 Pontos de atenção
 
 - **A inferência bloqueia o event loop.** A inferência é CPU-bound. Se o worker rodar como corrotina no mesmo event loop do FastAPI, enquanto ele executa a API para de responder, inclusive as conexões SSE. Com `asyncio.Queue`, a inferência precisa rodar fora do loop (`run_in_executor` com thread ou process pool).
-- **O estado em memória não é compartilhado entre processos.** Com `asyncio.Queue`, a fila e os resultados vivem na memória de um processo. Se o Uvicorn subir com `--workers > 1`, cada processo terá sua própria fila, e o cliente pode consultar ou escutar um processo que não conhece o seu `job_id`. Na opção 1, rode um único processo do Uvicorn. Esse é o principal motivo para migrar para Redis.
+- **O estado em memória não é compartilhado entre processos.** Com `asyncio.Queue`, a fila e os resultados vivem na memória de um processo. Se o Uvicorn subir com `--workers > 1`, cada processo terá sua própria fila, e o cliente pode consultar ou escutar um processo que não conhece o seu `job_id`. Com `asyncio.Queue`, rode um único processo do Uvicorn. Esse é o principal motivo para migrar para Redis.
 - **Threads do runtime.** Por padrão, o PyTorch usa todos os núcleos em cada inferência, e o notebook tem 4 núcleos físicos. Configure as threads explicitamente (`torch.set_num_threads` ou o equivalente do runtime escolhido). Dois workers com quatro threads cada disputam os mesmos núcleos, e mais workers não garantem mais throughput.
 - **O notebook divide a CPU com tudo:** frontend, API, fila e o modelo. Meça o consumo do conjunto, e não só o do modelo. Em carga longa, o notebook pode sofrer throttling térmico.
 
@@ -357,9 +360,10 @@ O celular é apenas cliente. Toda a inferência roda no servidor.
 
 - **Bind dos serviços em `0.0.0.0`.** Por padrão, tanto o `ng serve` quanto o Uvicorn escutam só em `localhost` e ficam invisíveis para o celular. Use `ng serve --host 0.0.0.0` (só no desenvolvimento) e `uvicorn ... --host 0.0.0.0`.
 - **Frontend em produção é build estático.** O servidor de desenvolvimento do Angular não é configuração de deploy ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)). Como servir o build (pelo próprio FastAPI ou por um servidor estático) fica para o `docs/RUNNING.md`.
-- **CORS.** O frontend (porta 4200) e a API (porta 8000) são origens diferentes. O FastAPI precisa liberar a origem do frontend, e só ela.
-- **URL da API no frontend.** Se o frontend chamar `http://localhost:8000`, no celular `localhost` é o próprio celular. A URL da API precisa usar o IP do servidor, ou o Angular pode usar um proxy para a API (assim tudo passa pela porta 4200 e o CORS deixa de ser necessário).
-- **Firewall.** Liberar as portas 4200 e 8000 na rede local.
+- **CORS.** No desenvolvimento, o frontend (porta 4200) e a API (porta 8000) são origens diferentes, e o FastAPI precisa liberar a origem do frontend, e só ela. Em produção, servir o build estático **na mesma origem da API** elimina o CORS. O build pode ser servido pelo próprio FastAPI ou por um proxy na frente dos dois; a escolha fica para o `docs/RUNNING.md`.
+- **URL da API no frontend.** Se o frontend chamar `http://localhost:8000`, no celular `localhost` é o próprio celular. Use uma URL relativa (`/api`): no desenvolvimento, o proxy do `ng serve` encaminha para a API; em produção, a mesma origem resolve.
+- **Firewall.** Liberar na rede local só as portas em uso: 4200 e 8000 no desenvolvimento, e a porta única de produção.
+- **Acesso pelo celular.** O aluno chega pela URL do servidor; a proposta é um QR Code na parede da escola com essa URL, o que depende do IP reservado (abaixo).
 - **IP fixo.** O IP do servidor pode mudar a cada conexão ao roteador. Reserve o IP no DHCP do roteador para não precisar reconfigurar.
 
 ### 6.2 Exposição na rede local
@@ -413,7 +417,7 @@ O projeto usa um dataset público de kanjis manuscritos. Critérios de escolha:
 
 Candidatos a avaliar (licenças e números ainda a confirmar nas fontes oficiais):
 
-- **ETL Character Database (AIST)**, em especial o ETL8G e o ETL9B: kanjis modernos escritos à mão por centenas de pessoas. É a referência mais usada para esse problema.
+- **ETL Character Database (AIST)**, em especial o ETL8G e o ETL9G (tons de cinza) e as variantes binárias (ETL8B2, ETL9B): kanjis modernos escritos à mão por centenas de pessoas. É a referência mais usada para esse problema.
 - **Kuzushiji-Kanji**: tem muitas classes, mas é escrita cursiva clássica, bem diferente da escrita moderna. Tende a não servir como base principal.
 
 **Dados por parte** ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)):
@@ -520,14 +524,14 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 ### Etapa 1: Machine Learning
 
 - [x] Avaliar famílias de modelos e runtimes ([spike](spikes/model-and-runtime-evaluation.md)) e definir o modo `ordered` como avaliação da ordem ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
-- [ ] Pesquisar e selecionar o dataset *offline* (`unordered`) e a quantidade de classes.
+- [ ] Pesquisar e selecionar o dataset e a quantidade de classes.
 - [ ] Escolher o algoritmo de avaliação da ordem e o formato de captura dos pontos.
-- [ ] Criar o pré-processamento compartilhado (imagem e sequência).
+- [ ] Criar o pré-processamento compartilhado (imagem e traços normalizados).
 - [ ] Implementar e treinar a CNN 2D compacta.
 - [ ] Implementar a avaliação da ordem contra o KanjiVG (`ordered`).
 - [ ] Avaliar o reconhecimento (Top-1/Top-5) e a avaliação da ordem (conjunto com ordem certa e errada).
-- [ ] Medir no notebook da escola, depois de o modelo e o código ficarem prontos (runtimes, resolução, INT8, concorrência).
 - [ ] Implementar inferência top-K.
+- [ ] Medir no notebook da escola, depois de o modelo e o código ficarem prontos (runtimes, resolução, INT8, concorrência).
 
 ### Etapa 2: Backend
 
@@ -579,6 +583,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Dataset do reconhecimento | ETL8G / ETL9G em avaliação (licença a confirmar) | Em aberto |
 | Algoritmo de avaliação da ordem | *DP matching*, bipartite matching / cube search ou avaliação incremental com contexto; quantos candidatos avaliar; se só anota ou também reordena | Em aberto |
 | Modo padrão da interface | `ordered` ou `unordered` | Em aberto |
+| Verbete do kanji escolhido | Dicionário com dados abertos locais (KANJIDIC2 / JMdict, licença a confirmar) e um link externo como ação secundária, ou só o link | Em aberto (proposta: dados locais, porque não há saída de rede) |
 | Runtime, resolução, precisão e concorrência de produção | PyTorch / OpenVINO / ONNX Runtime CPU; 64–128 px; FP32 / INT8; 1 ou 2 execuções | Em aberto (benchmark no notebook) |
 | Quantidade de classes | Centenas → 2.136 (Jōyō) | Em aberto |
 | Ferramentas de cada stack | Gerenciador de pacotes, linter, test runner | Em aberto — uma ADR no começo de cada etapa |

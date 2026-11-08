@@ -39,6 +39,8 @@ Separe o que viu na tela do que leu no código, e diga o que não deu para ver (
 - [ ] Pointer Events, `touch-action: none`, `devicePixelRatio` e pointer capture no lugar (`style.md`).
 - [ ] O desenho vai como foi desenhado: nada de recortar, redimensionar, inverter ou normalizar no frontend.
 - [ ] Limpar o canvas também limpa os resultados e qualquer job pendente.
+- [ ] O canvas guarda o desenho como lista de traços (pontos na ordem do pointer) e envia isso com o `stroke_order_mode`; nada de PNG nem de normalização no frontend (ADR 0012).
+- [ ] O seletor de modo é um grupo de opções com rótulo visível, e o resultado da avaliação da ordem aparece em texto, não só em cor (`docs/UI-UX.md`, padrões propostos).
 
 **Fluxo assíncrono (ADR 0005)**
 - [ ] Todo estado do job aparece na tela: `queued`, `processing`, `completed`, `failed`, mais o `503` (fila cheia) e erro de rede.

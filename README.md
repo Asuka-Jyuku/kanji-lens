@@ -19,14 +19,13 @@ Recognition uses a compact 2D CNN trained with PyTorch, which does not depend on
 ```text
 ┌──────────────────────────────┐
 │          KanjiLens           │
-│                              │
+│   Stroke order:              │
+│   [ matters | doesn't ]      │
 │   ┌──────────────────────┐   │
 │   │                      │   │
 │   │          日          │   │
 │   │                      │   │
 │   └──────────────────────┘   │
-│   Stroke order:              │
-│   [ matters | doesn't ]      │
 │                              │
 │   [Clear]       [Recognize]  │
 │                              │
@@ -80,6 +79,7 @@ Example of a completed job:
 {
   "job_id": "abc123",
   "status": "completed",
+  "stroke_order_mode": "unordered",
   "predictions": [
     { "kanji": "日", "confidence": 0.81 },
     { "kanji": "目", "confidence": 0.12 },
@@ -102,12 +102,12 @@ kanji-lens/
 │       └── presentation/    # Canvas and results view
 ├── backend/                 # FastAPI, ports and adapters
 │   └── src/kanjilens/
-│       ├── domain/          # RecognitionJob, Prediction, JobStatus
+│       ├── domain/          # RecognitionJob, Prediction, JobStatus, Drawing, StrokeOrderMode
 │       ├── application/     # Use cases and ports
-│       ├── adapters/        # Inbound (HTTP, SSE, queue consumer), outbound (recognizer, queue, store)
+│       ├── adapters/        # Inbound (HTTP, SSE, queue consumer), outbound (recognizer, stroke-order checker, queue, store)
 │       └── bootstrap/       # Composition root
 ├── ml/
-│   ├── src/kanjilens_ml/    # Shared preprocessing, models, training, evaluation
+│   ├── src/kanjilens_ml/    # Shared preprocessing, models, training, evaluation, stroke-order check
 │   ├── configs/             # Versioned training configs
 │   ├── notebooks/           # Exploration only
 │   ├── datasets/            # Not in git
@@ -145,10 +145,10 @@ Not available yet. Setup instructions will be added once the first components ar
 
 ## What this project explores
 
-Computer Vision, Deep Learning and CNNs, asynchronous processing, event-driven architecture, REST APIs, real-time communication, concurrency and job queues, and integration between a frontend and an ML model.
+Computer Vision, Deep Learning and CNNs, stroke matching for stroke-order checking, asynchronous processing, event-driven architecture, REST APIs, real-time communication, concurrency and job queues, and integration between a frontend and an ML model.
 
 ## License
 
 The source code is licensed under the [MIT License](LICENSE).
 
-The license covers the code in this repository only. Datasets used for training and trained model weights are not part of the repository and are not covered by it: each dataset keeps its own terms, and weights trained on it may inherit them.
+The license covers the code in this repository only. Datasets used for training and trained model weights are not part of the repository and are not covered by it: each dataset keeps its own terms, and weights trained on it may inherit them. The KanjiVG stroke-order reference data shipped with the app keeps its own license (CC BY-SA 3.0, to be confirmed), with attribution.

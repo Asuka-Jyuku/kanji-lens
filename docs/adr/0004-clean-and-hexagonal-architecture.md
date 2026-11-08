@@ -31,6 +31,7 @@ A tabela completa do que cada camada pode importar está em [ARCHITECTURE.md, se
 - **Na prática:**
   - O domínio só importa a biblioteca padrão (backend) ou nada do Angular (frontend).
   - Pydantic só em `adapters/inbound/http`; PyTorch e `kanjilens_ml` só em `adapters/outbound/recognizer`.
+  - **Atualização de 2026-11-08 ([ADR 0012](0012-ordered-mode-as-stroke-order-evaluation.md)):** o `kanjilens_ml` também entra no adapter outbound do avaliador da ordem (port proposto `StrokeOrderEvaluator`), que não usa PyTorch. O PyTorch continua só no recognizer.
   - Componente nunca injeta `HttpClient`; os adapters são ligados aos ports em `app.config.ts`.
   - `bootstrap/` é o único módulo do backend que conhece adapters concretos.
   - Cada parte ganha um teste de arquitetura (uma regra de import que falha) junto com o primeiro código; a ferramenta é escolhida na ADR de ferramentas da etapa.

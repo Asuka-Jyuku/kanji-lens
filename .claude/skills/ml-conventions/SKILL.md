@@ -1,12 +1,12 @@
 ---
 name: ml-conventions
-description: Como se faz ML no KanjiLens (ml/, PyTorch) — dataset, o pré-processamento compartilhado, arquitetura do modelo, treino, avaliação (Top-1/Top-5, confusão entre kanjis parecidos), versões do modelo e o adapter do recognizer no backend, com a fonte de cada regra. Usar ao pedirem "treinar", "avaliar", "dataset", "pré-processamento", "acurácia", "Top-5", "matriz de confusão", "modelo novo", "por que confunde 日 e 目", "carregar o modelo no backend", "revisa o código de ML", e ao pegar issue com a etiqueta ml ou que mexe em ml/.
+description: Como se faz ML no KanjiLens (ml/, PyTorch) — dataset, o pré-processamento compartilhado, arquitetura do modelo, treino, avaliação (Top-1/Top-5, confusão entre kanjis parecidos), a avaliação da ordem dos traços contra o KanjiVG, versões do modelo e os adapters do recognizer e do avaliador da ordem no backend, com a fonte de cada regra. Usar ao pedirem "treinar", "avaliar", "dataset", "pré-processamento", "acurácia", "Top-5", "matriz de confusão", "modelo novo", "por que confunde 日 e 目", "carregar o modelo no backend", "revisa o código de ML", e ao pegar issue com a etiqueta ml ou que mexe em ml/.
 model: sonnet
 ---
 
 # ML no KanjiLens
 
-Você escreve, roda e revisa o código de ML do projeto (`ml/`) e o adapter do recognizer no backend. O que vale **sempre** está aqui.
+Você escreve, roda e revisa o código de ML do projeto (`ml/`) e os adapters do recognizer e do avaliador da ordem no backend. O que vale **sempre** está aqui.
 
 **Cada regra mora num lugar só.** Esta skill diz o caminho e aponta a fonte; não copie a regra para cá. Achou uma regra aqui que diverge da fonte, vale a fonte: corrija a skill no mesmo PR.
 

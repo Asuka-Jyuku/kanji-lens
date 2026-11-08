@@ -19,14 +19,13 @@ O reconhecimento usa uma CNN 2D compacta treinada em PyTorch, que não depende d
 ```text
 ┌──────────────────────────────┐
 │          KanjiLens           │
-│                              │
+│   Ordem dos traços:          │
+│   [ importa | não importa ]  │
 │   ┌──────────────────────┐   │
 │   │                      │   │
 │   │          日          │   │
 │   │                      │   │
 │   └──────────────────────┘   │
-│   Ordem dos traços:          │
-│   [ importa | não importa ]  │
 │                              │
 │   [Limpar]   [Reconhecer]    │
 │                              │
@@ -80,6 +79,7 @@ Exemplo de tarefa concluída:
 {
   "job_id": "abc123",
   "status": "completed",
+  "stroke_order_mode": "unordered",
   "predictions": [
     { "kanji": "日", "confidence": 0.81 },
     { "kanji": "目", "confidence": 0.12 },
@@ -102,12 +102,12 @@ kanji-lens/
 │       └── presentation/    # Canvas e tela de resultados
 ├── backend/                 # FastAPI, portas e adaptadores
 │   └── src/kanjilens/
-│       ├── domain/          # RecognitionJob, Prediction, JobStatus
+│       ├── domain/          # RecognitionJob, Prediction, JobStatus, Drawing, StrokeOrderMode
 │       ├── application/     # Casos de uso e portas
-│       ├── adapters/        # Inbound (HTTP, SSE, consumidor da fila), outbound (reconhecedor, fila, armazenamento)
+│       ├── adapters/        # Inbound (HTTP, SSE, consumidor da fila), outbound (reconhecedor, avaliador da ordem, fila, armazenamento)
 │       └── bootstrap/       # Composition root
 ├── ml/
-│   ├── src/kanjilens_ml/    # Pré-processamento compartilhado, modelos, treino, avaliação
+│   ├── src/kanjilens_ml/    # Pré-processamento compartilhado, modelos, treino, avaliação, avaliação da ordem
 │   ├── configs/             # Configurações de treino versionadas
 │   ├── notebooks/           # Só exploração
 │   ├── datasets/            # Fora do git
@@ -145,10 +145,10 @@ Ainda não disponível. As instruções serão adicionadas quando os primeiros c
 
 ## O que o projeto explora
 
-Visão Computacional, Deep Learning e CNN, processamento assíncrono, arquitetura orientada a eventos, REST API, comunicação em tempo real, concorrência e filas, e integração entre frontend e modelo de Machine Learning.
+Visão Computacional, Deep Learning e CNN, correspondência entre traços para avaliar a ordem, processamento assíncrono, arquitetura orientada a eventos, REST API, comunicação em tempo real, concorrência e filas, e integração entre frontend e modelo de Machine Learning.
 
 ## Licença
 
 O código-fonte está sob a [licença MIT](LICENSE).
 
-A licença cobre só o código deste repositório. Os datasets usados no treino e os pesos treinados não fazem parte do repositório e não são cobertos por ela: cada dataset mantém os próprios termos, e pesos treinados com ele podem herdá-los.
+A licença cobre só o código deste repositório. Os datasets usados no treino e os pesos treinados não fazem parte do repositório e não são cobertos por ela: cada dataset mantém os próprios termos, e pesos treinados com ele podem herdá-los. Os dados de referência do KanjiVG, usados na avaliação da ordem e distribuídos com a aplicação, mantêm a própria licença (CC BY-SA 3.0, a confirmar), com atribuição.
