@@ -1,0 +1,144 @@
+# CI (ADR 0018). The only required check is the final "CI" job: it passes when every job
+# passed or was skipped because its part did not change, so path filtering never leaves a
+# required check pending.
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changed parts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      # Pull requests run only the parts they touch; pushes and manual runs run everything.
+      python: ${{ github.event_name != 'pull_request' || steps.filter.outputs.python == 'true' }}
+      frontend: ${{ github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true' }}
+      docs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            python:
+              - 'ml/**'
+              - 'backend/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.python-version'
+              - '.github/workflows/ci.yml'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/ci.yml'
+            docs:
+              - '**/*.md'
+              - '.github/scripts/**'
+              - '.github/workflows/ci.yml'
+
+  python:
+    name: Python (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        # The school notebook runs Windows (ADR 0013); Linux is where development happens.
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.7"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Install (Python from .python-version, CPU-only PyTorch)
+        run: uv sync --all-packages --locked
+      - name: Lint and format
+        if: runner.os == 'Linux'
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Types (ML)
+        run: uv run --directory ml mypy
+      - name: Types (backend)
+        run: uv run --directory backend mypy
+      - name: Tests and architecture (ML)
+        run: uv run --directory ml pytest
+      - name: Tests and architecture (backend)
+        run: uv run --directory backend pytest
+
+  frontend:
+    name: Frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Lint (includes the architecture test and the i18n rule)
+        run: npm run lint
+      - name: Format
+        run: npm run format:check
+      - name: Tests
+        run: npm run test:ci
+      - name: Build
+        run: npm run build
+
+  docs:
+    name: Docs links
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Relative links and anchors in Markdown
+        run: python3 .github/scripts/check_doc_links.py
+
+  ci:
+    name: CI
+    needs: [changes, python, frontend, docs]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+      - name: All jobs passed or were skipped
+        run: echo "OK"

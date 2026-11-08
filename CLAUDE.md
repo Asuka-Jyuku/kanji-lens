@@ -23,7 +23,7 @@ O KanjiLens reconhece kanjis manuscritos: a pessoa escolhe se a ordem dos traço
 
 ## Comandos
 
-Cada etapa acrescenta os seus aqui (build, testes, lint, rodar) no PR em que o primeiro código dela entra. As ferramentas são escolhidas numa ADR no começo de cada etapa, não aqui.
+Cada etapa acrescenta os seus aqui (build, testes, lint, rodar) no PR em que o primeiro código dela entra. As ferramentas são escolhidas numa ADR no começo de cada etapa, não aqui. O CI ([ADR 0018](docs/adr/0018-ci-with-github-actions-and-a-single-required-check.md), `.github/workflows/ci.yml`) roda estes mesmos comandos em todo PR, e o Python também no Windows. Comando novo numa parte entra no job dela no mesmo PR. Os links dos `.md` são conferidos por `python3 .github/scripts/check_doc_links.py`.
 
 **Python (ML e backend, no mesmo workspace)** — ADRs [0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) e [0015](docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md). Pré-requisito: o [uv](https://docs.astral.sh/uv/) instalado; ele baixa o Python 3.15 sozinho. Tudo a partir da raiz do repositório:
 
