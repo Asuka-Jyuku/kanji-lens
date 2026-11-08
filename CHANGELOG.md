@@ -5,9 +5,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Publicação e documentação
-- **Dois modos de reconhecimento: a ordem dos traços importa ou não** ([ADR 0010](docs/adr/0010-two-recognition-modes-with-specialized-models.md)). O aluno escolhe o modo a cada reconhecimento, e o canvas envia a lista de traços, não uma imagem.
-  - Cada modo tem o seu modelo compacto: uma CNN 2D sobre a imagem final quando a ordem não importa, e uma 1D-CNN temporal sobre a sequência de traços quando importa.
-  - A investigação que levou a essa escolha está em [docs/spikes/model-and-runtime-evaluation.md](docs/spikes/model-and-runtime-evaluation.md) (#23). Ela traz candidatos, runtimes, plano de benchmark e projetos do GitHub para estudo.
+- **Dois modos de reconhecimento: a ordem dos traços importa ou não** ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a [ADR 0010](docs/adr/0010-two-recognition-modes-with-specialized-models.md)). O aluno escolhe o modo a cada reconhecimento, e o canvas envia a lista de traços, não uma imagem.
+  - Os dois modos reconhecem o kanji com a mesma CNN 2D compacta, que não depende da ordem.
+  - Quando a ordem importa, o KanjiLens também confere a ordem e a direção dos traços contra a referência do KanjiVG e diz quais traços estão fora de ordem, como se faz em sistemas de ensino de kanji. Não há modelo temporal, nem dataset de escrita *online* para treinar.
+  - A investigação está em [docs/spikes/model-and-runtime-evaluation.md](docs/spikes/model-and-runtime-evaluation.md) (#23, #26). Ela traz candidatos, runtimes, plano de benchmark, projetos do GitHub para estudo e, na seção 5.3, como o modo com ordem costuma ser feito.
 - **O notebook da escola é o servidor** ([ADR 0011](docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md)): Dell Inspiron 3501 (i7-1165G7, 16 GB).
   - A inferência roda só na CPU, e o frontend é servido como build estático.
   - O dimensionamento é para 3–5 alunos enviando desenhos ao mesmo tempo, com 10 clientes como teste de estresse.

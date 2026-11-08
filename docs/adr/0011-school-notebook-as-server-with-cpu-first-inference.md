@@ -2,7 +2,9 @@
 
 - **Status:** Aceita
 - **Data:** 2026-11-08
-- **Relacionadas:** [0005](0005-asynchronous-recognition-with-queue-and-workers.md), [0007](0007-local-execution-over-the-lan.md), [0010](0010-two-recognition-modes-with-specialized-models.md)
+- **Relacionadas:** [0005](0005-asynchronous-recognition-with-queue-and-workers.md), [0007](0007-local-execution-over-the-lan.md), [0012](0012-ordered-mode-as-stroke-order-evaluation.md)
+
+> **Atualização de 2026-11-08 ([ADR 0012](0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a 0010):** "os dois modelos" passa a ser **um modelo (a CNN 2D) mais as referências do KanjiVG**. O modo `ordered` acrescenta uma avaliação da ordem, leve e sem rede neural. O resto da decisão continua valendo.
 
 ## Contexto
 

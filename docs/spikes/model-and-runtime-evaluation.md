@@ -1,12 +1,14 @@
 # Spike: avaliação de modelos e do runtime de inferência
 
-> **Issue:** [#23](https://github.com/Asuka-Jyuku/kanji-lens/issues/23)  
+> **Issues:** [#23](https://github.com/Asuka-Jyuku/kanji-lens/issues/23) (modelos e runtime), [#26](https://github.com/Asuka-Jyuku/kanji-lens/issues/26) (modo `ordered`, seção 5.3)  
 > **Tipo:** spike técnico (pesquisa e plano de experimentos)  
-> **Status:** estratégia decidida, a Opção C ([ADR 0010](../adr/0010-two-recognition-modes-with-specialized-models.md)), com o hardware e a carga na [ADR 0011](../adr/0011-school-notebook-as-server-with-cpu-first-inference.md). Ainda não há números medidos: variantes, resolução, runtime, quantização e workers dependem dos benchmarks no notebook.  
+> **Status:** estratégia decidida: uma CNN 2D nos dois modos e, no `ordered`, avaliação da ordem contra o KanjiVG ([ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substituiu a Opção C da ADR 0010), com o hardware e a carga na [ADR 0011](../adr/0011-school-notebook-as-server-with-cpu-first-inference.md). Ainda não há números medidos: variantes, resolução, runtime, quantização e workers dependem dos benchmarks no notebook.  
 > **Data:** 2026-11-07 (projetos de referência revistos em 2026-11-08)  
 > **Hardware-alvo:** Dell Inspiron 3501 (Intel Core i7-1165G7, 16 GB de RAM)
 
 ---
+
+> **Revisão de 2026-11-08: o modo `ordered` mudou.** Depois da pesquisa da seção 5.3, o projeto escolheu o caminho (b): **avaliar a ordem e a direção dos traços contra a referência do KanjiVG**, sem 1D-CNN ([ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a ADR 0010). Os dois modos usam a mesma CNN 2D. Nas seções 1, 5.2, 7, 10 e 13, o que fala de 1D-CNN, GRU ou dados *online* para treinar o `ordered` fica como registro da investigação, não como plano.
 
 ## 1. Resumo executivo
 
@@ -298,8 +300,8 @@ Na prática, quem treina reconhecedores *online* combina três coisas:
    - **(a) reconhecer melhor usando a trajetória:** é o que a [ADR 0010](../adr/0010-two-recognition-modes-with-specialized-models.md) descreve, com a 1D-CNN;
    - **(b) cobrar a ordem correta da escrita japonesa:** é avaliação por referência, um problema diferente.
 
-   Uma escola de japonês tende a querer (b). Se for esse o caso, a ADR 0010 deve ser revista: (b) usa o reconhecedor do `unordered` mais *matching* com o KanjiVG, sem precisar de dados *online* para treinar.
-2. **Se o caminho for (a):**
+   Uma escola de japonês tende a querer (b). **Decidido em 2026-11-08: caminho (b)** ([ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a ADR 0010). O `ordered` usa o reconhecedor do `unordered` mais *matching* com o KanjiVG, sem dados *online* para treinar.
+2. **O caminho (a), descartado:**
    - a 1D-CNN precisa de dados *online*: TUAT ou CASIA para o pré-treino, coleta própria para o teste, com termos de uso confirmados;
    - o modelo aprende a tolerar variações de ordem, em vez de cobrá-las.
 3. **Nos dois casos,** a captura no canvas é a mesma (traços com `x`, `y` e `t`), e o KanjiVG entra como referência.
@@ -528,7 +530,7 @@ Os limites numéricos de aceitação devem ser definidos depois de uma primeira 
 7. Comparar runtimes e quantização com o melhor checkpoint de cada modo.
 8. Registrar resultados em tabela e fechar runtime, resolução, precisão e concorrência numa ADR.
 
-**Decisão registrada:** adotar a Opção C como arquitetura inicial do KanjiLens: CNN 2D compacta para `unordered` e 1D-CNN temporal compacta para `ordered`. A decisão sobre variantes concretas, hiperparâmetros, runtime e quantização permanece condicionada aos benchmarks no Inspiron 3501.
+**Decisão registrada (substituída em 2026-11-08 pela [ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md)):** adotar a Opção C como arquitetura inicial do KanjiLens: CNN 2D compacta para `unordered` e 1D-CNN temporal compacta para `ordered`. A decisão sobre variantes concretas, hiperparâmetros, runtime e quantização permanece condicionada aos benchmarks no Inspiron 3501.
 
 ---
 
@@ -607,7 +609,23 @@ Para evitar que hipótese seja confundida com resultado experimental:
 
 ---
 
-## 13. Decisão arquitetural registrada — Opção C
+## 13. Decisão arquitetural registrada
+
+### 13.1 Decisão atual: avaliação da ordem contra uma referência (2026-11-08)
+
+Registrada na [ADR 0012](../adr/0012-ordered-mode-as-stroke-order-evaluation.md).
+
+- **Reconhecimento, nos dois modos:** uma CNN 2D compacta sobre a imagem rasterizada, que não depende da ordem. Continuam valendo os candidatos, comparadores, resoluções e o plano de benchmark de `unordered` deste spike.
+- **`ordered`:** depois do reconhecimento, os traços desenhados são comparados com a ordem e a direção do KanjiVG dos candidatos, por correspondência entre traços. Os algoritmos estão na seção 5.3 (b). A resposta diz se a ordem está correta e quais traços estão fora de ordem ou na direção errada.
+- **Sem 1D-CNN, GRU ou dataset *online* para treinar.**
+- **Fica em aberto:**
+  - o algoritmo de correspondência;
+  - quantos candidatos avaliar;
+  - se a avaliação só anota ou também reordena;
+  - o formato da resposta;
+  - o conjunto de teste com ordem certa e errada.
+
+### 13.2 Decisão anterior: Opção C (substituída)
 
 O projeto decidiu seguir com duas estratégias/modelos especializados:
 

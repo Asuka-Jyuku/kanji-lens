@@ -2,7 +2,7 @@
 
 - **Status:** Aceita
 - **Data:** 2026-11-03
-- **Relacionadas:** [0004](0004-clean-and-hexagonal-architecture.md), [0006](0006-cnn-with-pytorch.md), [0010](0010-two-recognition-modes-with-specialized-models.md), [0011](0011-school-notebook-as-server-with-cpu-first-inference.md)
+- **Relacionadas:** [0004](0004-clean-and-hexagonal-architecture.md), [0006](0006-cnn-with-pytorch.md), [0011](0011-school-notebook-as-server-with-cpu-first-inference.md)
 
 ## Contexto
 
@@ -23,8 +23,8 @@ Processamos o reconhecimento de forma assíncrona: `POST /api/recognitions` cria
 - **Positivas:** as requisições HTTP ficam curtas, qualquer que seja o tempo de inferência; a quantidade de workers limita o uso de CPU/GPU; o modelo de job deixa espaço para progresso e cancelamento depois.
 - **Negativas:** mais peças que uma chamada síncrona (estados do job, armazenamento, notificação, expiração); com `asyncio.Queue`, fila e resultados vivem num processo só, então o Uvicorn precisa rodar **um processo só** (`--workers 1`) até o Redis; a inferência ainda tem de rodar fora do event loop (`run_in_executor`), e `torch.set_num_threads` precisa de ajuste quando vários workers dividem um processo.
 - **Na prática:** use cases `SubmitRecognition`, `GetRecognition` e `ProcessRecognition` atrás dos ports `JobQueue`, `JobRepository`, `KanjiRecognizer` e `ResultNotifier` (ADR 0004); a fila tem tamanho máximo e responde `503` quando cheia (`CLAUDE.md`, "Segurança"); os resultados dos jobs expiram.
-- **Atualização de 2026-11-08 ([ADRs 0010](0010-two-recognition-modes-with-specialized-models.md) e [0011](0011-school-notebook-as-server-with-cpu-first-inference.md)):**
+- **Atualização de 2026-11-08 ([ADRs 0011](0011-school-notebook-as-server-with-cpu-first-inference.md) e [0012](0012-ordered-mode-as-stroke-order-evaluation.md)):**
   - o job leva o `stroke_order_mode`, e a fila é uma só para os dois modos;
-  - o "modelo carregado uma vez por worker" passa a ser **os dois modelos carregados uma vez no processo de inferência**, separado do event loop;
+  - o "modelo carregado uma vez por worker" passa a ser **o modelo e as referências do KanjiVG carregados uma vez no processo de inferência**, separado do event loop;
   - a execução começa com uma inferência ativa por vez;
-  - dois processos de worker duplicam os modelos na RAM, então mais workers só entram depois de medir.
+  - dois processos de worker duplicam o modelo na RAM, então mais workers só entram depois de medir.

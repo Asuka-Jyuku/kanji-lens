@@ -14,9 +14,9 @@ O sistema não precisa acertar o caractere com 100% de precisão. Ele apresenta 
 
 ### Objetivos
 
-- Reconhecer kanjis manuscritos em dois modos, com um modelo compacto para cada um ([ADR 0010](adr/0010-two-recognition-modes-with-specialized-models.md)):
-  - **ordem dos traços importa** (`ordered`);
-  - **ordem dos traços não importa** (`unordered`).
+- Reconhecer kanjis manuscritos com um modelo compacto (CNN 2D) que não depende da ordem dos traços, em dois modos ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)):
+  - **ordem dos traços não importa** (`unordered`): só o reconhecimento;
+  - **ordem dos traços importa** (`ordered`): o reconhecimento mais a avaliação da ordem e da direção dos traços contra a referência do KanjiVG, dizendo quais traços estão fora de ordem.
 - Disponibilizar uma interface de desenho manual, acessível pelo celular.
 - Atender 3–5 alunos enviando desenhos numa janela curta. 10 clientes simultâneos são o cenário de estresse ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)).
 - Processar as solicitações de forma assíncrona.
@@ -40,7 +40,7 @@ flowchart LR
     fe -- "REST: POST /api/recognitions" --> api["FastAPI"]
     api --> queue[["Fila de jobs"]]
     queue --> w1["Worker 1"] & w2["Worker 2"]
-    w1 & w2 --> model["CNN 2D (unordered)<br/>1D-CNN temporal (ordered)"]
+    w1 & w2 --> model["CNN 2D<br/>+ avaliação da ordem (KanjiVG, no ordered)"]
     w1 & w2 --> store[("Resultados dos jobs")]
     store -- "SSE (ou WebSocket)" --> fe
 ```
@@ -52,7 +52,8 @@ flowchart LR
 Funcionalidades:
 
 - Escolha do modo antes de reconhecer: a ordem dos traços importa ou não. O modo vai em cada solicitação, e o padrão da interface ainda está em aberto (seção 10).
-- Área de desenho com suporte a mouse e touch, que guarda o desenho como **lista de traços**, cada um com a sua sequência de pontos (X, Y). A separação e a ordem dos traços são preservadas ([ADR 0010](adr/0010-two-recognition-modes-with-specialized-models.md)).
+- Área de desenho com suporte a mouse e touch, que guarda o desenho como **lista de traços**, cada um com a sua sequência de pontos (X, Y). A separação e a ordem dos traços são preservadas ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
+- No modo `ordered`, a avaliação da ordem junto dos candidatos: se está correta e quais traços estão fora de ordem ou na direção errada.
 - Botão para limpar o canvas.
 - Botão para enviar o desenho.
 - Indicador de processamento.
@@ -93,7 +94,7 @@ Fluxo:
 3. O backend gera um `job_id`.
 4. O job entra na fila de processamento.
 5. O backend responde imediatamente com a confirmação de recebimento.
-6. Um worker consome o job e executa a inferência com o modelo do modo do job.
+6. Um worker consome o job e executa a inferência; num job `ordered`, também avalia a ordem dos traços.
 7. O resultado é armazenado.
 8. O backend notifica o frontend que o job terminou.
 
@@ -109,7 +110,7 @@ Requisição (`POST /api/recognitions`):
 }
 ```
 
-> Cada traço é uma lista de pontos na ordem em que foram desenhados. O formato exato de cada ponto ainda não está fechado, e sai junto com a fonte dos dados do modo `ordered` (seção 7.1):
+> Cada traço é uma lista de pontos na ordem em que foram desenhados. O formato exato de cada ponto ainda não está fechado, e sai junto com o algoritmo de avaliação da ordem (seção 2.3):
 > - normalização das coordenadas;
 > - timestamp ou `delta_t`;
 > - limite de traços e de pontos (que é o limite de entrada da API).
@@ -142,40 +143,68 @@ Resposta após o processamento:
 
 > As confianças são probabilidades da saída Softmax. Por isso a soma das previsões top-K nunca passa de 1.
 
+No modo `ordered`, a resposta também traz a avaliação da ordem. O formato abaixo é ilustrativo e ainda não está fechado ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)):
+
+```json
+{
+  "job_id": "abc123",
+  "status": "completed",
+  "stroke_order_mode": "ordered",
+  "predictions": [
+    { "kanji": "日", "confidence": 0.81 },
+    { "kanji": "目", "confidence": 0.12 }
+  ],
+  "stroke_order": {
+    "kanji": "日",
+    "correct": false,
+    "expected_strokes": 4,
+    "drawn_strokes": 4,
+    "issues": [
+      { "stroke": 3, "problem": "order", "expected_position": 4 },
+      { "stroke": 2, "problem": "direction" }
+    ]
+  }
+}
+```
+
 ### 2.3 Machine Learning
 
 **Stack:** Python e PyTorch para treino e avaliação, NumPy, OpenCV (opcional, para pré-processamento) ([ADR 0006](adr/0006-cnn-with-pytorch.md)). O runtime de inferência ainda está em aberto: PyTorch CPU, OpenVINO CPU ou ONNX Runtime CPU (seção 4.2).
 
-São dois modelos especializados, um por modo, sem compartilhar pesos nesta primeira versão ([ADR 0010](adr/0010-two-recognition-modes-with-specialized-models.md), a Opção C do [spike de modelos](spikes/model-and-runtime-evaluation.md)):
+Os dois modos usam **um único modelo**, a CNN 2D compacta, que não depende da ordem dos traços. O modo `ordered` acrescenta uma **avaliação da ordem contra uma referência**, sem rede neural ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md); a pesquisa está no [spike de modelos, seção 5.3](spikes/model-and-runtime-evaluation.md#53-como-o-modo-ordered-costuma-ser-feito-pesquisa-de-2026-11-08)).
 
-| Modo | Modelo inicial | Entrada | Comparadores / alternativas |
+| Parte | O que é | Entrada | Alternativas / em aberto |
 |---|---|---|---|
-| `unordered` | CNN 2D customizada compacta | Imagem rasterizada final, em tons de cinza; resoluções a comparar: 64×64, 96×96 e 128×128 | MobileNetV3-Small, ResNet-18, HOG + SVM |
-| `ordered` | 1D-CNN temporal compacta | Sequência de pontos e traços: `x`, `y`, `delta_t`, `pen_state` e `stroke_id` | CNN 2D com mapas de ordem, GRU pequena |
+| Reconhecimento (os dois modos) | CNN 2D customizada compacta | Imagem rasterizada final, em tons de cinza; resoluções a comparar: 64×64, 96×96 e 128×128 | Comparadores: MobileNetV3-Small, ResNet-18, HOG + SVM |
+| Avaliação da ordem (só `ordered`) | Correspondência entre os traços desenhados e a ordem e a direção do KanjiVG para os candidatos | Traços normalizados e reamostrados, e a referência do KanjiVG | O algoritmo (*DP matching*, bipartite matching / cube search, avaliação incremental com contexto); quantos candidatos avaliar; se só anota ou também reordena |
 
-Ponto de partida das arquiteturas (não fechado; tamanho e profundidade saem dos benchmarks):
+Ponto de partida da CNN (não fechado; tamanho e profundidade saem dos benchmarks):
 
 ```text
-unordered:  Imagem 1×H×W → 3–4 × [Conv2D → Norm → ReLU/SiLU → downsampling]
-                         → Global Average Pooling → Linear → Softmax → Top-K
-ordered:    Sequência N×F → blocos Conv1D → pooling global (com máscara)
-                          → Linear → Softmax → Top-K
+Imagem 1×H×W → 3–4 × [Conv2D → Norm → ReLU/SiLU → downsampling]
+             → Global Average Pooling → Linear → Softmax → Top-K
 ```
 
 Pipeline de reconhecimento:
 
 ```text
-Traços do canvas → Validação → Pré-processamento compartilhado ─┬─ unordered: rasterização → imagem → CNN 2D
-                                                                 └─ ordered: reamostragem → sequência → 1D-CNN
-                 → Softmax → Top-K Predictions
+Traços do canvas → Validação → Pré-processamento compartilhado → rasterização → CNN 2D → Softmax → Top-K
+                                          │
+                                          └─ (ordered) normalização dos traços ─▶ avaliação da ordem
+                                                         contra o KanjiVG dos candidatos ─▶ resultado traço a traço
 ```
+
+**Dados de referência:** o KanjiVG (vetores, ordem e direção de cada traço). Ele é distribuído junto com a aplicação, porque não há saída de rede. A licença (CC BY-SA 3.0, *a confirmar*) exige atribuição e vale também para os dados derivados, à parte da licença MIT do código.
 
 O modelo retorna as K classes mais prováveis, e não apenas a de maior probabilidade. Os dois modos compartilham:
 - o contrato da API;
 - a validação;
+- o modelo;
 - o módulo de pré-processamento;
 - a fila e os workers;
 - o formato da resposta.
+
+O `ordered` só acrescenta a avaliação.
 
 **Projetos de referência:** o [spike, seção 11.1](spikes/model-and-runtime-evaluation.md#111-projetos-de-referência-no-github) lista repositórios públicos para estudo, cada um com as suas limitações e a sua licença:
 - `mcyph/cnn_chinese_hw`: traços online;
@@ -198,10 +227,10 @@ flowchart TB
     end
     subgraph application["Application"]
         usecases["Use cases<br/>SubmitRecognition, GetRecognition,<br/>ProcessRecognition"]
-        ports["Ports<br/>KanjiRecognizer, JobQueue,<br/>JobRepository, ResultNotifier"]
+        ports["Ports<br/>KanjiRecognizer, StrokeOrderEvaluator,<br/>JobQueue, JobRepository, ResultNotifier"]
     end
     subgraph domain["Domain"]
-        entities["RecognitionJob, JobStatus,<br/>Prediction, Drawing, StrokeOrderMode"]
+        entities["RecognitionJob, JobStatus, Prediction,<br/>Drawing, StrokeOrderMode, StrokeOrderEvaluation"]
     end
     bootstrap["Bootstrap (composition root)"]
 
@@ -216,11 +245,11 @@ flowchart TB
 
 | Camada | O que contém | Pode importar |
 |---|---|---|
-| `domain/` | Entidades e value objects (`RecognitionJob`, `JobStatus`, `Prediction`, `Drawing` feito de traços, `StrokeOrderMode`) e as regras deles, em Python puro | só a biblioteca padrão |
+| `domain/` | Entidades e value objects (`RecognitionJob`, `JobStatus`, `Prediction`, `Drawing` feito de traços, `StrokeOrderMode`, `StrokeOrderEvaluation`) e as regras deles, em Python puro | só a biblioteca padrão |
 | `application/use_cases/` | Um use case por ação (`SubmitRecognition`, `GetRecognition`, `ProcessRecognition`) | `domain`, `application/ports` |
-| `application/ports/` | As interfaces de que os use cases precisam (`KanjiRecognizer`, `JobQueue`, `JobRepository`, `ResultNotifier`) | `domain` |
+| `application/ports/` | As interfaces de que os use cases precisam (`KanjiRecognizer`, `StrokeOrderEvaluator`, `JobQueue`, `JobRepository`, `ResultNotifier`) | `domain` |
 | `adapters/inbound/` | Rotas do FastAPI e schemas Pydantic de request/response, o endpoint SSE, o consumidor da fila que chama `ProcessRecognition` | `application`, `domain`, FastAPI |
-| `adapters/outbound/` | Implementações dos ports: recognizer em PyTorch, `asyncio.Queue` (depois Redis), armazenamento dos jobs em memória, notifier SSE | `application/ports`, `domain`, `kanjilens_ml`, PyTorch, Redis… |
+| `adapters/outbound/` | Implementações dos ports: recognizer em PyTorch, avaliador da ordem com o KanjiVG, `asyncio.Queue` (depois Redis), armazenamento dos jobs em memória, notifier SSE | `application/ports`, `domain`, `kanjilens_ml`, PyTorch, Redis… |
 | `bootstrap/` | Composition root: monta os adapters, injeta nos use cases e cria o app FastAPI | tudo |
 
 As duas decisões em aberto do backend (fila e notificação) são **adapters outbound atrás de um port**: trocar `asyncio.Queue` por Redis, ou SSE por WebSocket, substitui um adapter e a ligação em `bootstrap/`, sem mexer nos use cases.
@@ -238,7 +267,7 @@ Os adapters são ligados aos ports nos providers de `app.config.ts`. Componente 
 
 ### 3.3 ML (`ml/src/kanjilens_ml/`)
 
-O código de ML é uma biblioteca usada em dois lugares: os scripts de treino em `ml/` e o adapter do recognizer no backend. **O pré-processamento existe uma vez só**, em `kanjilens_ml/preprocessing/`, e os dois lados o importam. Ele gera as duas representações a partir da mesma lista de traços: a imagem do `unordered` e a sequência do `ordered`. `kanjilens_ml/models/` tem as duas arquiteturas. Duas implementações paralelas divergiriam, e o modelo erraria calado em produção (*train/serve skew*).
+O código de ML é uma biblioteca usada em dois lugares: os scripts de treino em `ml/` e o adapter do recognizer no backend. **O pré-processamento existe uma vez só**, em `kanjilens_ml/preprocessing/`, e os dois lados o importam. Ele gera, a partir da mesma lista de traços, a imagem que a CNN recebe e os traços normalizados que a avaliação da ordem usa. `kanjilens_ml/models/` tem a CNN 2D. A avaliação da ordem é um módulo puro, sem PyTorch (proposta: `kanjilens_ml/stroke_order/`), que compara os traços com o KanjiVG. Duas implementações paralelas divergiriam, e o modelo erraria calado em produção (*train/serve skew*).
 
 ---
 
@@ -249,7 +278,7 @@ Para suportar vários alunos ao mesmo tempo, a inferência é separada do recebi
 ```mermaid
 flowchart TB
     api["FastAPI"] --> queue[["Fila de jobs"]]
-    queue --> inf["Processo de inferência<br/>CNN 2D + 1D-CNN carregadas uma vez<br/>1 inferência ativa por vez (inicial)"]
+    queue --> inf["Processo de inferência<br/>CNN 2D + referências do KanjiVG carregadas uma vez<br/>1 inferência ativa por vez (inicial)"]
     inf --> results[("Resultados dos jobs")]
 ```
 
@@ -268,9 +297,9 @@ flowchart TB
 
 O servidor é o notebook da escola (seção 6.3), com inferência **CPU-first** ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)). A configuração inicial, a validar por benchmark:
 
-1. **Um processo de inferência separado do event loop do FastAPI.** Ele carrega **os dois modelos uma vez** e escolhe um deles pelo `stroke_order_mode` de cada job.
+1. **Um processo de inferência separado do event loop do FastAPI.** Ele carrega **o modelo e as referências do KanjiVG uma vez**. Nos jobs `ordered`, ele também roda a avaliação da ordem.
 2. **Uma fila só** para `ordered` e `unordered`, com **uma inferência ativa por vez** e as threads do runtime controladas.
-3. **Uma segunda execução simultânea** (no mesmo processo ou em dois processos de worker) só depois de medir a espera na fila e a latência p95. Dois processos carregam duas cópias dos modelos na RAM.
+3. **Uma segunda execução simultânea** (no mesmo processo ou em dois processos de worker) só depois de medir a espera na fila e a latência p95. Dois processos carregam duas cópias do modelo na RAM.
 4. **Runtime:** o PyTorch CPU é a referência. Entram na comparação o OpenVINO CPU (prioritário no i7 de 11ª geração) e o ONNX Runtime CPU. INT8 só depois do FP32, e só se não piorar Top-1/Top-5.
 
 **Usuários conectados não são inferências simultâneas.** A meta é aceitar 3–5 envios próximos sem perder jobs, mantendo a API e o SSE responsivos. A fila pode serializar parte do trabalho. O limite numérico de latência só é fixado depois da primeira rodada de medições no notebook.
@@ -280,7 +309,7 @@ O servidor é o notebook da escola (seção 6.3), com inferência **CPU-first** 
 - **A inferência bloqueia o event loop.** A inferência é CPU-bound. Se o worker rodar como corrotina no mesmo event loop do FastAPI, enquanto ele executa a API para de responder, inclusive as conexões SSE. Com `asyncio.Queue`, a inferência precisa rodar fora do loop (`run_in_executor` com thread ou process pool).
 - **O estado em memória não é compartilhado entre processos.** Com `asyncio.Queue`, a fila e os resultados vivem na memória de um processo. Se o Uvicorn subir com `--workers > 1`, cada processo terá sua própria fila, e o cliente pode consultar ou escutar um processo que não conhece o seu `job_id`. Na opção 1, rode um único processo do Uvicorn. Esse é o principal motivo para migrar para Redis.
 - **Threads do runtime.** Por padrão, o PyTorch usa todos os núcleos em cada inferência, e o notebook tem 4 núcleos físicos. Configure as threads explicitamente (`torch.set_num_threads` ou o equivalente do runtime escolhido). Dois workers com quatro threads cada disputam os mesmos núcleos, e mais workers não garantem mais throughput.
-- **O notebook divide a CPU com tudo:** frontend, API, fila e os dois modelos. Meça o consumo do conjunto, e não só o do modelo. Em carga longa, o notebook pode sofrer throttling térmico.
+- **O notebook divide a CPU com tudo:** frontend, API, fila e o modelo. Meça o consumo do conjunto, e não só o do modelo. Em carga longa, o notebook pode sofrer throttling térmico.
 
 ---
 
@@ -345,7 +374,7 @@ Qualquer um na mesma rede alcança a API, sem login. As regras que decorrem diss
 | CPU | Intel Core i7-1165G7: 4 núcleos / 8 threads, até 4,70 GHz, AVX2, AVX-512, DL Boost |
 | RAM | 16 GB |
 | GPU | Intel Iris Xe integrada; não pressupor GPU dedicada nem uso da integrada pelo runtime (configuração efetiva *a confirmar*) |
-| Hospeda | Frontend (build estático), FastAPI, fila, runtime de inferência, os dois modelos e serviços auxiliares que rodarem ali |
+| Hospeda | Frontend (build estático), FastAPI, fila, runtime de inferência, o modelo, as referências do KanjiVG e serviços auxiliares que rodarem ali |
 
 O treino roda noutra máquina, mais potente. O que precisa caber no notebook é o artefato final, o runtime, a memória de trabalho e a carga ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)).
 
@@ -387,28 +416,17 @@ Candidatos a avaliar (licenças e números ainda a confirmar nas fontes oficiais
 - **ETL Character Database (AIST)**, em especial o ETL8G e o ETL9B: kanjis modernos escritos à mão por centenas de pessoas. É a referência mais usada para esse problema.
 - **Kuzushiji-Kanji**: tem muitas classes, mas é escrita cursiva clássica, bem diferente da escrita moderna. Tende a não servir como base principal.
 
-**Os dois modos precisam de dados diferentes:**
+**Dados por parte** ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)):
 
-| Modo | Dados necessários | Candidatos |
+| Parte | Dados necessários | Candidatos |
 |---|---|---|
-| `unordered` | Imagens do caractere (dados *offline*) | ETL8G / ETL9G (grayscale 128×127) e as variantes binárias ETL8B2 / ETL9B (64×63) |
-| `ordered` | Sequências reais de traços, com ordem e direção (dados *online*) | Coleta própria pelo canvas, datasets *online* públicos (a levantar) e KanjiVG para protótipo e dados sintéticos |
+| Reconhecimento (os dois modos) | Imagens do caractere (dados *offline*) para treinar | ETL8G / ETL9G (grayscale 128×127) e as variantes binárias ETL8B2 / ETL9B (64×63) |
+| Avaliação da ordem (`ordered`) | A ordem e a direção de referência de cada kanji; **nada de treino** | KanjiVG (licença CC BY-SA 3.0, *a confirmar*), cobrindo toda a lista de classes |
+| Teste da avaliação da ordem | Um conjunto fixo de desenhos com ordem certa e errada, com o resultado esperado | Desenhos feitos de propósito para o teste. Coletar desenhos de alunos muda a regra de não guardar desenhos (`CLAUDE.md`, "Segurança") e pede ADR |
 
-O ETL foi digitalizado de folhas de papel: tem a imagem final, sem a trajetória da caneta. Ele serve ao `unordered`, mas não treina o `ordered`.
+O ETL foi digitalizado de folhas de papel: tem a imagem final, sem a trajetória da caneta. Isso basta, porque o modelo não usa a ordem. Datasets *online* (TUAT Kuchibue/Nakayosi, CASIA-OLHWDB) **não são necessários**: o `ordered` não treina um modelo temporal.
 
-O KanjiVG tem os vetores e a ordem de referência. As formas vêm de fontes escolares, e não de escrita humana: ele não prova generalização para a letra de um aluno.
-
-**Em aberto:**
-- a fonte dos dados *online*;
-- a licença de cada dataset;
-- o formato de captura dos pontos.
-
-Guardar desenhos de alunos para coleta muda a regra de não guardar desenhos (`CLAUDE.md`, "Segurança") e pede ADR.
-
-Como o modo `ordered` costuma ser feito está no [spike, seção 5.3](spikes/model-and-runtime-evaluation.md#53-como-o-modo-ordered-costuma-ser-feito-pesquisa-de-2026-11-08):
-- datasets *online* (TUAT Kuchibue/Nakayosi, CASIA-OLHWDB);
-- captura no navegador;
-- a diferença entre **reconhecer usando a trajetória** e **avaliar a ordem correta contra uma referência**.
+A pesquisa que levou a esse desenho está no [spike, seção 5.3](spikes/model-and-runtime-evaluation.md#53-como-o-modo-ordered-costuma-ser-feito-pesquisa-de-2026-11-08): reconhecimento *online* × avaliação da ordem, algoritmos de correspondência entre traços e captura no navegador.
 
 ### 7.2 Quantidade de classes (em aberto)
 
@@ -418,11 +436,15 @@ Começar com algumas centenas de kanjis e depois expandir para o conjunto Jōyō
 
 Métricas acompanhadas:
 
-- Accuracy Top-1 e Top-5, **separadas por modo**.
+- Accuracy Top-1 e Top-5 do reconhecimento (o mesmo modelo nos dois modos).
 - Precision, Recall, F1-score e Macro-F1.
 - Matriz de confusão.
 - Acurácia por faixa de complexidade (quantidade de traços) e por quem escreveu, quando o dataset permitir.
-- No `unordered`, invariância à reordenação dos traços. No `ordered`, se mudar a ordem ou a direção afeta o ranking de forma coerente.
+- Invariância do reconhecimento à reordenação dos traços: a mesma figura, desenhada em outra ordem, dá o mesmo resultado.
+- **Avaliação da ordem (`ordered`)**, num conjunto fixo de desenhos com ordem certa e errada:
+  - erros de ordem e de direção detectados;
+  - falsos alarmes em desenhos corretos;
+  - comportamento com traços unidos ou quebrados.
 - Desempenho no notebook da escola:
   - latência de pré-processamento, de inferência e total (p50/p95);
   - throughput;
@@ -436,7 +458,8 @@ A Top-5 é a métrica mais próxima da experiência do usuário, já que a inter
 
 - **O desenho do canvas é diferente das imagens do dataset.** Datasets como o ETL são digitalizações de papel: tons de cinza, traço de caneta, ruído e contraste próprios. O canvas gera traço sintético, geralmente fino e uniforme, com cores e proporção diferentes. Se o pré-processamento da inferência não aproximar o desenho das imagens de treino (inversão de cores, recorte pela bounding box, centralização, padding, espessura do traço e resolução), a acurácia em produção cai bastante em relação à do conjunto de teste. Esse é o principal risco do projeto e deve ser testado com desenhos reais assim que houver um modelo base.
 - **Treino e inferência rodam em máquinas diferentes.** O treino usa uma máquina potente; a inferência, a CPU de um notebook. Um modelo que só é bom porque é grande não cabe no servidor. Toda escolha de modelo é validada no hardware-alvo (seção 6.3).
-- **Escopo do `ordered`.** O objetivo é **reconhecer usando a ordem como evidência**. Validar se o aluno seguiu a ordem correta é outro problema, que fica para depois (com o KanjiVG como referência).
+- **A avaliação da ordem depende do reconhecimento.** Se o kanji certo não estiver entre os candidatos avaliados, a ordem é comparada com o kanji errado. Por isso o Top-K do reconhecimento continua sendo a métrica principal.
+- **Traços unidos ou quebrados** mudam a quantidade de traços desenhados, e a avaliação não pode acusar erro falso. Variantes de ordem aceitas na escola precisam ser verificadas com os professores.
 - **O pré-processamento precisa ser o mesmo no treino e na inferência.** Ele fica em um único módulo compartilhado entre `ml/` e `backend/` (seção 3.3), nunca em duas implementações paralelas.
 
 ---
@@ -471,7 +494,8 @@ kanji-lens/
 │   ├── src/kanjilens_ml/
 │   │   ├── preprocessing/   # compartilhado com o backend
 │   │   ├── data/
-│   │   ├── models/          # arquiteturas nn.Module: CNN 2D e 1D-CNN (código, não pesos)
+│   │   ├── models/          # arquitetura nn.Module da CNN 2D (código, não pesos)
+│   │   ├── stroke_order/    # avaliação da ordem contra o KanjiVG (sem PyTorch)
 │   │   ├── training/
 │   │   └── evaluation/
 │   ├── configs/             # configurações de treino, versionadas
@@ -495,14 +519,14 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 
 ### Etapa 1: Machine Learning
 
-- [x] Avaliar famílias de modelos e runtimes para os dois modos ([spike](spikes/model-and-runtime-evaluation.md), [ADR 0010](adr/0010-two-recognition-modes-with-specialized-models.md)).
+- [x] Avaliar famílias de modelos e runtimes ([spike](spikes/model-and-runtime-evaluation.md)) e definir o modo `ordered` como avaliação da ordem ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
 - [ ] Pesquisar e selecionar o dataset *offline* (`unordered`) e a quantidade de classes.
-- [ ] Definir a fonte dos dados de traços *online* (`ordered`).
+- [ ] Escolher o algoritmo de avaliação da ordem e o formato de captura dos pontos.
 - [ ] Criar o pré-processamento compartilhado (imagem e sequência).
-- [ ] Implementar e treinar a CNN 2D compacta (`unordered`).
-- [ ] Implementar e treinar a 1D-CNN temporal compacta (`ordered`).
-- [ ] Avaliar os resultados por modo.
-- [ ] Medir os modelos no notebook da escola (runtimes, resolução, INT8, concorrência).
+- [ ] Implementar e treinar a CNN 2D compacta.
+- [ ] Implementar a avaliação da ordem contra o KanjiVG (`ordered`).
+- [ ] Avaliar o reconhecimento (Top-1/Top-5) e a avaliação da ordem (conjunto com ordem certa e errada).
+- [ ] Medir no notebook da escola, depois de o modelo e o código ficarem prontos (runtimes, resolução, INT8, concorrência).
 - [ ] Implementar inferência top-K.
 
 ### Etapa 2: Backend
@@ -511,7 +535,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [ ] Criar o endpoint de reconhecimento.
 - [ ] Gerar o `job_id`.
 - [ ] Implementar o processamento assíncrono.
-- [ ] Integrar os dois modelos no processo de inferência.
+- [ ] Integrar o modelo e a avaliação da ordem no processo de inferência.
 - [ ] Armazenar os resultados.
 - [ ] Implementar a notificação via SSE ou WebSocket.
 
@@ -546,14 +570,14 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Arquitetura do código | Clean Architecture, ports and adapters, em camadas | Decidido — [ADR 0004](adr/0004-clean-and-hexagonal-architecture.md) |
 | Processamento | Assíncrono, com fila e workers | Decidido — [ADR 0005](adr/0005-asynchronous-recognition-with-queue-and-workers.md) |
 | Machine Learning | PyTorch para treino e avaliação | Decidido — [ADR 0006](adr/0006-cnn-with-pytorch.md) |
-| Modos e modelos | `ordered` / `unordered`, escolhido por solicitação; CNN 2D compacta (`unordered`) e 1D-CNN temporal compacta (`ordered`), sem pesos compartilhados (Opção C) | Decidido — [ADR 0010](adr/0010-two-recognition-modes-with-specialized-models.md) |
+| Modos e modelo | `ordered` / `unordered`, escolhido por solicitação; uma CNN 2D compacta nos dois; no `ordered`, avaliação da ordem contra o KanjiVG | Decidido — [ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md) (substitui a [0010](adr/0010-two-recognition-modes-with-specialized-models.md)) |
 | Servidor e carga | Notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB), inferência CPU-first; 3–5 envios numa janela curta, 10 clientes como estresse | Decidido — [ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md) |
 | Execução | Local / rede local, sem nuvem | Decidido — [ADR 0007](adr/0007-local-execution-over-the-lan.md) |
 | Branches e releases | `main` + `develop`, CHANGELOG por release | Decidido — [ADR 0008](adr/0008-git-flow-and-changelog-by-release.md) |
 | Notificação do resultado | SSE ou WebSocket | Em aberto (tendência: SSE) |
 | Fila | `asyncio.Queue` ou Redis + Celery/RQ | Em aberto (começar com `asyncio.Queue`) |
-| Dataset `unordered` | ETL8G / ETL9G em avaliação (licença a confirmar) | Em aberto |
-| Dados `ordered` | Sequências reais de traços: coleta própria, dataset *online* público ou KanjiVG sintético | Em aberto |
+| Dataset do reconhecimento | ETL8G / ETL9G em avaliação (licença a confirmar) | Em aberto |
+| Algoritmo de avaliação da ordem | *DP matching*, bipartite matching / cube search ou avaliação incremental com contexto; quantos candidatos avaliar; se só anota ou também reordena | Em aberto |
 | Modo padrão da interface | `ordered` ou `unordered` | Em aberto |
 | Runtime, resolução, precisão e concorrência de produção | PyTorch / OpenVINO / ONNX Runtime CPU; 64–128 px; FP32 / INT8; 1 ou 2 execuções | Em aberto (benchmark no notebook) |
 | Quantidade de classes | Centenas → 2.136 (Jōyō) | Em aberto |
@@ -571,7 +595,7 @@ Entregar uma aplicação funcional na qual diferentes usuários acessem uma inte
 Além do reconhecimento em si, o projeto explora:
 
 - Computer Vision.
-- Deep Learning: CNN 2D e 1D-CNN temporal.
+- Deep Learning (CNN 2D) e correspondência entre traços para avaliar a ordem.
 - Processamento assíncrono.
 - Arquitetura orientada a eventos.
 - REST API.
