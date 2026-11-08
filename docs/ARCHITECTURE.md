@@ -405,6 +405,11 @@ O KanjiVG tem os vetores e a ordem de referência. As formas vêm de fontes esco
 
 Guardar desenhos de alunos para coleta muda a regra de não guardar desenhos (`CLAUDE.md`, "Segurança") e pede ADR.
 
+Como o modo `ordered` costuma ser feito está no [spike, seção 5.3](spikes/model-and-runtime-evaluation.md#53-como-o-modo-ordered-costuma-ser-feito-pesquisa-de-2026-11-08):
+- datasets *online* (TUAT Kuchibue/Nakayosi, CASIA-OLHWDB);
+- captura no navegador;
+- a diferença entre **reconhecer usando a trajetória** e **avaliar a ordem correta contra uma referência**.
+
 ### 7.2 Quantidade de classes (em aberto)
 
 Começar com algumas centenas de kanjis e depois expandir para o conjunto Jōyō (2.136 kanjis).
