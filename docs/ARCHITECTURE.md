@@ -496,6 +496,8 @@ kanji-lens/
 │   ├── tests/
 │   └── pyproject.toml
 ├── ml/
+│   ├── pyproject.toml       # membro do workspace do uv (ADR 0014)
+│   ├── tests/               # pytest, inclusive o teste de arquitetura
 │   ├── src/kanjilens_ml/
 │   │   ├── preprocessing/   # compartilhado com o backend
 │   │   ├── data/
@@ -508,6 +510,9 @@ kanji-lens/
 │   ├── datasets/            # fora do git
 │   └── artifacts/           # pesos treinados, fora do git
 ├── docs/
+├── pyproject.toml           # raiz do workspace do uv e configuração do Ruff (não é pacote)
+├── uv.lock                  # lock único das partes Python
+├── .python-version          # 3.15
 └── README.md
 ```
 
@@ -585,7 +590,8 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Verbete do kanji escolhido | Link externo em nova aba, com o Takoboto como padrão e o dicionário escolhido pelo usuário numa lista fixa ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)); dicionário próprio com dados abertos locais (KANJIDIC2 / JMdict) | Por ora, link externo; o dicionário próprio fica em aberto, para depois |
 | Runtime, resolução, precisão e concorrência de produção | PyTorch / OpenVINO / ONNX Runtime CPU; 64–128 px; FP32 / INT8; 1 ou 2 execuções | Em aberto (benchmark no notebook) |
 | Quantidade de classes | Centenas → 2.136 (Jōyō) | Em aberto |
-| Ferramentas de cada stack | Gerenciador de pacotes, linter, test runner | Em aberto — uma ADR no começo de cada etapa |
+| Ferramentas do ML | Python 3.15, uv (workspace com lock único), Ruff, mypy, pytest, Import Linter, PyTorch só-CPU | Decidido — [ADR 0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) |
+| Ferramentas do backend e do frontend | Gerenciador de pacotes, linter, test runner | Em aberto — uma ADR no começo de cada etapa (#18, #21) |
 | Idioma da interface | Português primeiro, japonês depois, com i18n desde a primeira tela | Decidido — [ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md) (o mecanismo de i18n sai na ADR de ferramentas da etapa 3) |
 
 Quando uma decisão em aberto for fechada, ela vira ADR em `docs/adr/` e a linha dela aqui passa a apontar para a ADR.

@@ -10,7 +10,7 @@ Você escreve, roda e revisa o código de ML do projeto (`ml/`) e os adapters do
 
 **Cada regra mora num lugar só.** Esta skill diz o caminho e aponta a fonte; não copie a regra para cá. Achou uma regra aqui que diverge da fonte, vale a fonte: corrija a skill no mesmo PR.
 
-> **Fase:** ainda não há código de ML (a etapa 1 começa aqui). O dataset e a quantidade de classes são decisões em aberto; o gerenciador de pacotes, o test runner e o registro dos experimentos são escolhidos na ADR de ferramentas da etapa. O `docs/MODEL.md` nasce no primeiro PR da etapa 1.
+> **Fase:** a estrutura de `ml/` existe, com as ferramentas da [ADR 0014](../../../docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) (Python 3.15, uv, Ruff, mypy, pytest, Import Linter; comandos no `CLAUDE.md`, "Comandos"); ainda não há código de produto. Seguem em aberto o dataset, a quantidade de classes e o registro dos experimentos. O `docs/MODEL.md` nasce no primeiro PR com dataset, pré-processamento ou modelo.
 
 | Assunto | Fonte (a regra está lá) |
 |---|---|

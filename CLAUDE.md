@@ -19,11 +19,22 @@ Vale também quando o conteúdo técnico (log, erro, documentação de bibliotec
 
 O KanjiLens reconhece kanjis manuscritos: a pessoa escolhe se a ordem dos traços importa, desenha num canvas e recebe os top-K candidatos, ordenados por confiança. O reconhecimento é uma CNN 2D compacta, treinada em PyTorch, que não depende da ordem; no modo `ordered`, os traços também são comparados com a ordem e a direção do KanjiVG, e a resposta diz quais estão fora de ordem ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md)). É um **monorepo** ([ADR 0002](docs/adr/0002-monorepo-for-frontend-backend-and-ml.md)) com três partes: `frontend/` (Angular), `backend/` (Python, FastAPI, fila de jobs e workers) e `ml/` (dataset, treino, avaliação e o pré-processamento compartilhado). Tudo roda numa máquina só e é acessado pela rede local, sem nuvem ([ADR 0007](docs/adr/0007-local-execution-over-the-lan.md)). Essa máquina é o notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB, sem GPU dedicada), então a inferência é **CPU-first** e todo número de desempenho é medido nele ([ADR 0011](docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md)). Veja o [README.pt-BR.md](README.pt-BR.md) para a visão geral e o [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para o desenho. O porquê das decisões está nas ADRs em [docs/adr/](docs/adr/README.md).
 
-**Fase:** só desenho, ainda sem código. O roteiro do MVP está em [docs/ARCHITECTURE.md, "Escopo do MVP"](docs/ARCHITECTURE.md#9-escopo-do-mvp).
+**Fase:** a estrutura de `ml/` existe, com as ferramentas da [ADR 0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md); ainda não há código de produto. O roteiro do MVP está em [docs/ARCHITECTURE.md, "Escopo do MVP"](docs/ARCHITECTURE.md#9-escopo-do-mvp).
 
 ## Comandos
 
-Ainda não há. Cada etapa acrescenta os seus aqui (build, testes, lint, rodar) no PR em que o primeiro código dela entra. As ferramentas (gerenciador de pacotes, linter, test runner) são escolhidas numa ADR no começo de cada etapa, não aqui.
+Cada etapa acrescenta os seus aqui (build, testes, lint, rodar) no PR em que o primeiro código dela entra. As ferramentas são escolhidas numa ADR no começo de cada etapa, não aqui.
+
+**Python (ML; o backend entra no mesmo workspace)** — [ADR 0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md). Pré-requisito: o [uv](https://docs.astral.sh/uv/) instalado; ele baixa o Python 3.15 sozinho. Tudo a partir da raiz do repositório:
+
+```bash
+uv sync --all-packages                       # instala o Python 3.15 e as dependências (PyTorch só-CPU)
+uv run ruff check . && uv run ruff format --check .   # lint e formatação (ruff format . para corrigir)
+uv run --directory ml mypy                   # tipos (strict)
+uv run --directory ml pytest                 # testes do ML, inclusive o de arquitetura
+uv run --directory ml lint-imports           # só o teste de arquitetura, com o relatório dos contratos
+uv add --package kanjilens-ml <pacote>       # dependência nova (o uv.lock vai no mesmo PR)
+```
 
 ## Arquitetura (detalhes em docs/ARCHITECTURE.md)
 
