@@ -4,7 +4,7 @@
 
 [Português](README.pt-BR.md) · [Architecture (pt-BR)](docs/ARCHITECTURE.md) · [Decisions (ADRs, pt-BR)](docs/adr/README.md) · [Contributing (pt-BR)](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-> **Status:** early stage. The architecture is defined; implementation has not started yet.
+> **Status:** early stage. The architecture, tooling and CI are in place, and the `ml/`, `backend/` and `frontend/` skeletons exist. Product code starts with the backend.
 
 ---
 
@@ -70,7 +70,8 @@ Recognition uses a compact 2D CNN trained with PyTorch, which does not depend on
 | Method | Endpoint | Purpose |
 |---|---|---|
 | `POST` | `/api/recognitions` | Submit the strokes and the mode (`ordered` / `unordered`) for recognition |
-| `GET` | `/api/recognitions/{id}` | Get the status and result of a job |
+| `GET` | `/api/recognitions/{id}` | Get the status and result of a job (SSE fallback) |
+| `GET` | `/api/recognitions/{id}/events` | Stream the job's status changes over SSE |
 | `GET` | `/api/health` | Health check |
 
 Example of a completed job:
@@ -134,7 +135,7 @@ See the full checklist in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-escopo-d
 
 ## Running locally
 
-Not available yet. Setup instructions will be added once the first components are in place.
+The app does not recognize kanji yet. For development, the commands (install, test, run the API and the frontend) are in [`CLAUDE.md`, "Comandos"](CLAUDE.md#comandos) (pt-BR). Step-by-step instructions for the school laptop and the local network will go to `docs/RUNNING.md` once the first version runs.
 
 ## What this project explores
 

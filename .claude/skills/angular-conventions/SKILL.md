@@ -16,7 +16,7 @@ Você escreve e revisa o frontend do projeto (`frontend/`). O que vale **sempre*
 |---|---|
 | UI/UX: as referências obrigatórias (Nielsen, NN/g, WCAG 2.2, WAI-ARIA, Shneiderman) e os padrões propostos | [`docs/UI-UX.md`](../../../docs/UI-UX.md): leia antes de propor, avaliar ou desenhar |
 | Camadas `domain` → `application` → `infrastructure` / `presentation`; ports como classes abstratas usadas como token de DI; componente nunca injeta `HttpClient` | [ADR 0004](../../../docs/adr/0004-clean-and-hexagonal-architecture.md) e [ARCHITECTURE.md, seção 3.2](../../../docs/ARCHITECTURE.md#32-frontend-frontendsrcapp) |
-| Angular + TypeScript, REST, SSE ou WebSocket (em aberto) | [ADR 0003](../../../docs/adr/0003-angular-frontend-and-fastapi-backend.md) e [ARCHITECTURE.md, seção 5](../../../docs/ARCHITECTURE.md#5-comunicação-entre-frontend-e-backend) |
+| Angular + TypeScript, REST; o resultado por SSE (`EventSource` no `SseResultStream`, estado completo por evento), com polling de `GET /api/recognitions/{id}` como reserva | [ADR 0003](../../../docs/adr/0003-angular-frontend-and-fastapi-backend.md), [ADR 0020](../../../docs/adr/0020-result-notification-by-server-sent-events.md) e [ARCHITECTURE.md, seção 5](../../../docs/ARCHITECTURE.md#5-comunicação-entre-frontend-e-backend) |
 | URL da API a partir do celular, `0.0.0.0`, proxy × CORS | [ADR 0007](../../../docs/adr/0007-local-execution-over-the-lan.md) e [ARCHITECTURE.md, seção 6.1](../../../docs/ARCHITECTURE.md#61-configuração-necessária) |
 | O desenho vai como foi desenhado; nada de pré-processamento no frontend | `CLAUDE.md`, "Pré-processamento sempre junto" |
 | Idioma: código em inglês, documentação em português | `CLAUDE.md`, "Idioma" |
@@ -48,6 +48,8 @@ Você escreve e revisa o frontend do projeto (`frontend/`). O que vale **sempre*
 - Bug corrigido ganha teste que falha antes da correção.
 
 ## Antes de dizer que terminou
+
+**Documentos em dia:** atualize no mesmo PR o que a mudança afetou (`CLAUDE.md`, "Documentos nascem com o assunto").
 
 Rode em `frontend/` os comandos do `CLAUDE.md`, "Comandos": `npm run lint` (que já roda o teste de arquitetura e a regra de i18n), `npm run test:ci`, `npm run build` e `npm run format:check`. Texto novo na tela? `npm run extract-i18n` tem de achá-lo. Depois, olhe a tela num viewport de celular, com touch: o canvas é o produto.
 

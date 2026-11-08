@@ -2,7 +2,7 @@
 
 - **Status:** Aceita
 - **Data:** 2026-11-03
-- **Relacionadas:** [0002](0002-monorepo-for-frontend-backend-and-ml.md), [0005](0005-asynchronous-recognition-with-queue-and-workers.md)
+- **Relacionadas:** [0002](0002-monorepo-for-frontend-backend-and-ml.md), [0005](0005-asynchronous-recognition-with-queue-and-workers.md), [0019](0019-in-memory-job-queue-with-one-inference-process.md), [0020](0020-result-notification-by-server-sent-events.md)
 
 ## Contexto
 
@@ -35,3 +35,4 @@ A tabela completa do que cada camada pode importar está em [ARCHITECTURE.md, se
   - Componente nunca injeta `HttpClient`; os adapters são ligados aos ports em `app.config.ts`.
   - `bootstrap/` é o único módulo do backend que conhece adapters concretos.
   - Cada parte ganha um teste de arquitetura (uma regra de import que falha) junto com o primeiro código; a ferramenta é escolhida na ADR de ferramentas da etapa.
+- **Atualização de 2026-11-08 ([ADR 0019](0019-in-memory-job-queue-with-one-inference-process.md) e [ADR 0020](0020-result-notification-by-server-sent-events.md)):** as duas decisões em aberto do contexto foram fechadas. A fila é `asyncio.Queue` limitada, com um processo de inferência, e o resultado volta por SSE. Os ports continuam os mesmos, e trocar a fila ou o canal segue sendo trocar um adapter. O teste de arquitetura existe nas três partes: Import Linter no ML e no backend (ADRs [0014](0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) e [0015](0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md)) e `eslint-plugin-boundaries` no frontend ([ADR 0017](0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)).

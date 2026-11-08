@@ -2,7 +2,7 @@
 
 - **Status:** Aceita
 - **Data:** 2026-11-03
-- **Relacionadas:** [0005](0005-asynchronous-recognition-with-queue-and-workers.md), [0006](0006-cnn-with-pytorch.md)
+- **Relacionadas:** [0005](0005-asynchronous-recognition-with-queue-and-workers.md), [0006](0006-cnn-with-pytorch.md), [0020](0020-result-notification-by-server-sent-events.md)
 
 ## Contexto
 
@@ -25,3 +25,4 @@ Usamos Angular com TypeScript no frontend e Python com FastAPI no backend, conve
 - **Positivas:** uma linguagem só entre treino e inferência; endpoints assíncronos e SSE são nativos do FastAPI; a DI do Angular corresponde direto a ports e adapters.
 - **Negativas:** dois ecossistemas para manter (Node e Python), com ferramentas e atualizações próprias; o Angular é mais framework do que um app de uma tela precisa; o servidor de desenvolvimento do frontend e a API são origens diferentes, então é preciso CORS ou proxy (ADR 0007).
 - **Na prática:** o contrato da API é a especificação OpenAPI gerada pelo FastAPI; o frontend só chega a ela pelos adapters de `infrastructure/`; as ferramentas de cada stack são escolhidas numa ADR no começo da etapa.
+- **Atualização de 2026-11-08 ([ADR 0020](0020-result-notification-by-server-sent-events.md)):** a notificação do resultado é por **SSE**, com o `GET /api/recognitions/{id}` como reserva. O WebSocket ficou de fora. As ferramentas de cada stack estão nas ADRs [0014](0014-ml-tooling-python-uv-ruff-pytest-import-linter.md), [0015](0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) e [0017](0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md).

@@ -33,13 +33,13 @@ Você escreve e revisa o backend do projeto (`backend/`). O que vale **sempre** 
 ## Funcionalidade nova
 
 1. **Issue e branch** como em todo PR (`CLAUDE.md`, "Git / commits").
-2. **ADR antes do código** quando a funcionalidade trouxer dependência, fechar uma decisão em aberto (fila, notificação) ou criar um padrão novo (`CLAUDE.md`, "Decisões de arquitetura").
+2. **ADR antes do código** quando a funcionalidade trouxer dependência, fechar uma decisão em aberto (ARCHITECTURE.md, seção 10; ex.: o runtime de inferência) ou criar um padrão novo (`CLAUDE.md`, "Decisões de arquitetura").
 3. **Domínio:** entidade ou value object em `domain/`, com as regras dele (ex.: as transições permitidas de `JobStatus`) em Python puro, testado sozinho.
 4. **Port** em `application/ports/` como `typing.Protocol`, com nome de papel (`KanjiRecognizer`, `JobQueue`), usando só tipos do domínio.
 5. **Use case** em `application/use_cases/`: uma classe, dependências (ports) pelo construtor, um método público. Testado com adapters falsos.
 6. **Adapters:** inbound em `adapters/inbound/` (rota + Pydantic `XxxRequest`/`XxxResponse` + mapeamento de e para o domínio; erros de domínio viram status HTTP aqui); outbound em `adapters/outbound/`, implementando o port.
 7. **Ligação** só em `bootstrap/`: monta os adapters, injeta nos use cases e expõe os use cases às rotas.
-8. **Testes:** unitários do domínio e do use case; integração dos adapters (test client do FastAPI, fila real no mesmo processo); os casos de erro do endpoint (`400`/`413`/`404`/`503`).
+8. **Testes:** unitários do domínio e do use case; integração dos adapters (test client do FastAPI, fila real no mesmo processo, o SSE lido até o estado final, o pool de verdade com um modelo falso); os casos de erro do endpoint (`400`/`413`/`404`/`503`).
 
 ## Mudança em código que já existe
 
@@ -48,6 +48,8 @@ Você escreve e revisa o backend do projeto (`backend/`). O que vale **sempre** 
 - Bug corrigido ganha teste que falha antes da correção.
 
 ## Antes de dizer que terminou
+
+**Documentos em dia:** atualize no mesmo PR o que a mudança afetou (`CLAUDE.md`, "Documentos nascem com o assunto").
 
 Rode os comandos do `CLAUDE.md`, "Comandos": `ruff check` e `ruff format --check` na raiz, e `mypy`, `pytest` e `lint-imports` com `--directory backend`. O `pytest` já roda o teste de arquitetura (os seis contratos do `backend/pyproject.toml`). Mudou o `kanjilens_ml`? Rode também com `--directory ml`.
 

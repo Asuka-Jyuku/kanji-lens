@@ -59,3 +59,4 @@ Um workflow, `.github/workflows/ci.yml`, roda em todo PR e em todo push para o `
   - os comandos locais são os do `CLAUDE.md`, "Comandos": se passam localmente, passam no CI (a menos de diferenças do Windows);
   - etapa nova numa parte entra no job dela, no mesmo PR que cria o comando;
   - a `main` e o `develop` exigem o check `CI` para o merge (configuração do repositório, descrita no `CONTRIBUTING.md`).
+- **Atualização de 2026-11-08:** a proteção do `develop` e da `main` está configurada. Ela exige o check `CI` com a branch **atualizada com a base** ("Require branches to be up to date"), sem push forçado e sem apagar a branch. Quando um PR entra, os outros abertos precisam do "Update branch" antes do merge.

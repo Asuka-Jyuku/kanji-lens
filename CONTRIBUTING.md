@@ -190,7 +190,7 @@ Todo PR para o `develop` ou a `main`, e todo push nessas branches, roda o workfl
 | Docs links | qualquer `.md` | links relativos e âncoras |
 | **CI** | sempre | passa se todos os jobs passaram ou foram pulados; **é o único check obrigatório** |
 
-Os comandos são os do `CLAUDE.md`, "Comandos": se passam na sua máquina, passam no CI, exceto por alguma diferença do Windows. O merge exige o check `CI` verde. Isso é configurado na proteção do `develop` e da `main` (Settings → Branches), com "Require status checks to pass" e o check `CI`.
+Os comandos são os do `CLAUDE.md`, "Comandos": se passam na sua máquina, passam no CI, exceto por alguma diferença do Windows. O merge exige o check `CI` verde. Isso é configurado na proteção do `develop` e da `main` (Settings → Branches), com "Require status checks to pass", o check `CI` e "Require branches to be up to date". Por isso o PR também precisa estar **atualizado com a base**: quando outro PR entra antes, use "Update branch" no PR (ou traga o `develop` para a branch com merge) e espere o CI de novo.
 
 ## Checklist do pull request
 

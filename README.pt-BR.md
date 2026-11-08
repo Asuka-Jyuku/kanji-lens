@@ -4,7 +4,7 @@
 
 [English](README.md) · [Arquitetura](docs/ARCHITECTURE.md) · [Decisões (ADRs)](docs/adr/README.md) · [Como contribuir](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-> **Status:** fase inicial. A arquitetura está definida; a implementação ainda não começou.
+> **Status:** fase inicial. A arquitetura, as ferramentas e o CI estão definidos, e as estruturas de `ml/`, `backend/` e `frontend/` existem. O código do produto começa pelo backend.
 
 ---
 
@@ -70,7 +70,8 @@ O reconhecimento usa uma CNN 2D compacta treinada em PyTorch, que não depende d
 | Método | Endpoint | Responsabilidade |
 |---|---|---|
 | `POST` | `/api/recognitions` | Enviar os traços e o modo (`ordered` / `unordered`) para reconhecimento |
-| `GET` | `/api/recognitions/{id}` | Consultar status e resultado de uma tarefa |
+| `GET` | `/api/recognitions/{id}` | Consultar status e resultado de uma tarefa (reserva do SSE) |
+| `GET` | `/api/recognitions/{id}/events` | Receber as mudanças de estado da tarefa por SSE |
 | `GET` | `/api/health` | Verificar disponibilidade do backend |
 
 Exemplo de tarefa concluída:
@@ -134,7 +135,7 @@ O checklist completo está em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-esco
 
 ## Como executar
 
-Ainda não disponível. As instruções serão adicionadas quando os primeiros componentes estiverem prontos.
+O app ainda não reconhece kanjis. Para desenvolver, os comandos (instalar, testar, subir a API e o frontend) estão no [`CLAUDE.md`, "Comandos"](CLAUDE.md#comandos). O passo a passo para rodar no notebook da escola e na rede local vai para o `docs/RUNNING.md` quando a primeira versão rodar.
 
 ## O que o projeto explora
 
