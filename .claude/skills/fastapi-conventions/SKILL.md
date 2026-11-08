@@ -10,7 +10,7 @@ Você escreve e revisa o backend do projeto (`backend/`). O que vale **sempre** 
 
 **Cada regra mora num lugar só.** Esta skill diz o caminho e aponta a fonte; não copie a regra para cá. Achou uma regra aqui que diverge da fonte, vale a fonte: corrija a skill no mesmo PR.
 
-> **Fase:** a estrutura de `backend/` existe, com as ferramentas da [ADR 0015](../../../docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md): FastAPI, Uvicorn, uv, Ruff, mypy, pytest com `httpx2` e Import Linter. A aplicação é criada por `create_app()` em `bootstrap/app.py`, e só o `GET /api/health` existe. Quando o primeiro código entrar, crie `references/examples.md` apontando o use case e o adapter que servem de modelo.
+> **Fase:** a estrutura de `backend/` existe, com as ferramentas da [ADR 0015](../../../docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md): FastAPI, Uvicorn, uv, Ruff, mypy, pytest com `httpx2` e Import Linter. O domínio do reconhecimento existe ([docs/architecture/domain.md](../../../docs/architecture/domain.md)); a aplicação é criada por `create_app()` em `bootstrap/app.py`, e só o `GET /api/health` existe. Os modelos a seguir estão em [`references/examples.md`](references/examples.md).
 
 | Assunto | Fonte (a regra está lá) |
 |---|---|
@@ -29,6 +29,7 @@ Você escreve e revisa o backend do projeto (`backend/`). O que vale **sempre** 
 |---|---|
 | [`references/style.md`](references/style.md) | antes de escrever código, e sempre que um tutorial de FastAPI ou um revisor parecer dizer outra coisa |
 | [`references/review.md`](references/review.md) | ao revisar um PR com backend, e no fim do seu próprio trabalho |
+| [`references/examples.md`](references/examples.md) | antes de escrever um tipo de domínio, um use case ou um adapter: o código que já serve de modelo |
 
 ## Funcionalidade nova
 
