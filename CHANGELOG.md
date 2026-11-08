@@ -5,6 +5,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Publicação e documentação
+- **A prioridade fica num campo só, o `Priority` do Project, de 0 a 4**, com o significado de cada valor no [CONTRIBUTING.md](CONTRIBUTING.md#backlog-no-project) e nas próprias opções do campo. As etiquetas `priority:` foram apagadas (#41).
 - **CI no GitHub Actions** ([ADR 0018](docs/adr/0018-ci-with-github-actions-and-a-single-required-check.md)), em todo PR para o `develop` ou a `main`:
   - **Python:** lint, tipos, testes e arquitetura do ML e do backend, no Linux e no Windows;
   - **frontend:** lint, formatação, testes e build;

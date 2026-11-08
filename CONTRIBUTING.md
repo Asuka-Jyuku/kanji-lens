@@ -100,7 +100,25 @@ A estrutura do texto de um épico está no template de Épico (`.github/ISSUE_TE
 ### Backlog no Project
 
 As issues e o andamento ficam no GitHub Project do repositório, o [CNN de Kanjis](https://github.com/orgs/Asuka-Jyuku/projects/6) (número 6). Issue nova (e sub-issue) entra sozinha, pelo workflow "Auto-add to project", com o Status `Backlog`.
-- **Campos:** **Status** (Backlog, Ready, In progress, In review, Done e Epic, este só para épicos), **Priority** (P0–P2) e **Size** (XS–XL). Na prática, a prioridade vai na etiqueta `priority: high|medium|low`.
+- **Campos:** **Status** (Backlog, Ready, In progress, In review, Done e Epic, este só para épicos), **Priority** (0–4) e **Size** (XS–XL).
+- **Priority** é a única fonte de prioridade. Toda issue tem uma, inclusive épicos e issues fechadas; o significado de cada valor também está na descrição das opções do campo:
+
+  | Valor | Significado |
+  |---|---|
+  | **0** | Caminho crítico agora, ou algo quebrado |
+  | **1** | A próxima da fila |
+  | **2** | Depois |
+  | **3** | Quando houver tempo |
+  | **4** | Ideia ou talvez |
+
+- **Pôr a prioridade numa issue:**
+
+  ```bash
+  item=$(gh project item-add 6 --owner Asuka-Jyuku --url <url da issue> --format json -q .id)
+  gh project item-edit --project-id PVT_kwDOEOSoQM4BqAo9 --id "$item" \
+    --field-id PVTSSF_lADOEOSoQM4BqAo9zhpC3vg --single-select-option-id <opção>
+  # opções: 0 = 3310041b, 1 = 645b2e32, 2 = 705be3b7, 3 = 7e5e438c, 4 = 5969c008
+  ```
 - **Pelo `gh`** (a conta precisa do escopo `project`): `gh project item-list 6 --owner Asuka-Jyuku`, `gh project field-list 6 --owner Asuka-Jyuku` e `gh project item-edit`.
 - **Pôr um épico no Status `Epic`:**
 
@@ -118,7 +136,6 @@ Os nomes das etiquetas ficam em inglês, como os outros identificadores; a descr
 |---|---|
 | Tipo | `bug`, `enhancement`, `chore`, `spike`, `epic` |
 | Área | `frontend`, `backend`, `ml`, `infra` |
-| Prioridade | `priority: high` (algo quebrado ou que bloqueia outra issue), `priority: medium` (próxima da fila), `priority: low` (quando houver tempo) |
 | Épico | `epic: <name>`, uma por épico |
 | Andamento | `in progress` |
 
