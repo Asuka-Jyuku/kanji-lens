@@ -51,14 +51,14 @@ flowchart LR
 
 Funcionalidades:
 
-- Escolha do modo antes de reconhecer: a ordem dos traços importa ou não. O modo vai em cada solicitação, e o padrão da interface ainda está em aberto (seção 10).
+- Escolha do modo antes de reconhecer: a ordem dos traços importa ou não. O modo vai em cada solicitação. O padrão é **"não importa"** ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
 - Área de desenho com suporte a mouse e touch, que guarda o desenho como **lista de traços**, cada um com a sua sequência de pontos (X, Y). A separação e a ordem dos traços são preservadas ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
 - No modo `ordered`, a avaliação da ordem junto dos candidatos: se está correta e quais traços estão fora de ordem ou na direção errada.
 - Botão para limpar o canvas.
 - Botão para enviar o desenho.
 - Indicador de processamento.
 - Lista dos kanjis previstos, com a confiança de cada um.
-- Verbete do kanji escolhido: por ora, um link que abre um dicionário externo em nova aba; o dicionário próprio fica para depois (seção 10).
+- Verbete do kanji escolhido: tocar num candidato abre o verbete num dicionário externo, em nova aba. O padrão é o **Takoboto**, e o usuário pode escolher outro dicionário numa configuração da interface, guardada no aparelho ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)). O dicionário próprio fica para depois (seção 10).
 
 ```text
 ┌──────────────────────────────┐
@@ -377,6 +377,7 @@ Qualquer um na mesma rede alcança a API, sem login. As regras que decorrem diss
 | Notebook | Dell Inspiron 3501 |
 | CPU | Intel Core i7-1165G7: 4 núcleos / 8 threads, até 4,70 GHz, AVX2, AVX-512, DL Boost |
 | RAM | 16 GB |
+| Sistema operacional | Windows ([ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md)) |
 | GPU | Intel Iris Xe integrada; não pressupor GPU dedicada nem uso da integrada pelo runtime (configuração efetiva *a confirmar*) |
 | Hospeda | Frontend (build estático), FastAPI, fila, runtime de inferência, o modelo, as referências do KanjiVG e serviços auxiliares que rodarem ali |
 
@@ -574,14 +575,14 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Modos e modelo | `ordered` / `unordered`, escolhido por solicitação; uma CNN 2D compacta nos dois; no `ordered`, avaliação da ordem contra o KanjiVG | Decidido — [ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md) (substitui a [0010](adr/0010-two-recognition-modes-with-specialized-models.md)) |
 | Servidor e carga | Notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB), inferência CPU-first; 3–5 envios numa janela curta, 10 clientes como estresse | Decidido — [ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md) |
 | Execução | Local / rede local, sem nuvem | Decidido — [ADR 0007](adr/0007-local-execution-over-the-lan.md) |
-| Como roda no notebook | Direto, sem Docker: ambiente Python isolado, build estático e serviço do sistema (SO *a confirmar*) | Decidido — [ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md) |
+| Como roda no notebook | Direto, sem Docker, no Windows: ambiente Python isolado, build estático e serviço do sistema | Decidido — [ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md) |
 | Branches e releases | `main` + `develop`, CHANGELOG por release | Decidido — [ADR 0008](adr/0008-git-flow-and-changelog-by-release.md) |
 | Notificação do resultado | SSE ou WebSocket | Em aberto (tendência: SSE) |
 | Fila | `asyncio.Queue` ou Redis + Celery/RQ | Em aberto (começar com `asyncio.Queue`) |
 | Dataset do reconhecimento | ETL8G / ETL9G em avaliação (licença a confirmar) | Em aberto |
 | Algoritmo de avaliação da ordem | *DP matching*, bipartite matching / cube search ou avaliação incremental com contexto; quantos candidatos avaliar; se só anota ou também reordena | Em aberto |
-| Modo padrão da interface | `ordered` ou `unordered` | Em aberto |
-| Verbete do kanji escolhido | Link externo (nova aba) ou dicionário próprio com dados abertos locais (KANJIDIC2 / JMdict, licença a confirmar) | Em aberto (por ora: link externo; o dicionário próprio fica para depois. O site do link ainda está a definir) |
+| Modo padrão da interface | "Não importa" (`unordered`) | Decidido — [ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md) (atualização) |
+| Verbete do kanji escolhido | Link externo em nova aba, com o Takoboto como padrão e o dicionário escolhido pelo usuário numa lista fixa ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)); dicionário próprio com dados abertos locais (KANJIDIC2 / JMdict) | Por ora, link externo; o dicionário próprio fica em aberto, para depois |
 | Runtime, resolução, precisão e concorrência de produção | PyTorch / OpenVINO / ONNX Runtime CPU; 64–128 px; FP32 / INT8; 1 ou 2 execuções | Em aberto (benchmark no notebook) |
 | Quantidade de classes | Centenas → 2.136 (Jōyō) | Em aberto |
 | Ferramentas de cada stack | Gerenciador de pacotes, linter, test runner | Em aberto — uma ADR no começo de cada etapa |

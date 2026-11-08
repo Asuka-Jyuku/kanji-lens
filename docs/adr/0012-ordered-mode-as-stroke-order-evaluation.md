@@ -44,7 +44,7 @@ Continuam como na ADR 0010:
 - **Quantos candidatos são avaliados:** só o primeiro ou os top-K.
 - **O papel da avaliação:** se ela só anota o resultado ou também reordena os candidatos.
 - **O formato exato da resposta.**
-- **O modo padrão da interface.**
+- **O modo padrão da interface.** *Atualização de 2026-11-08:* o padrão é **"não importa" (`unordered`)**. Quem quer treinar a ordem troca a opção antes de desenhar.
 
 ## Consequências
 

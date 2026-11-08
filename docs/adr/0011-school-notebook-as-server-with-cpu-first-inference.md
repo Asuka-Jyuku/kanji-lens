@@ -15,6 +15,7 @@ A [ADR 0007](0007-local-execution-over-the-lan.md) decidiu rodar tudo numa máqu
 | Notebook | Dell Inspiron 3501 |
 | CPU | Intel Core i7-1165G7: 4 núcleos / 8 threads, até 4,70 GHz, com AVX2, AVX-512 e DL Boost |
 | RAM | 16 GB |
+| Sistema operacional | Windows (confirmado em 2026-11-08; [ADR 0013](0013-run-directly-on-the-school-notebook-without-docker.md)) |
 | GPU | Intel Iris Xe integrada; não há GPU dedicada, e variantes do modelo podem ter configuração diferente (*a confirmar*) |
 
 O notebook hospeda o **conjunto completo** do KanjiLens:
