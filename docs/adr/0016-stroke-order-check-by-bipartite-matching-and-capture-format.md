@@ -90,6 +90,7 @@ O [spike #28](../spikes/stroke-order-evaluation.md) conferiu o KanjiVG na fonte 
   ```
 
   - `type` pode ser `order`, `direction`, `joined` (com `expected_strokes`: as posições unidas) ou `broken` (com `expected_stroke`).
+    *Atualização de 2026-11-08 (#44):* o `joined` traz também o `drawn_stroke` (o traço que une), e o `broken`, os `drawn_strokes` (os pedaços); os dois só juntam traços vizinhos, em ordem. O `correct` é calculado a partir dos problemas, sem campo próprio no domínio ([docs/architecture/domain.md](../architecture/domain.md)).
   - `correct` olha só ordem e direção; traços unidos ou quebrados aparecem como observação.
   - Sem avaliação: `"status": "not_evaluated"`, com `reason` (`stroke_count_mismatch` ou `reference_missing`).
   - No modo `unordered`, o campo não existe.

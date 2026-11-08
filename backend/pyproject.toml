@@ -1,7 +1,7 @@
 [project]
 name = "kanjilens"
 version = "0.0.0"
-description = "KanjiLens backend: FastAPI app, recognition jobs, queue and workers"
+description = "KanjiLens backend: FastAPI app, recognition jobs, queue and inference process"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.15,<3.16"

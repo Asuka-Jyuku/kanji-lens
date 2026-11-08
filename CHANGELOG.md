@@ -4,6 +4,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Não publicado]
 
+### Funcionalidades
+- **O domínio do reconhecimento existe no backend** (#44):
+  - **regras:** o desenho, o modo, o job com os estados, os candidatos e a avaliação da ordem, cada um com as próprias regras;
+  - **desenho fora dos limites:** é recusado com um código estável, `drawing_too_large` (muito grande) ou `invalid_drawing` (formato errado), que o frontend vai traduzir;
+  - **job:** só passa por `queued` → `processing` → `completed` ou `failed`, e o resultado expira 5 minutos depois do fim;
+  - **documentação:** glossário e diagrama de estados em [docs/architecture/domain.md](docs/architecture/domain.md).
+
 ### Publicação e documentação
 - **Documentação alinhada com a fila, o SSE e as ferramentas**:
   - as ADRs 0003 e 0004, as skills e o `CLAUDE.md` deixam de tratar a fila e a notificação como decisões em aberto e descrevem o processo de inferência no lugar dos "workers";

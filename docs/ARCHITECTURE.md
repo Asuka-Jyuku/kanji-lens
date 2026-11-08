@@ -179,8 +179,8 @@ No modo `ordered`, cada candidato traz a avaliação da ordem do desenho contra 
 > - **Tipos de problema (`type`):**
 >   - `order`;
 >   - `direction`;
->   - `joined`, com `expected_strokes`: as posições unidas;
->   - `broken`, com `expected_stroke`.
+>   - `joined`, com `drawn_stroke` e `expected_strokes`: as posições vizinhas da referência que o traço une;
+>   - `broken`, com `drawn_strokes` (os pedaços vizinhos) e `expected_stroke`.
 > - **Numeração:** as posições começam em 1, como na tela.
 > - **`correct`:** olha só ordem e direção; traços unidos ou quebrados aparecem como observação.
 > - **Sem avaliação:** `not_evaluated` quando a quantidade de traços difere em mais de 2 (`stroke_count_mismatch`) ou o kanji não está no KanjiVG (`reference_missing`).
@@ -265,7 +265,7 @@ flowchart TB
 
 | Camada | O que contém | Pode importar |
 |---|---|---|
-| `domain/` | Entidades e value objects (`RecognitionJob`, `JobStatus`, `Prediction`, `Drawing` feito de traços, `StrokeOrderMode`, `StrokeOrderEvaluation`) e as regras deles, em Python puro | só a biblioteca padrão |
+| `domain/` | Entidades e value objects (`RecognitionJob`, `JobStatus`, `JobFailure`, `Prediction`, `RecognitionResult`, `Drawing` feito de `Stroke`s e `Point`s, `StrokeOrderMode`, `StrokeOrderEvaluation`) e as regras deles, em Python puro. Glossário, estados do job e regras em [architecture/domain.md](architecture/domain.md) | só a biblioteca padrão |
 | `application/use_cases/` | Um use case por ação (`SubmitRecognition`, `GetRecognition`, `ProcessRecognition`) | `domain`, `application/ports` |
 | `application/ports/` | As interfaces de que os use cases precisam (`KanjiRecognizer`, `StrokeOrderEvaluator`, `JobQueue`, `JobRepository`, `ResultNotifier`) | `domain` |
 | `adapters/inbound/` | Rotas do FastAPI e schemas Pydantic de request/response, o endpoint SSE, o consumidor da fila que chama `ProcessRecognition` | `application`, `domain`, FastAPI |
@@ -356,7 +356,7 @@ Decidida na [ADR 0020](adr/0020-result-notification-by-server-sent-events.md). O
 - **Backend:** `GET /api/recognitions/{id}/events` com o `EventSourceResponse` nativo do FastAPI (que já manda keep-alive a cada 15 s).
 - **Um evento por mudança de estado:**
   - `event:` é o estado (`queued`, `processing`, `completed` ou `failed`);
-  - `data:` é o **estado completo do job**, no mesmo formato do `GET /api/recognitions/{id}`;
+  - `data:` é o **estado completo do job**, no mesmo formato do `GET /api/recognitions/{id}`; num job `failed`, o estado traz o código da falha (`inference_failed`), que o frontend traduz;
   - o stream termina no estado final.
 - **Reconexão:** como cada evento é completo, quem reconecta recebe o estado atual, sem `Last-Event-ID`.
 - **Frontend:** o adapter `SseResultStream` usa o `EventSource` nativo e fecha no estado final. Se o SSE falhar repetidamente, o frontend consulta o `GET /api/recognitions/{id}` por polling.
@@ -567,7 +567,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 
 - [x] Configurar o projeto FastAPI ([ADR 0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md)).
 - [x] Escolher a fila e a notificação ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md), [ADR 0020](adr/0020-result-notification-by-server-sent-events.md)).
-- [ ] Criar o domínio: desenho, modo, job e estados ([#44](https://github.com/Asuka-Jyuku/kanji-lens/issues/44)).
+- [x] Criar o domínio: desenho, modo, job e estados ([#44](https://github.com/Asuka-Jyuku/kanji-lens/issues/44); [architecture/domain.md](architecture/domain.md)).
 - [ ] Criar o endpoint de reconhecimento, gerar o `job_id` e pôr o job na fila ([#45](https://github.com/Asuka-Jyuku/kanji-lens/issues/45)).
 - [ ] Processar os jobs no processo de inferência e armazenar os resultados, com um reconhecedor falso ([#46](https://github.com/Asuka-Jyuku/kanji-lens/issues/46)).
 - [ ] Implementar a notificação por SSE, com o polling de reserva ([#47](https://github.com/Asuka-Jyuku/kanji-lens/issues/47)).
