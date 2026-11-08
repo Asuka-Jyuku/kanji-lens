@@ -104,19 +104,20 @@ Requisição (`POST /api/recognitions`):
 ```json
 {
   "stroke_order_mode": "unordered",
+  "canvas": { "width": 320, "height": 320 },
   "strokes": [
-    [[0.21, 0.30], [0.48, 0.31], [0.79, 0.30]],
-    [[0.50, 0.12], [0.50, 0.55], [0.49, 0.90]]
+    [[41.0, 30.5, 0], [41.2, 88.0, 140]],
+    [[44.1, 31.0, 410], [118.3, 29.4, 590], [117.9, 92.2, 780]]
   ]
 }
 ```
 
-> Cada traço é uma lista de pontos na ordem em que foram desenhados. O formato exato de cada ponto ainda não está fechado, e sai junto com o algoritmo de avaliação da ordem (seção 2.3):
-> - normalização das coordenadas;
-> - timestamp ou `delta_t`;
-> - limite de traços e de pontos (que é o limite de entrada da API).
->
-> `stroke_order_mode` aceita `ordered` ou `unordered`; outro valor é rejeitado no adapter HTTP.
+> Formato da [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md):
+> - **traços:** cada traço é uma lista de pontos `[x, y, t]`, na ordem em que foram desenhados;
+> - **coordenadas:** `x` e `y` em pixels CSS a partir do canto superior esquerdo do canvas, como desenhados (a normalização é do `kanjilens_ml`);
+> - **tempo:** `t` em milissegundos desde o primeiro ponto, inteiro e não decrescente;
+> - **limites iniciais**, conferidos no adapter HTTP: até 40 traços, 1.000 pontos por traço, 10.000 pontos no total, coordenadas dentro do canvas com 10% de folga e `canvas` entre 64 e 4.096 px por lado;
+> - **modo:** `stroke_order_mode` aceita `ordered` ou `unordered`; outro valor é rejeitado.
 
 Resposta inicial:
 
@@ -144,7 +145,7 @@ Resposta após o processamento:
 
 > As confianças são probabilidades da saída Softmax. Por isso a soma das previsões top-K nunca passa de 1.
 
-No modo `ordered`, a resposta também traz a avaliação da ordem. O formato abaixo é ilustrativo e ainda não está fechado ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)):
+No modo `ordered`, cada candidato traz a avaliação da ordem do desenho contra a referência dele. A avaliação só anota: não muda o ranking ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
 
 ```json
 {
@@ -152,21 +153,37 @@ No modo `ordered`, a resposta também traz a avaliação da ordem. O formato aba
   "status": "completed",
   "stroke_order_mode": "ordered",
   "predictions": [
-    { "kanji": "日", "confidence": 0.81 },
-    { "kanji": "目", "confidence": 0.12 }
-  ],
-  "stroke_order": {
-    "kanji": "日",
-    "correct": false,
-    "expected_strokes": 4,
-    "drawn_strokes": 4,
-    "issues": [
-      { "stroke": 3, "problem": "order", "expected_position": 4 },
-      { "stroke": 2, "problem": "direction" }
-    ]
-  }
+    {
+      "kanji": "日",
+      "confidence": 0.81,
+      "stroke_order": {
+        "status": "evaluated",
+        "correct": false,
+        "expected_strokes": 4,
+        "drawn_strokes": 4,
+        "issues": [
+          { "type": "order", "drawn_stroke": 3, "expected_position": 4 },
+          { "type": "direction", "drawn_stroke": 2 }
+        ]
+      }
+    },
+    {
+      "kanji": "目",
+      "confidence": 0.12,
+      "stroke_order": { "status": "not_evaluated", "reason": "stroke_count_mismatch" }
+    }
+  ]
 }
 ```
+
+> - **Tipos de problema (`type`):**
+>   - `order`;
+>   - `direction`;
+>   - `joined`, com `expected_strokes`: as posições unidas;
+>   - `broken`, com `expected_stroke`.
+> - **Numeração:** as posições começam em 1, como na tela.
+> - **`correct`:** olha só ordem e direção; traços unidos ou quebrados aparecem como observação.
+> - **Sem avaliação:** `not_evaluated` quando a quantidade de traços difere em mais de 2 (`stroke_count_mismatch`) ou o kanji não está no KanjiVG (`reference_missing`).
 
 ### 2.3 Machine Learning
 
@@ -177,7 +194,7 @@ Os dois modos usam **um único modelo**, a CNN 2D compacta, que não depende da 
 | Parte | O que é | Entrada | Alternativas / em aberto |
 |---|---|---|---|
 | Reconhecimento (os dois modos) | CNN 2D customizada compacta | Imagem rasterizada final, em tons de cinza; resoluções a comparar: 64×64, 96×96 e 128×128 | Comparadores: MobileNetV3-Small, ResNet-18, HOG + SVM |
-| Avaliação da ordem (só `ordered`) | Correspondência entre os traços desenhados e a ordem e a direção do KanjiVG para os candidatos | Traços normalizados e reamostrados, e a referência do KanjiVG | O algoritmo (*DP matching*, bipartite matching / cube search, avaliação incremental com contexto); quantos candidatos avaliar; se só anota ou também reordena |
+| Avaliação da ordem (só `ordered`) | Correspondência bipartite (algoritmo húngaro) entre os traços desenhados e os do KanjiVG, com hipóteses de traços unidos e quebrados (até 2) e checagem de direção, para cada candidato ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md); [spike](spikes/stroke-order-evaluation.md)) | Traços normalizados e reamostrados, e a referência do KanjiVG | Parâmetros (margem de direção, comprimento mínimo, abstenção por custo alto) ajustados com desenhos reais (#29) |
 
 Ponto de partida da CNN (não fechado; tamanho e profundidade saem dos benchmarks):
 
@@ -195,7 +212,7 @@ Traços do canvas → Validação → Pré-processamento compartilhado → raste
                                                          contra o KanjiVG dos candidatos ─▶ resultado traço a traço
 ```
 
-**Dados de referência:** o KanjiVG (vetores, ordem e direção de cada traço). Ele é distribuído junto com a aplicação, porque não há saída de rede. A licença (CC BY-SA 3.0, *a confirmar*) exige atribuição e vale também para os dados derivados, à parte da licença MIT do código.
+**Dados de referência:** o KanjiVG (vetores, ordem e direção de cada traço). Ele fica numa versão fixada (`r20260714`, com checksum), e um script de preparação gera os traços de referência fora do git, porque a aplicação não sai para a rede ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)). A licença, **CC BY-SA 3.0** (confirmada na fonte), exige atribuição, inclusive na interface, e vale também para os dados derivados, à parte da licença MIT do código.
 
 O modelo retorna as K classes mais prováveis, e não apenas a de maior probabilidade. Os dois modos compartilham:
 - o contrato da API;
@@ -426,7 +443,7 @@ Candidatos a avaliar (licenças e números ainda a confirmar nas fontes oficiais
 | Parte | Dados necessários | Candidatos |
 |---|---|---|
 | Reconhecimento (os dois modos) | Imagens do caractere (dados *offline*) para treinar | ETL8G / ETL9G (grayscale 128×127) e as variantes binárias ETL8B2 / ETL9B (64×63) |
-| Avaliação da ordem (`ordered`) | A ordem e a direção de referência de cada kanji; **nada de treino** | KanjiVG (licença CC BY-SA 3.0, *a confirmar*), cobrindo toda a lista de classes |
+| Avaliação da ordem (`ordered`) | A ordem e a direção de referência de cada kanji; **nada de treino** | KanjiVG `r20260714` (CC BY-SA 3.0), cobrindo toda a lista de classes |
 | Teste da avaliação da ordem | Um conjunto fixo de desenhos com ordem certa e errada, com o resultado esperado | Desenhos feitos de propósito para o teste. Coletar desenhos de alunos muda a regra de não guardar desenhos (`CLAUDE.md`, "Segurança") e pede ADR |
 
 O ETL foi digitalizado de folhas de papel: tem a imagem final, sem a trajetória da caneta. Isso basta, porque o modelo não usa a ordem. Datasets *online* (TUAT Kuchibue/Nakayosi, CASIA-OLHWDB) **não são necessários**: o `ordered` não treina um modelo temporal.
@@ -528,7 +545,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 
 - [x] Avaliar famílias de modelos e runtimes ([spike](spikes/model-and-runtime-evaluation.md)) e definir o modo `ordered` como avaliação da ordem ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
 - [ ] Pesquisar e selecionar o dataset e a quantidade de classes.
-- [ ] Escolher o algoritmo de avaliação da ordem e o formato de captura dos pontos.
+- [x] Escolher o algoritmo de avaliação da ordem e o formato de captura dos pontos ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
 - [ ] Criar o pré-processamento compartilhado (imagem e traços normalizados).
 - [ ] Implementar e treinar a CNN 2D compacta.
 - [ ] Implementar a avaliação da ordem contra o KanjiVG (`ordered`).
@@ -585,7 +602,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Notificação do resultado | SSE ou WebSocket | Em aberto (tendência: SSE) |
 | Fila | `asyncio.Queue` ou Redis + Celery/RQ | Em aberto (começar com `asyncio.Queue`) |
 | Dataset do reconhecimento | ETL8G / ETL9G em avaliação (licença a confirmar) | Em aberto |
-| Algoritmo de avaliação da ordem | *DP matching*, bipartite matching / cube search ou avaliação incremental com contexto; quantos candidatos avaliar; se só anota ou também reordena | Em aberto |
+| Algoritmo de avaliação da ordem | Bipartite com hipóteses de união e quebra; todos os candidatos avaliados; só anota, sem reordenar; formato dos pontos `[x, y, t]` | Decidido — [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md) |
 | Modo padrão da interface | "Não importa" (`unordered`) | Decidido — [ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md) (atualização) |
 | Verbete do kanji escolhido | Link externo em nova aba, com o Takoboto como padrão e o dicionário escolhido pelo usuário numa lista fixa ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)); dicionário próprio com dados abertos locais (KANJIDIC2 / JMdict) | Por ora, link externo; o dicionário próprio fica em aberto, para depois |
 | Runtime, resolução, precisão e concorrência de produção | PyTorch / OpenVINO / ONNX Runtime CPU; 64–128 px; FP32 / INT8; 1 ou 2 execuções | Em aberto (benchmark no notebook) |

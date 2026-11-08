@@ -39,7 +39,7 @@ Continuam como na ADR 0010:
 - o canvas enviando a lista de traços, e não um PNG;
 - o modo escolhido a cada reconhecimento.
 
-**Em aberto:**
+**Em aberto** (*atualização de 2026-11-08:* o algoritmo, os candidatos, o papel da avaliação e os formatos foram fechados na [ADR 0016](0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)):
 - **O algoritmo de correspondência:** *DP matching*, bipartite matching / cube search ou avaliação incremental com contexto, a comparar num spike.
 - **Quantos candidatos são avaliados:** só o primeiro ou os top-K.
 - **O papel da avaliação:** se ela só anota o resultado ou também reordena os candidatos.
@@ -58,7 +58,7 @@ Continuam como na ADR 0010:
   - **A avaliação depende de o reconhecimento acertar o kanji.** Se o candidato certo não estiver entre os avaliados, a avaliação da ordem é feita contra o kanji errado.
   - **Traços unidos ou quebrados** fazem a quantidade desenhada diferir da referência, e o algoritmo precisa tratar isso sem acusar erro falso.
   - **A referência é a ordem convencional do KanjiVG.** Variantes aceitas na escola precisam de tratamento à parte (*a verificar* com os professores).
-  - **Licença do KanjiVG.** Os dados vêm do KanjiVG (CC BY-SA 3.0, *a confirmar* na fonte) e vão junto com a aplicação, porque não há saída de rede. É preciso atribuir a fonte e manter a licença nos dados derivados, à parte da licença MIT do código.
+  - **Licença do KanjiVG.** Os dados vêm do KanjiVG (CC BY-SA 3.0, confirmada na fonte pela ADR 0016) e vão junto com a aplicação, porque não há saída de rede. É preciso atribuir a fonte e manter a licença nos dados derivados, à parte da licença MIT do código.
   - **Um teste com desenhos reais** em ordem certa e errada ainda é necessário. Guardar desenhos de alunos para isso pede ADR (`CLAUDE.md`, "Segurança").
 - **Na prática:**
   - `kanjilens_ml/models/` tem só a CNN 2D;

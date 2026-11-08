@@ -131,7 +131,6 @@ O checklist completo está em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-esco
 | Fila de tarefas | `asyncio.Queue` / Redis + Celery ou RQ | Começar com `asyncio.Queue` e migrar para Redis quando necessário |
 | Notificação do resultado | SSE / WebSocket | Tendência para SSE (só servidor → cliente) |
 | Dataset | ETL8G / ETL9G | Imagens públicas de kanjis manuscritos (*offline*; licença a confirmar) |
-| Avaliação da ordem | *DP matching* / bipartite matching / avaliação incremental | Comparar com o KanjiVG (licença a confirmar); sem dados de treino |
 | Runtime de inferência | PyTorch / OpenVINO / ONNX Runtime (CPU), FP32 ou INT8 | Definido por benchmark no notebook da escola |
 | Quantidade de classes | Algumas centenas → 2.136 kanjis Jōyō | Começar pequeno e expandir |
 
@@ -147,4 +146,4 @@ Visão Computacional, Deep Learning e CNN, correspondência entre traços para a
 
 O código-fonte está sob a [licença MIT](LICENSE).
 
-A licença cobre só o código deste repositório. Os datasets usados no treino e os pesos treinados não fazem parte do repositório e não são cobertos por ela: cada dataset mantém os próprios termos, e pesos treinados com ele podem herdá-los. Os dados de referência do KanjiVG, usados na avaliação da ordem e distribuídos com a aplicação, mantêm a própria licença (CC BY-SA 3.0, a confirmar), com atribuição.
+A licença cobre só o código deste repositório. Os datasets usados no treino e os pesos treinados não fazem parte do repositório e não são cobertos por ela: cada dataset mantém os próprios termos, e pesos treinados com ele podem herdá-los. Os dados de referência do KanjiVG, usados na avaliação da ordem e distribuídos com a aplicação, mantêm a própria licença (CC BY-SA 3.0, © Ulrich Apel, [kanjivg.tagaini.net](https://kanjivg.tagaini.net)), com atribuição.
