@@ -10,3 +10,43 @@ h1 {
   font-size: 1.25rem;
   text-align: center;
 }
+
+/* The mode comes before the drawing, so it is chosen and seen first (ADR 0012; Nielsen 1). */
+.workspace {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* As wide as the canvas, so the two read as one block (the same size as --pad-size in
+   drawing-pad.css). */
+app-mode-selector {
+  width: min(100%, 60dvh);
+}
+
+app-drawing-pad {
+  align-self: stretch;
+  min-width: 0;
+}
+
+/* A phone lying down: the selector goes left of the pad, so the canvas keeps the height
+   left under the title (drawing-pad.css; WCAG 1.3.4). */
+@media (orientation: landscape) and (max-height: 32rem) {
+  .workspace {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  app-mode-selector {
+    flex: 0 0 10rem;
+    width: auto;
+  }
+
+  app-drawing-pad {
+    flex: 1 1 auto;
+    align-self: flex-start;
+  }
+}

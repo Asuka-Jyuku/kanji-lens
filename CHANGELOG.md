@@ -5,6 +5,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Funcionalidades
+- **Antes de desenhar, a tela pergunta se a ordem dos traços importa** (#57):
+  - **"Ordem dos traços: Importa / Não importa"**, sempre à vista acima do canvas (ao lado, com o celular deitado), começando em "Não importa";
+  - **trocar o modo não apaga o desenho**; funciona pelo toque e só pelo teclado (Tab e setas);
+  - o modo vai junto com o desenho no envio, que vem na #58.
+- **Com o celular deitado, a mensagem de limite do desenho fica ao lado do canvas**, embaixo dos botões, e a página não rola mais (#57).
 - **A tela tem a área de desenho** (#56):
   - **desenhar:** com o mouse, o dedo ou a caneta, um dedo por vez, sem rolar nem dar zoom na página, e com o traço nítido em tela de alta densidade;
   - **os traços ficam como foram desenhados**, no formato que a API recebe (`[x, y, t]`), com os mesmos limites dela; ao chegar num limite, a tela diz o que fazer;

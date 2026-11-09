@@ -63,7 +63,8 @@
 }
 
 /* A phone lying down: too short for canvas + buttons in a column. The buttons go beside the
-   canvas, which takes the height left under the title, so nothing scrolls (WCAG 1.3.4). */
+   canvas, which takes the height left under the title, with the limit message under the
+   buttons, so nothing scrolls (WCAG 1.3.4). */
 @media (orientation: landscape) and (max-height: 32rem) {
   :host {
     --pad-size: min(100%, calc(100dvh - 6.5rem));
@@ -72,10 +73,11 @@
   .pad {
     display: grid;
     grid-template-columns: var(--pad-size) 9rem;
+    grid-template-rows: auto auto 1fr;
     grid-template-areas:
       'instruction instruction'
       'canvas actions'
-      'status status';
+      'canvas status';
     justify-content: center;
     align-items: start;
   }

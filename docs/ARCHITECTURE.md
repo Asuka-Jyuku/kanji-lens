@@ -288,9 +288,9 @@ A fila e a notificação são **adapters atrás de um port** ([ADR 0019](adr/001
 | Camada | O que contém | Pode importar |
 |---|---|---|
 | `domain/` | Modelos (`Drawing` feito de traços e a captura deles, com os mesmos limites da API, `StrokeOrderMode`, `Prediction`, `StrokeOrderEvaluation`, `RecognitionJob`) e funções puras | nada do Angular |
-| `application/` | Use cases / facades (`DrawingSession`, o desenho em andamento; `RecognizeDrawing`) e ports como classes abstratas usadas como token de DI (`RecognitionGateway`, `ResultStream`) | `domain`, e só o `@angular/core` (signals e DI; [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
+| `application/` | Use cases / facades (`DrawingSession`, o desenho em andamento; `StrokeOrderModeSelection`, o modo escolhido para o próximo reconhecimento; `RecognizeDrawing`) e ports como classes abstratas usadas como token de DI (`RecognitionGateway`, `ResultStream`) | `domain`, e só o `@angular/core` (signals e DI; [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
 | `infrastructure/` | Implementações dos ports: `HttpRecognitionGateway` (`HttpClient`), `SseResultStream` (`EventSource`) | `application`, `domain`, Angular |
-| `presentation/` | Componentes, páginas e rotas: o canvas e a tela de resultados | `application`, `domain`, Angular |
+| `presentation/` | Componentes, páginas e rotas: o seletor de modo, o canvas e a tela de resultados | `application`, `domain`, Angular |
 
 Os adapters são ligados aos ports nos providers de `app.config.ts`. Componente nunca injeta `HttpClient`.
 
@@ -616,7 +616,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [x] Criar a aplicação Angular ([ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)).
 - [x] Implementar o canvas responsivo ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
 - [x] Implementar desenho com mouse e touch, capturando os traços ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
-- [ ] Implementar a escolha do modo (ordem importa / não importa) ([#57](https://github.com/Asuka-Jyuku/kanji-lens/issues/57)).
+- [x] Implementar a escolha do modo (ordem importa / não importa) ([#57](https://github.com/Asuka-Jyuku/kanji-lens/issues/57)).
 - [x] Implementar a limpeza do canvas e o desfazer do último traço ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
 - [ ] Integrar com a REST API e o SSE ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
 - [ ] Implementar o indicador de processamento ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
