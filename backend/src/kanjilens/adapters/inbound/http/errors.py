@@ -13,7 +13,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
-from kanjilens.domain.errors import DomainError, DrawingTooLarge, InvalidDrawing, QueueFull
+from kanjilens.domain.errors import (
+    DomainError,
+    DrawingTooLarge,
+    InvalidDrawing,
+    JobNotFound,
+    QueueFull,
+)
 
 # Seconds a client waits before resending when the queue is full; about a full queue of 16 jobs
 # at the prototype's 0.3 s each (ADR 0019). Revisit with the real inference time.
@@ -25,6 +31,7 @@ INVALID_STROKE_ORDER_MODE = "invalid_stroke_order_mode"
 _DOMAIN_STATUS: dict[type[DomainError], int] = {
     InvalidDrawing: HTTPStatus.BAD_REQUEST,
     DrawingTooLarge: HTTPStatus.CONTENT_TOO_LARGE,
+    JobNotFound: HTTPStatus.NOT_FOUND,
     QueueFull: HTTPStatus.SERVICE_UNAVAILABLE,
 }
 

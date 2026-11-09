@@ -78,4 +78,5 @@ Todo erro do domínio herda de `DomainError` e tem um `code` estável, que o ada
 | `invalid_prediction` | O recognizer devolveu um resultado inválido (bug) |
 | `invalid_stroke_order_evaluation` | O avaliador da ordem devolveu uma avaliação inválida (bug) |
 | `invalid_job_transition` | Uma transição de estado proibida (bug) |
+| `job_not_found` | Não há job com esse id, ou o resultado já expirou (`JobNotFound`, levantado pelo use case `GetRecognition`; `404`) |
 | `queue_full` | A fila de jobs está cheia (`QueueFull`, levantado pelo adapter da fila; `503` com `Retry-After`) |
