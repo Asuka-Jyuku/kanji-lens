@@ -17,4 +17,15 @@ describe('App', () => {
     );
     expect(page.querySelector('app-drawing-pad canvas')).not.toBeNull();
   });
+
+  it('shows the stroke order mode before the drawing area (ADR 0012)', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const page = fixture.nativeElement as HTMLElement;
+
+    const selector = page.querySelector('app-mode-selector');
+    const pad = page.querySelector('app-drawing-pad');
+    expect(selector?.querySelector('legend')?.textContent?.trim()).toBe('Ordem dos traços');
+    expect(selector!.compareDocumentPosition(pad!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });

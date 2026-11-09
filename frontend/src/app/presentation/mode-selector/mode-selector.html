@@ -1,0 +1,25 @@
+<fieldset class="modes">
+  <legend i18n="@@modeSelector.legend">Ordem dos traços</legend>
+  <div class="options">
+    <label class="option">
+      <input
+        type="radio"
+        name="stroke-order-mode"
+        value="ordered"
+        [checked]="selection.mode() === 'ordered'"
+        (change)="onChange($event)"
+      />
+      <span i18n="@@modeSelector.ordered">Importa</span>
+    </label>
+    <label class="option">
+      <input
+        type="radio"
+        name="stroke-order-mode"
+        value="unordered"
+        [checked]="selection.mode() === 'unordered'"
+        (change)="onChange($event)"
+      />
+      <span i18n="@@modeSelector.unordered">Não importa</span>
+    </label>
+  </div>
+</fieldset>
