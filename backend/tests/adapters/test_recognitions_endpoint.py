@@ -30,8 +30,10 @@ def strokes(count: int, points: int) -> list[list[list[float]]]:
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
-    with TestClient(create_app()) as test_client:
-        yield test_client
+    # Outside a `with` block the TestClient does not run the lifespan, so no inference process
+    # starts and no consumer takes jobs: these tests are about the HTTP adapter only. The
+    # running pipeline is tested in test_app_lifespan.py and test_queue_consumer.py.
+    yield TestClient(create_app())
 
 
 def test_a_valid_drawing_is_accepted_and_queued(client: TestClient) -> None:
@@ -136,7 +138,7 @@ def test_a_chunked_body_over_1_mib_is_413_too(client: TestClient) -> None:
 
 
 def test_the_17th_job_waiting_is_refused_with_retry_after(client: TestClient) -> None:
-    # No consumer yet (#46), so nothing leaves the queue.
+    # No consumer runs here (see the client fixture), so nothing leaves the queue.
     for _ in range(16):
         assert client.post(URL, json=body()).status_code == 202
 

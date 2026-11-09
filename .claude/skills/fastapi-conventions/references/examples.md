@@ -16,5 +16,13 @@ Antes de escrever, abra o exemplo do mesmo tipo e siga a forma dele. Exemplo nov
 | Adapter outbound em memória | `backend/src/kanjilens/adapters/outbound/jobs/in_memory_job_repository.py` | implementa o port sem herdar dele, recebe o `Clock`, aplica a regra do domínio (`is_expired`) |
 | Fakes dos ports | `backend/tests/fakes.py` | uma classe simples por port, com o estado à mostra para o teste conferir |
 | Teste do use case | `backend/tests/application/test_submit_recognition.py` | só fakes, sem FastAPI |
-| Teste do endpoint | `backend/tests/adapters/test_recognitions_endpoint.py` | `TestClient(create_app())`, um caso por status, `pytest.param(..., id=...)` dizendo de onde vem o erro (schema ou domínio) |
-| Consumidor da fila, SSE | *a criar* (#46, #47) | — |
+| Teste do endpoint | `backend/tests/adapters/test_recognitions_endpoint.py` | `TestClient(create_app())` fora do `with`, para não subir o processo de inferência, um caso por status, `pytest.param(..., id=...)` dizendo de onde vem o erro (schema ou domínio) |
+| Port que roda no processo de inferência | `backend/src/kanjilens/application/ports/kanji_recognizer.py` | `async def`, porque a chamada cruza para outro processo; só tipos do domínio, nada do formato que cruza |
+| Use case que espera outro processo | `backend/src/kanjilens/application/use_cases/process_recognition.py` (`ProcessRecognition`) | toda falha vira `failed` (nenhum job fica `processing` para sempre), o `job_id` no log, o avaliador só no `ordered` |
+| Processo de inferência | `backend/src/kanjilens/adapters/outbound/inference/process.py` (`InferenceProcess`) | `spawn` explícito, o `initializer` rodado no `start()` (falha impede a partida), `BrokenProcessPool` recria o pool, `stop()` sem esperar a chamada em curso |
+| O que cruza para o processo de inferência | `backend/src/kanjilens/adapters/outbound/inference/wire.py` | tuplas, listas e dicts; a conversão de e para o domínio fica aqui, e o domínio confere o resultado ao recebê-lo |
+| Adapter que roda no processo de inferência | `backend/src/kanjilens/adapters/outbound/recognizer/process_pool_recognizer.py` | recebe a função de nível de módulo que roda no worker; converte com o `wire.py` |
+| Consumidor da fila | `backend/src/kanjilens/adapters/inbound/queue/consumer.py` (`QueueConsumer`) | um job por vez, um job com erro não para o consumidor; a fila entra por um `Protocol` local (`JobSource`), não pelo port do use case |
+| Ligação no `lifespan` | `backend/src/kanjilens/bootstrap/app.py` | `create_app(inference)` recebe as funções do worker (`InferenceFunctions`); o teste passa as dele |
+| Teste com o processo de verdade | `backend/tests/adapters/test_queue_consumer.py`, `test_app_lifespan.py` | as funções do worker em `tests/worker_functions.py`; medir o event loop durante um job lento; derrubar o worker com `os._exit` |
+| SSE | *a criar* (#47) | — |

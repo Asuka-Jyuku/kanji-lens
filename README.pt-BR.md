@@ -74,7 +74,7 @@ O reconhecimento usa uma CNN 2D compacta treinada em PyTorch, que não depende d
 | `GET` | `/api/recognitions/{id}/events` | Receber as mudanças de estado da tarefa por SSE |
 | `GET` | `/api/health` | Verificar disponibilidade do backend |
 
-Hoje o `POST` recebe o desenho e põe o job na fila. O processamento ([#46](https://github.com/Asuka-Jyuku/kanji-lens/issues/46)) e a consulta do resultado ([#47](https://github.com/Asuka-Jyuku/kanji-lens/issues/47)) vêm a seguir. Os erros têm sempre um código estável ([ARCHITECTURE.md, seção 5.3](docs/ARCHITECTURE.md#53-erros)).
+Hoje o `POST` recebe o desenho e põe o job na fila, e o processo de inferência o processa, ainda com um reconhecedor falso no lugar do modelo ([#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48)). A consulta do resultado ([#47](https://github.com/Asuka-Jyuku/kanji-lens/issues/47)) vem a seguir. Os erros têm sempre um código estável ([ARCHITECTURE.md, seção 5.3](docs/ARCHITECTURE.md#53-erros)).
 
 Exemplo de tarefa concluída:
 

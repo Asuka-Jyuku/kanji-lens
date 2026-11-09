@@ -5,12 +5,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Funcionalidades
+- **A API processa os jobs** (#46):
+  - **fila:** os jobs saem da fila um por vez, então ela não enche mais depois de 16 envios;
+  - **processo de inferência:** um processo separado, que deixa a API e o SSE respondendo enquanto reconhece. Ele sobe com a API e, se cair, o job em curso termina como `failed` e o processo seguinte assume;
+  - **reconhecedor provisório:** ainda devolve os mesmos candidatos (日, 目, 白) para qualquer desenho e, no modo `ordered`, diz que a ordem está correta. O modelo e a avaliação da ordem de verdade entram na #48;
+  - **sem leitura do resultado ainda:** o `GET` e o SSE entram na #47.
 - **A API recebe o desenho** em `POST /api/recognitions` e responde na hora com o `job_id` (#45):
   - **limites:** corpo de até 1 MiB e os limites de traços e pontos;
   - **erros:** desenho inválido ou modo desconhecido → `400`, desenho grande demais → `413`, sempre com um código estável no corpo (`{"error": "..."}`) para o frontend traduzir;
   - **fila:** até 16 jobs esperando; cheia, `503` com `Retry-After` e `queue_full`;
-  - **expiração:** o job e o desenho somem 5 minutos depois de terminados;
-  - ainda não há quem processe a fila: isso entra na #46.
+  - **expiração:** o job e o desenho somem 5 minutos depois de terminados.
 - **O domínio do reconhecimento existe no backend** (#44):
   - **regras:** o desenho, o modo, o job com os estados, os candidatos e a avaliação da ordem, cada um com as próprias regras;
   - **desenho fora dos limites:** é recusado com um código estável, `drawing_too_large` (muito grande) ou `invalid_drawing` (formato errado), que o frontend vai traduzir;

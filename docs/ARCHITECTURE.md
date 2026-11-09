@@ -582,7 +582,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [x] Escolher a fila e a notificação ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md), [ADR 0020](adr/0020-result-notification-by-server-sent-events.md)).
 - [x] Criar o domínio: desenho, modo, job e estados ([#44](https://github.com/Asuka-Jyuku/kanji-lens/issues/44); [architecture/domain.md](architecture/domain.md)).
 - [x] Criar o endpoint de reconhecimento, gerar o `job_id` e pôr o job na fila ([#45](https://github.com/Asuka-Jyuku/kanji-lens/issues/45)).
-- [ ] Processar os jobs no processo de inferência e armazenar os resultados, com um reconhecedor falso ([#46](https://github.com/Asuka-Jyuku/kanji-lens/issues/46)).
+- [x] Processar os jobs no processo de inferência e armazenar os resultados, com um reconhecedor falso ([#46](https://github.com/Asuka-Jyuku/kanji-lens/issues/46)).
 - [ ] Implementar a notificação por SSE, com o polling de reserva ([#47](https://github.com/Asuka-Jyuku/kanji-lens/issues/47)).
 - [ ] Integrar o modelo e a avaliação da ordem no processo de inferência ([#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48)).
 
