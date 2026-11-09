@@ -59,3 +59,4 @@ As ADRs 0002, 0003 e 0005 a 0007 foram escritas depois das decisões, a partir d
 | [0018](0018-ci-with-github-actions-and-a-single-required-check.md) | CI no GitHub Actions, com um check obrigatório só | Aceita |
 | [0019](0019-in-memory-job-queue-with-one-inference-process.md) | Fila em memória (`asyncio.Queue`) com um processo de inferência | Aceita |
 | [0020](0020-result-notification-by-server-sent-events.md) | Notificação do resultado por SSE, com polling como reserva | Aceita |
+| [0021](0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md) | ETL9G como dataset do reconhecimento e os 1.026 kanji escolares como primeiras classes | Aceita |

@@ -450,9 +450,9 @@ O treino roda noutra máquina, mais potente. O que precisa caber no notebook é 
 
 ## 7. Dataset e treinamento
 
-### 7.1 Dataset (em aberto)
+### 7.1 Dataset
 
-O projeto usa um dataset público de kanjis manuscritos. Critérios de escolha:
+**Decidido na [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)** ([spike](spikes/dataset-selection.md), #11): o reconhecimento treina com o **ETL9G** (ETL Character Database, AIST), e o **ETL9B** é baixado junto como alternativa leve. Os critérios da escolha foram:
 
 - Quantidade de kanjis disponíveis.
 - Quantidade de amostras por caractere.
@@ -461,16 +461,25 @@ O projeto usa um dataset público de kanjis manuscritos. Critérios de escolha:
 - Licença e possibilidade de uso.
 - Compatibilidade com o pipeline de treinamento.
 
-Candidatos a avaliar (licenças e números ainda a confirmar nas fontes oficiais):
+O resultado:
 
-- **ETL Character Database (AIST)**, em especial o ETL8G e o ETL9G (tons de cinza) e as variantes binárias (ETL8B2, ETL9B): kanjis modernos escritos à mão por centenas de pessoas. É a referência mais usada para esse problema.
-- **Kuzushiji-Kanji**: tem muitas classes, mas é escrita cursiva clássica, bem diferente da escrita moderna. Tende a não servir como base principal.
+- **ETL9G:** 2.965 kanji do JIS nível 1, com 200 amostras por classe, em 128×127 com 16 níveis de cinza. Cobre **2.106 dos 2.136 Jōyō** e todos os 1.026 教育漢字 (estimativa feita com o KANJIDIC2).
+- **Licença** (termos de 2025-03-28):
+  - uso livre e gratuito, sem cadastro;
+  - distribuição **só pelo site oficial**: nenhuma imagem do ETL entra no repositório, e cada máquina baixa do site;
+  - citação obrigatória (texto na ADR).
+- **Descartados:**
+  - o ETL8G, com só cerca de 41% do Jōyō;
+  - o ETL9B como base, por ser binarizado na digitalização;
+  - o Kuzushiji-Kanji, que é escrita cursiva clássica;
+  - as cópias do ETL em sites de terceiros, que ferem a cláusula de distribuição.
+- **Pendente,** até o site oficial voltar (está fora do ar desde 08/11/2026): baixar e conferir os md5, confirmar a lista de classes no `ETL9INFO` e verificar o `unpack.py` (#13).
 
 **Dados por parte** ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)):
 
 | Parte | Dados necessários | Candidatos |
 |---|---|---|
-| Reconhecimento (os dois modos) | Imagens do caractere (dados *offline*) para treinar | ETL8G / ETL9G (grayscale 128×127) e as variantes binárias ETL8B2 / ETL9B (64×63) |
+| Reconhecimento (os dois modos) | Imagens do caractere (dados *offline*) para treinar | **ETL9G** (grayscale 128×127), com o ETL9B (binário 64×63) como alternativa leve ([ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)) |
 | Avaliação da ordem (`ordered`) | A ordem e a direção de referência de cada kanji; **nada de treino** | KanjiVG `r20260714` (CC BY-SA 3.0), cobrindo toda a lista de classes |
 | Teste da avaliação da ordem | Um conjunto fixo de desenhos com ordem certa e errada, com o resultado esperado | Desenhos feitos de propósito para o teste. Coletar desenhos de alunos muda a regra de não guardar desenhos (`CLAUDE.md`, "Segurança") e pede ADR |
 
@@ -478,9 +487,15 @@ O ETL foi digitalizado de folhas de papel: tem a imagem final, sem a trajetória
 
 A pesquisa que levou a esse desenho está no [spike, seção 5.3](spikes/model-and-runtime-evaluation.md#53-como-o-modo-ordered-costuma-ser-feito-pesquisa-de-2026-11-08): reconhecimento *online* × avaliação da ordem, algoritmos de correspondência entre traços e captura no navegador.
 
-### 7.2 Quantidade de classes (em aberto)
+### 7.2 Quantidade de classes
 
-Começar com algumas centenas de kanjis e depois expandir para o conjunto Jōyō (2.136 kanjis).
+**Decidido na [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md):** a primeira versão reconhece os **1.026 教育漢字**, os kanji ensinados no ensino fundamental japonês, todos presentes no ETL9 e no KanjiVG. O caminho:
+
+1. **240 kanji** da 1ª e da 2ª série, para validar o pipeline com um treino curto;
+2. os **1.026**;
+3. depois da v1, os **2.106 Jōyō cobertos pelo ETL9**, com uma nova medição.
+
+Os 30 Jōyō que faltam no ETL9 ficam fora até uma fonte complementar passar por uma ADR. A lista de classes é um arquivo versionado em `ml/`: trocá-la muda treino, inferência e versão do modelo no mesmo PR.
 
 ### 7.3 Avaliação do modelo
 
@@ -577,7 +592,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 
 - [x] Avaliar famílias de modelos e runtimes ([spike](spikes/model-and-runtime-evaluation.md)) e definir o modo `ordered` como avaliação da ordem ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
 - [x] Definir as ferramentas e criar a estrutura de `ml/` ([ADR 0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md)).
-- [ ] Pesquisar e selecionar o dataset e a quantidade de classes.
+- [x] Pesquisar e selecionar o dataset e a quantidade de classes ([ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md); [spike](spikes/dataset-selection.md)).
 - [x] Escolher o algoritmo de avaliação da ordem e o formato de captura dos pontos ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
 - [ ] Criar o pré-processamento compartilhado (imagem e traços normalizados).
 - [ ] Implementar e treinar a CNN 2D compacta.
@@ -635,12 +650,12 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 | Branches e releases | `main` + `develop`, CHANGELOG por release | Decidido — [ADR 0008](adr/0008-git-flow-and-changelog-by-release.md) |
 | Notificação do resultado | SSE nativo do FastAPI, estado completo por evento, polling de reserva | Decidido — [ADR 0020](adr/0020-result-notification-by-server-sent-events.md) |
 | Fila | `asyncio.Queue` limitada (16) + um processo de inferência (`ProcessPoolExecutor`, `spawn`); jobs em memória com expiração | Decidido — [ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md) |
-| Dataset do reconhecimento | ETL8G / ETL9G em avaliação (licença a confirmar) | Em aberto |
+| Dataset do reconhecimento | ETL9G (ETL9B como alternativa leve); uso livre, distribuição só pelo site oficial, nada do ETL no repositório | Decidido — [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md) (download pendente: site fora do ar) |
 | Algoritmo de avaliação da ordem | Bipartite com hipóteses de união e quebra; todos os candidatos avaliados; só anota, sem reordenar; formato dos pontos `[x, y, t]` | Decidido — [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md) |
 | Modo padrão da interface | "Não importa" (`unordered`) | Decidido — [ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md) (atualização) |
 | Verbete do kanji escolhido | Link externo em nova aba, com o Takoboto como padrão e o dicionário escolhido pelo usuário numa lista fixa ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)); dicionário próprio com dados abertos locais (KANJIDIC2 / JMdict) | Por ora, link externo; o dicionário próprio fica em aberto, para depois |
 | Runtime, resolução, precisão e concorrência de produção | PyTorch / OpenVINO / ONNX Runtime CPU; 64–128 px; FP32 / INT8; 1 ou 2 execuções | Em aberto (benchmark no notebook) |
-| Quantidade de classes | Centenas → 2.136 (Jōyō) | Em aberto |
+| Quantidade de classes | 240 (1ª e 2ª série) para validar → 1.026 教育漢字 na v1 → 2.106 Jōyō cobertos pelo ETL9 | Decidido — [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md) |
 | Ferramentas do ML | Python 3.15, uv (workspace com lock único), Ruff, mypy, pytest, Import Linter, PyTorch só-CPU | Decidido — [ADR 0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) |
 | Ferramentas do backend | FastAPI + Uvicorn, membro do workspace do uv, com o `kanjilens_ml` pelo workspace; httpx2 nos testes; seis contratos de arquitetura | Decidido — [ADR 0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) |
 | CI | GitHub Actions, um workflow só: Python em Linux e Windows, frontend e links dos `.md`, cada um só quando a parte muda; um check obrigatório, `CI` | Decidido — [ADR 0018](adr/0018-ci-with-github-actions-and-a-single-required-check.md) |

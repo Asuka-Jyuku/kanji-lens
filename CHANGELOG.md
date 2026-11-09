@@ -27,6 +27,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   - **documentação:** glossário e diagrama de estados em [docs/architecture/domain.md](docs/architecture/domain.md).
 
 ### Publicação e documentação
+- **O modelo vai aprender com o ETL9G e reconhecer, na primeira versão, os 1.026 kanji ensinados no ensino fundamental japonês** ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md); pesquisa em [docs/spikes/dataset-selection.md](docs/spikes/dataset-selection.md), #11):
+  - **classes:** primeiro os 240 kanji da 1ª e da 2ª série, para validar o treino; depois os 1.026; mais tarde, os 2.106 kanji do Jōyō que o ETL9G tem;
+  - **licença do ETL:** o uso é livre, sem cadastro, mas o dataset só pode ser obtido pelo site oficial. Por isso nenhuma imagem dele fica no repositório, e cada máquina baixa do site. A citação exigida está nos READMEs;
+  - **download pendente:** o site oficial está fora do ar desde 08/11/2026, e baixar os arquivos e conferir a lista de classes ficam para quando ele voltar (#13).
 - **Documentação alinhada com a fila, o SSE e as ferramentas**:
   - as ADRs 0003 e 0004, as skills e o `CLAUDE.md` deixam de tratar a fila e a notificação como decisões em aberto e descrevem o processo de inferência no lugar dos "workers";
   - as skills do backend e do ML ganham as regras da fronteira entre processos (só dados serializáveis, falha do processo vira `failed`) e do SSE;
