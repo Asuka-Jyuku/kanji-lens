@@ -36,7 +36,7 @@ stateDiagram-v2
 - **Cada transição devolve um job novo.** O job antigo não muda.
 - **Qualquer outra transição** levanta `InvalidJobTransition`, por exemplo: completar um job `queued`, reiniciar um job terminado ou falhar um job já `failed`.
 - **Só um job terminado expira.** Um job `queued` ou `processing` ainda está sendo esperado.
-- **O domínio não tem relógio.** Quem chama passa o horário (`now`), sempre com fuso (*timezone-aware*).
+- **O domínio não tem relógio.** Quem chama passa o horário (`now`), sempre com fuso (*timezone-aware*). Nos use cases, ele vem do port `Clock`.
 - **O id** é um UUID4 em hexadecimal, gerado na criação. Quem chama pode passar um id, por exemplo nos testes.
 
 ## Regras
@@ -78,3 +78,4 @@ Todo erro do domínio herda de `DomainError` e tem um `code` estável, que o ada
 | `invalid_prediction` | O recognizer devolveu um resultado inválido (bug) |
 | `invalid_stroke_order_evaluation` | O avaliador da ordem devolveu uma avaliação inválida (bug) |
 | `invalid_job_transition` | Uma transição de estado proibida (bug) |
+| `queue_full` | A fila de jobs está cheia (`QueueFull`, levantado pelo adapter da fila; `503` com `Retry-After`) |

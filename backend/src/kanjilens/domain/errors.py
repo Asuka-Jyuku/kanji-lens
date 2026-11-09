@@ -39,3 +39,9 @@ class InvalidJobTransition(DomainError):
     """A job was asked to move to a status its current status does not allow."""
 
     code = "invalid_job_transition"
+
+
+class QueueFull(DomainError):
+    """The job queue is at its limit; the client should retry later (HTTP 503)."""
+
+    code = "queue_full"

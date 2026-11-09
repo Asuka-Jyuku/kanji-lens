@@ -70,6 +70,8 @@ O [spike #28](../spikes/stroke-order-evaluation.md) conferiu o KanjiVG na fonte 
     - `canvas` entre 64 e 4.096 px por lado.
 
     Acima disso, `413` ou `400`, com código de erro.
+
+    *Atualização de 2026-11-08 (#45):* o corpo da requisição também é limitado, a 1 MiB, antes de qualquer parsing. O erro de validação do schema responde `400` (`invalid_drawing`, `invalid_stroke_order_mode` ou `invalid_request`) ou `413` (`drawing_too_large`), nunca `422`. A tabela dos códigos está no [ARCHITECTURE.md, seção 5.3](../ARCHITECTURE.md#53-erros).
 - **Formato da resposta** do modo `ordered`: cada candidato leva a sua avaliação. As posições são numeradas a partir de 1, para a tela.
 
   ```json
