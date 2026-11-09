@@ -61,7 +61,7 @@ npm run extract-i18n       # gera src/locale/messages.xlf com os textos marcados
 - **ML** (`ml/src/kanjilens_ml/`): é uma biblioteca, não uma camada do backend. O backend a usa **só dentro dos adapters outbound do recognizer e do avaliador da ordem**; o PyTorch, só no do recognizer.
 - **Pré-processamento sempre junto:** existe **um** módulo de pré-processamento (`ml/src/kanjilens_ml/preprocessing/`), importado pelo treino e pelos adapters do backend. Ele gera, a partir da mesma lista de traços, a imagem da CNN e os traços normalizados da avaliação da ordem; o frontend envia os traços como foram desenhados. Mudou o pré-processamento, o tamanho da entrada, a normalização ou a lista de classes? Treino, inferência e versão do modelo mudam **no mesmo PR**. Duas cópias que divergem fazem o modelo errar calado em produção (*train/serve skew*): nenhum erro, só previsão errada.
 
-As decisões em aberto (dataset, quantidade de classes, runtime de inferência) estão em [docs/ARCHITECTURE.md, "Decisões em resumo"](docs/ARCHITECTURE.md#10-decisões-em-resumo). **Não implemente uma decisão em aberto como se estivesse fechada:** feche-a com uma ADR antes.
+As decisões em aberto (runtime de inferência, resolução e precisão de produção) estão em [docs/ARCHITECTURE.md, "Decisões em resumo"](docs/ARCHITECTURE.md#10-decisões-em-resumo). **Não implemente uma decisão em aberto como se estivesse fechada:** feche-a com uma ADR antes.
 
 ## Testes
 
@@ -86,7 +86,7 @@ Não precisa de ADR: bugfix, refatoração local, ajuste visual, tela ou endpoin
 
 - Nomes em inglês, no vocabulário das camadas: `XxxUseCase`, `XxxPort` (ou um nome de papel, como `KanjiRecognizer`, `JobQueue`), `XxxAdapter`, `XxxRequest`/`XxxResponse` (só nos schemas HTTP).
 - As regras de cada stack estão nas skills (`angular-conventions`, `fastapi-conventions`, `ml-conventions`), não aqui.
-- **Nunca suba dataset, pesos do modelo nem binário grande.** `ml/datasets/` e `ml/artifacts/` estão no `.gitignore`; como obter cada um fica documentado junto do código que usa. Confira a licença do dataset antes de usar ou descrever: alguns datasets de kanji manuscrito (o ETL, por exemplo) exigem cadastro e podem proibir redistribuição (*a confirmar* quando o dataset for escolhido). Os dados de referência do KanjiVG (CC BY-SA 3.0) seguem a mesma regra: versão fixada com checksum, gerados por um script de preparação, fora do git, com a atribuição mantida, inclusive na interface ([ADR 0016](docs/adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
+- **Nunca suba dataset, pesos do modelo nem binário grande.** `ml/datasets/` e `ml/artifacts/` estão no `.gitignore`; como obter cada um fica documentado junto do código que usa. Confira a licença do dataset antes de usar ou descrever. O do reconhecimento é o ETL9G ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)): o uso é livre, mas a distribuição é **só pelo site oficial**, então **nenhuma imagem do ETL entra no repositório**, nem como fixture de teste ou exemplo (os testes usam registros sintéticos no mesmo formato), e cada máquina baixa do site. Os dados de referência do KanjiVG (CC BY-SA 3.0) seguem a mesma regra: versão fixada com checksum, gerados por um script de preparação, fora do git, com a atribuição mantida, inclusive na interface ([ADR 0016](docs/adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
 
 ## Segurança (específico deste projeto — não genérico)
 

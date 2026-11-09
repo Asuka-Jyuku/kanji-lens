@@ -6,7 +6,7 @@ O que torna um número deste projeto confiável e comparável. O porquê está n
 
 | Ponto | Por quê | Fonte |
 |---|---|---|
-| **Split por pessoa que escreveu, não por amostra** (quando o dataset identifica quem escreveu, como o ETL) | as amostras da mesma pessoa no treino e no teste vazam o estilo de letra dela, e a acurácia no teste parece melhor do que vai ser para um usuário novo | — (julgamento; prática comum em datasets de escrita à mão) |
+| **Split por pessoa que escreveu, não por amostra** (o ETL não identifica quem escreveu: o split por *data set* é a aproximação, a confirmar no `ETL9INFO`; [ADR 0021](../../../../docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)) | as amostras da mesma pessoa no treino e no teste vazam o estilo de letra dela, e a acurácia no teste parece melhor do que vai ser para um usuário novo | — (julgamento; prática comum em datasets de escrita à mão) |
 | O split de teste é definido uma vez, com a definição versionada (arquivo ou seed + regra), e nunca usado para ajustar hiperparâmetro | números de splits diferentes não são comparáveis | [scikit-learn: cross-validation](https://scikit-learn.org/stable/modules/cross_validation.html) |
 | Um **conjunto do canvas** à parte: desenhos reais feitos no app, com o kanji esperado | mede a diferença entre dataset e canvas, o principal risco do projeto | ARCHITECTURE.md, seção 7.4 |
 | O subconjunto de classes (enquanto a quantidade estiver em aberto) é uma lista versionada, não "as N primeiras" | a lista define os índices dos rótulos | ARCHITECTURE.md, seção 7.2 |

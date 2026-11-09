@@ -120,7 +120,7 @@ kanji-lens/
 
 ## Roadmap
 
-- [ ] **Machine Learning:** escolher o dataset, pré-processamento compartilhado, treinar a CNN 2D, avaliação da ordem contra o KanjiVG, avaliar (Top-1/Top-5 e acerto da avaliação da ordem), inferência top-K e, depois, medir no notebook da escola
+- [ ] **Machine Learning:** dataset escolhido (ETL9G, com os 1.026 kanji escolares na primeira versão; [ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)), pré-processamento compartilhado, treinar a CNN 2D, avaliação da ordem contra o KanjiVG, avaliar (Top-1/Top-5 e acerto da avaliação da ordem), inferência top-K e, depois, medir no notebook da escola
 - [ ] **Backend:** projeto FastAPI, endpoint de reconhecimento, processamento assíncrono, integração com o modelo, notificação
 - [ ] **Frontend:** app Angular, escolha do modo (ordem dos traços), canvas responsivo com mouse e touch que captura os traços, tela de resultados
 - [ ] **Infraestrutura:** acesso pela LAN, CORS e firewall, frontend em build estático, teste com 3–5 alunos (10 clientes como estresse), consumo de CPU/memória/temperatura no notebook da escola
@@ -131,9 +131,7 @@ O checklist completo está em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-esco
 
 | Tema | Opções | Direção atual |
 |---|---|---|
-| Dataset | ETL8G / ETL9G | Imagens públicas de kanjis manuscritos (*offline*; licença a confirmar) |
 | Runtime de inferência | PyTorch / OpenVINO / ONNX Runtime (CPU), FP32 ou INT8 | Definido por benchmark no notebook da escola |
-| Quantidade de classes | Algumas centenas → 2.136 kanjis Jōyō | Começar pequeno e expandir |
 
 ## Como executar
 
@@ -148,3 +146,5 @@ Visão Computacional, Deep Learning e CNN, correspondência entre traços para a
 O código-fonte está sob a [licença MIT](LICENSE).
 
 A licença cobre só o código deste repositório. Os datasets usados no treino e os pesos treinados não fazem parte do repositório e não são cobertos por ela: cada dataset mantém os próprios termos, e pesos treinados com ele podem herdá-los. Os dados de referência do KanjiVG, usados na avaliação da ordem e distribuídos com a aplicação, mantêm a própria licença (CC BY-SA 3.0, © Ulrich Apel, [kanjivg.tagaini.net](https://kanjivg.tagaini.net)), com atribuição.
+
+O modelo de reconhecimento é treinado com o ETL Character Database (ETL9G), de uso livre, mas que só pode ser obtido pelo [site oficial](https://etlcdb.db.aist.go.jp/): este repositório não tem nenhuma imagem dele, e cada máquina o baixa de lá ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)). Referência: Electrotechnical Laboratory, Japanese Technical Committee for Optical Character Recognition, ETL Character Database, 1973-1984.
