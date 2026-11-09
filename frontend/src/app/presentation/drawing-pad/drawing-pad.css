@@ -1,0 +1,101 @@
+:host {
+  display: block;
+  /* Canvas first: the largest element, whole on a phone screen with the buttons below it. */
+  --pad-size: min(100%, 60dvh);
+}
+
+.pad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.instruction {
+  margin: 0;
+}
+
+.canvas {
+  width: var(--pad-size);
+  aspect-ratio: 1;
+  /* Drawing must not scroll or zoom the page (style.md, "Canvas e touch"). */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  box-sizing: border-box;
+  border: 2px solid var(--pad-border);
+  border-radius: 8px;
+  background: var(--pad-background);
+  /* The ink of the stroke; read by the component. */
+  color: var(--pad-ink);
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  width: var(--pad-size);
+}
+
+.actions button {
+  flex: 1;
+  /* About 1 cm (Harley, NN/g), well above the 24x24 px minimum (WCAG 2.5.8). */
+  min-height: 3rem;
+  font: inherit;
+  border: 2px solid var(--pad-border);
+  border-radius: 8px;
+  background: var(--pad-background);
+  color: var(--pad-ink);
+}
+
+.actions button:focus-visible {
+  outline: 3px solid var(--pad-focus);
+  outline-offset: 2px;
+}
+
+.actions button:disabled {
+  opacity: 0.55;
+}
+
+.status {
+  margin: 0;
+  min-height: 1.5em;
+}
+
+/* A phone lying down: too short for canvas + buttons in a column. The buttons go beside the
+   canvas, which takes the height left under the title, so nothing scrolls (WCAG 1.3.4). */
+@media (orientation: landscape) and (max-height: 32rem) {
+  :host {
+    --pad-size: min(100%, calc(100dvh - 6.5rem));
+  }
+
+  .pad {
+    display: grid;
+    grid-template-columns: var(--pad-size) 9rem;
+    grid-template-areas:
+      'instruction instruction'
+      'canvas actions'
+      'status status';
+    justify-content: center;
+    align-items: start;
+  }
+
+  .instruction {
+    grid-area: instruction;
+    text-align: center;
+  }
+
+  .canvas {
+    grid-area: canvas;
+  }
+
+  .actions {
+    grid-area: actions;
+    flex-direction: column;
+    width: auto;
+  }
+
+  .status {
+    grid-area: status;
+  }
+}

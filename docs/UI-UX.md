@@ -68,6 +68,10 @@ A partir das referências acima. Passam a "adotados" com a primeira tela validad
 - **Resultado da avaliação da ordem em texto, além do destaque visual:** no modo `ordered`, dizer em palavras se a ordem está certa e qual traço está fora de ordem ou na direção errada (por exemplo, "3º traço: deveria ser o 4º"). O destaque no desenho, como cor ou número sobre o traço, complementa o texto e não o substitui. A mensagem é anunciada como as outras de estado. *Julgamento próprio* sobre o formato; a resposta da API ainda não está fechada (ARCHITECTURE.md, seção 2.2) (Nielsen 1 e 9; WCAG 3.3.1 e 4.1.3).
 - **Nenhum comando por gesto além do desenho:** limpar e reconhecer são botões (WCAG 2.5.1 e 2.5.7).
 - **Funciona em pé, deitado e a partir de 320 px** (WCAG 1.3.4 e 1.4.10).
+- **Celular deitado: botões ao lado do canvas.** Na tela baixa, o canvas usa a altura que sobra embaixo do título, e "Desfazer" e "Limpar" vão para o lado, para nada sair da tela sem rolar ("Canvas primeiro"; WCAG 1.3.4). *Julgamento próprio* sobre o arranjo; conferido em 800×360 e 640×320 no navegador, não num celular de verdade (#56).
+- **Girar o celular não apaga o desenho:** os traços acompanham o novo tamanho do canvas, mantendo a forma (Nielsen 3 e 5; WCAG 1.3.4). *Julgamento próprio*, a alternativa era limpar (#56).
+- **Um dedo por vez no canvas:** um segundo dedo é ignorado enquanto o primeiro desenha, para um toque acidental da mão não virar traço (Nielsen 5). *Julgamento próprio* (#56).
+- **Desenho no limite diz o porquê:** ao chegar no limite de traços ou de pontos da API, o desenho para de crescer e uma mensagem anunciada diz o que fazer ("Desfaça ou limpe para continuar") (Nielsen 9; WCAG 3.3.1 e 4.1.3) (#56).
 
 ## Ao propor ou revisar
 

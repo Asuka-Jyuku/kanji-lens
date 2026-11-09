@@ -1,0 +1,57 @@
+<section class="pad">
+  <p id="drawing-instruction" class="instruction" i18n="@@drawingPad.instruction">
+    Desenhe um kanji
+  </p>
+  <canvas
+    #canvas
+    class="canvas"
+    role="img"
+    aria-label="Área de desenho do kanji"
+    i18n-aria-label="@@drawingPad.canvasLabel"
+    aria-describedby="drawing-instruction"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerEnd($event)"
+    (pointercancel)="onPointerEnd($event)"
+    (lostpointercapture)="onPointerEnd($event)"
+  ></canvas>
+  <div class="actions">
+    <button
+      type="button"
+      class="undo"
+      [disabled]="session.empty()"
+      (click)="session.undo()"
+      i18n="@@drawingPad.undo"
+    >
+      Desfazer traço
+    </button>
+    <button
+      type="button"
+      class="clear"
+      [disabled]="session.empty()"
+      (click)="session.clear()"
+      i18n="@@drawingPad.clear"
+    >
+      Limpar
+    </button>
+  </div>
+  <p class="status" role="status">
+    @switch (session.limit()) {
+      @case ('max_strokes') {
+        <span i18n="@@drawingPad.limit.strokes"
+          >O desenho chegou ao limite de traços. Desfaça ou limpe para continuar.</span
+        >
+      }
+      @case ('max_points_per_stroke') {
+        <span i18n="@@drawingPad.limit.pointsPerStroke"
+          >Este traço ficou longo demais e parou aqui. Comece outro traço.</span
+        >
+      }
+      @case ('max_total_points') {
+        <span i18n="@@drawingPad.limit.totalPoints"
+          >O desenho chegou ao limite de tamanho. Desfaça ou limpe para continuar.</span
+        >
+      }
+    }
+  </p>
+</section>

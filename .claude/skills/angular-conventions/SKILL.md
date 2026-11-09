@@ -10,7 +10,7 @@ Você escreve e revisa o frontend do projeto (`frontend/`). O que vale **sempre*
 
 **Cada regra mora num lugar só.** Esta skill diz o caminho e aponta a fonte; não copie a regra para cá. Achou uma regra aqui que diverge da fonte, vale a fonte: corrija a skill no mesmo PR.
 
-> **Fase:** a estrutura de `frontend/` existe, com as ferramentas da [ADR 0017](../../../docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md): Angular 22 (zoneless, standalone), `@angular/localize` com `pt-BR` de origem, Vitest, ESLint com `eslint-plugin-boundaries` e Prettier. Só a página inicial existe. Quando o primeiro código entrar, crie `references/examples.md` apontando a tela e o adapter que servem de modelo.
+> **Fase:** a estrutura de `frontend/` existe, com as ferramentas da [ADR 0017](../../../docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md): Angular 22 (zoneless, standalone), `@angular/localize` com `pt-BR` de origem, Vitest, ESLint com `eslint-plugin-boundaries` e Prettier. A área de desenho existe (#56): o domínio `Drawing`, o `DrawingSession` (signals) e o componente `DrawingPad`. Os modelos a seguir estão em [`references/examples.md`](references/examples.md); o primeiro adapter (HTTP e SSE) entra na #58.
 
 | Assunto | Fonte (a regra está lá) |
 |---|---|
@@ -28,6 +28,7 @@ Você escreve e revisa o frontend do projeto (`frontend/`). O que vale **sempre*
 | Arquivo | Quando ler |
 |---|---|
 | [`references/style.md`](references/style.md) | antes de escrever código, e sempre que o angular.dev, um guia da comunidade ou um revisor parecer dizer outra coisa |
+| [`references/examples.md`](references/examples.md) | antes de escrever um tipo de domínio, um estado em signals ou um componente: o código que já serve de modelo |
 | [`references/review.md`](references/review.md) | ao avaliar uma tela (UI/UX), ao revisar um PR com frontend, e no fim do seu próprio trabalho |
 
 ## Funcionalidade nova
