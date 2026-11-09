@@ -594,7 +594,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [x] Definir as ferramentas e criar a estrutura de `ml/` ([ADR 0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md)).
 - [x] Pesquisar e selecionar o dataset e a quantidade de classes ([ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md); [spike](spikes/dataset-selection.md)).
 - [x] Escolher o algoritmo de avaliação da ordem e o formato de captura dos pontos ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
-- [ ] Criar o pré-processamento compartilhado (imagem e traços normalizados).
+- [ ] Criar o pré-processamento compartilhado (imagem e traços normalizados). Os traços normalizados já existem ([docs/MODEL.md](MODEL.md#traços-normalizados-avaliação-da-ordem)); falta a imagem da CNN ([#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14)).
 - [ ] Implementar e treinar a CNN 2D compacta.
 - [ ] Implementar a avaliação da ordem contra o KanjiVG (`ordered`).
 - [ ] Avaliar o reconhecimento (Top-1/Top-5) e a avaliação da ordem (conjunto com ordem certa e errada).

@@ -48,6 +48,8 @@ O [spike #28](../spikes/stroke-order-evaluation.md) conferiu o KanjiVG na fonte 
   6. Com diferença maior que 2 traços, ou kanji fora do KanjiVG, a ordem **não é avaliada**, com o motivo na resposta.
 
   Os parâmetros iniciais do protótipo (24 pontos por traço, margem 0,75, comprimento mínimo 0,08) se ajustam na [#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29), com desenhos reais.
+
+  *Atualização de 2026-11-09 (#14):* os passos 1 e 2 da normalização estão em `kanjilens_ml.preprocessing.strokes`, a mesma função para o desenho e para a referência do KanjiVG. O que ficou fixado ali: a caixa é a de todos os pontos desenhados, antes da reamostragem; o caractere é escalado pelo **lado maior** da caixa, mantendo a proporção, e centrado no quadrado `[0, 1]`; a reamostragem é pelo comprimento, e o `t` é ignorado. Os passos e os casos de borda estão no [docs/MODEL.md](../MODEL.md#traços-normalizados-avaliação-da-ordem).
 - **Candidatos:** a ordem é avaliada para **todos os candidatos devolvidos** (top-K), e a tela mostra a do candidato escolhido. A avaliação **só anota: não reordena** o ranking do reconhecimento.
 - **Formato da requisição** (`POST /api/recognitions`):
 

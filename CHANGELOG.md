@@ -5,6 +5,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Funcionalidades
+- **Os traços desenhados são normalizados para a avaliação da ordem** (parte da #14):
+  - **o que faz:** põe o desenho num quadrado de lado 1, mantendo a proporção, e reamostra cada traço em 24 pontos igualmente espaçados. A ordem, a separação e a direção dos traços ficam como foram desenhadas;
+  - **para quem:** é a entrada da avaliação da ordem contra o KanjiVG (#29), que usa a mesma função para os traços de referência;
+  - **documentação:** o [docs/MODEL.md](docs/MODEL.md) nasce aqui, com os passos e os casos de borda. A imagem da CNN entra num segundo PR da #14.
 - **O resultado do reconhecimento pode ser lido** (#47):
   - **SSE em `GET /api/recognitions/{id}/events`:** um evento por mudança de estado (`queued`, `processing`, `completed`, `failed`), cada um com o estado completo, e o stream fecha no estado final. Quem conecta depois do fim recebe o estado final;
   - **`GET /api/recognitions/{id}`:** o estado atual, no mesmo formato, para o frontend consultar quando o SSE falhar;
