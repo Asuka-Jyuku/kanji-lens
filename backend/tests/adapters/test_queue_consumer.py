@@ -17,6 +17,7 @@ from kanjilens.adapters.inbound.queue.consumer import QueueConsumer
 from kanjilens.adapters.outbound.clock import SystemClock
 from kanjilens.adapters.outbound.inference.process import InferenceProcess
 from kanjilens.adapters.outbound.jobs.in_memory_job_repository import InMemoryJobRepository
+from kanjilens.adapters.outbound.notifier.in_memory_result_notifier import InMemoryResultNotifier
 from kanjilens.adapters.outbound.queue.asyncio_job_queue import AsyncioJobQueue
 from kanjilens.adapters.outbound.recognizer import placeholder as placeholder_recognizer
 from kanjilens.adapters.outbound.recognizer.process_pool_recognizer import (
@@ -73,6 +74,7 @@ async def start_backend(recognize: RecognizeFunction) -> AsyncIterator[Backend]:
         repository,
         ProcessPoolKanjiRecognizer(process, recognize),
         ProcessPoolStrokeOrderEvaluator(process, placeholder_evaluator.evaluate),
+        InMemoryResultNotifier(),
         clock,
     )
     consumer = asyncio.create_task(QueueConsumer(queue, process_recognition).run())

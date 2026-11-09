@@ -10,6 +10,7 @@ from fakes import (
     FakeClock,
     FakeJobRepository,
     FakeKanjiRecognizer,
+    FakeResultNotifier,
     FakeStrokeOrderEvaluator,
 )
 from kanjilens.application.use_cases.process_recognition import ProcessRecognition
@@ -23,13 +24,20 @@ def make(
     mode: StrokeOrderMode = StrokeOrderMode.UNORDERED,
     recognizer: FakeKanjiRecognizer | None = None,
     evaluator: FakeStrokeOrderEvaluator | None = None,
+    notifier: FakeResultNotifier | None = None,
 ) -> tuple[ProcessRecognition, FakeJobRepository, FakeStrokeOrderEvaluator, RecognitionJob]:
     repository = FakeJobRepository()
     evaluator = evaluator or FakeStrokeOrderEvaluator()
     job = RecognitionJob.submit(mode=mode, drawing=DRAWING, now=T0)
     repository.save(job)
     clock = FakeClock(T0 + timedelta(seconds=1))
-    process = ProcessRecognition(repository, recognizer or FakeKanjiRecognizer(), evaluator, clock)
+    process = ProcessRecognition(
+        repository,
+        recognizer or FakeKanjiRecognizer(),
+        evaluator,
+        notifier or FakeResultNotifier(),
+        clock,
+    )
     return process, repository, evaluator, job
 
 
@@ -115,3 +123,29 @@ async def test_a_job_no_longer_stored_is_skipped() -> None:
 
     assert await process.execute(job.id) is None
     assert repository.jobs == {}
+
+
+async def test_every_new_state_is_stored_and_then_notified() -> None:
+    stored_when_notified: list[bool] = []
+    notifier = FakeResultNotifier()
+    process, repository, _, job = make(notifier=notifier)
+    notifier.on_notify = lambda changed: stored_when_notified.append(
+        repository.jobs[changed.id] == changed
+    )
+
+    done = await process.execute(job.id)
+
+    assert [j.status for j in notifier.jobs] == [JobStatus.PROCESSING, JobStatus.COMPLETED]
+    assert notifier.jobs[-1] == done
+    assert stored_when_notified == [True, True]
+
+
+async def test_a_failed_job_is_notified_too() -> None:
+    notifier = FakeResultNotifier()
+    process, _, _, job = make(
+        recognizer=FakeKanjiRecognizer(error=RuntimeError("boom")), notifier=notifier
+    )
+
+    await process.execute(job.id)
+
+    assert [j.status for j in notifier.jobs] == [JobStatus.PROCESSING, JobStatus.FAILED]

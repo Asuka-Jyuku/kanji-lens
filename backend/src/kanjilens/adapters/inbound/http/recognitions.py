@@ -1,10 +1,13 @@
-"""POST /api/recognitions: receive a drawing and queue its job (ADRs 0016 and 0019)."""
+"""POST /api/recognitions receives a drawing and queues its job (ADRs 0016 and 0019);
+GET /api/recognitions/{id} answers the job's current state, the polling fallback (ADR 0020)."""
 
 from typing import Annotated
 
 from fastapi import APIRouter, status
 from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt
 
+from kanjilens.adapters.inbound.http.recognition_state import RecognitionStateResponse
+from kanjilens.application.use_cases.get_recognition import GetRecognition
 from kanjilens.application.use_cases.submit_recognition import SubmitRecognition
 from kanjilens.domain.drawing import DRAWING_LIMITS, CanvasSize, Drawing, Point, Stroke
 from kanjilens.domain.job import JobStatus
@@ -52,7 +55,9 @@ class ErrorResponse(BaseModel):
     error: str
 
 
-def recognitions_router(submit_recognition: SubmitRecognition) -> APIRouter:
+def recognitions_router(
+    submit_recognition: SubmitRecognition, get_recognition: GetRecognition
+) -> APIRouter:
     router = APIRouter()
 
     @router.post(
@@ -70,5 +75,13 @@ def recognitions_router(submit_recognition: SubmitRecognition) -> APIRouter:
     async def submit(request: RecognitionRequest) -> SubmitRecognitionResponse:
         job = submit_recognition.execute(request.stroke_order_mode, request.to_drawing())
         return SubmitRecognitionResponse(job_id=job.id, status=job.status)
+
+    @router.get(
+        "/api/recognitions/{job_id}",
+        response_model_exclude_none=True,
+        responses={404: {"model": ErrorResponse, "description": "job_not_found"}},
+    )
+    async def get(job_id: str) -> RecognitionStateResponse:
+        return RecognitionStateResponse.from_job(get_recognition.execute(job_id))
 
     return router

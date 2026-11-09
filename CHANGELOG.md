@@ -5,6 +5,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Funcionalidades
+- **O resultado do reconhecimento pode ser lido** (#47):
+  - **SSE em `GET /api/recognitions/{id}/events`:** um evento por mudança de estado (`queued`, `processing`, `completed`, `failed`), cada um com o estado completo, e o stream fecha no estado final. Quem conecta depois do fim recebe o estado final;
+  - **`GET /api/recognitions/{id}`:** o estado atual, no mesmo formato, para o frontend consultar quando o SSE falhar;
+  - **formato:** igual ao do [ARCHITECTURE.md, seção 2.2](docs/ARCHITECTURE.md#22-backend). Campo que não se aplica não vem, e um job `failed` traz o código da falha (`inference_failed`);
+  - **job inexistente ou expirado:** `404` com `job_not_found`, nos dois endpoints.
 - **A API processa os jobs** (#46):
   - **fila:** os jobs saem da fila um por vez, então ela não enche mais depois de 16 envios;
   - **processo de inferência:** um processo separado, que deixa a API e o SSE respondendo enquanto reconhece. Ele sobe com a API e, se cair, o job em curso termina como `failed` e o processo seguinte assume;

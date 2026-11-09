@@ -47,13 +47,19 @@ class FakeJobQueue:
 
 
 class FakeJobRepository:
+    """on_get runs at the start of each get, to change the job in the middle of a use case."""
+
     def __init__(self) -> None:
         self.jobs: dict[str, RecognitionJob] = {}
+        self.on_get: Callable[[str], None] | None = None
 
     def save(self, job: RecognitionJob) -> None:
         self.jobs[job.id] = job
 
     def get(self, job_id: str) -> RecognitionJob | None:
+        if self.on_get is not None:
+            on_get, self.on_get = self.on_get, None  # once
+            on_get(job_id)
         return self.jobs.get(job_id)
 
     def delete(self, job_id: str) -> None:
@@ -101,3 +107,16 @@ class FakeStrokeOrderEvaluator:
         if self.error is not None:
             raise self.error
         return self.evaluations
+
+
+class FakeResultNotifier:
+    """Records each notified job; on_notify runs during the call, to look at the repository."""
+
+    def __init__(self, on_notify: Callable[[RecognitionJob], None] | None = None) -> None:
+        self.jobs: list[RecognitionJob] = []
+        self.on_notify = on_notify
+
+    def notify(self, job: RecognitionJob) -> None:
+        if self.on_notify is not None:
+            self.on_notify(job)
+        self.jobs.append(job)

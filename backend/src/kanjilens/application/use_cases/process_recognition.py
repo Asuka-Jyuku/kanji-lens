@@ -1,7 +1,9 @@
-"""Run one queued job to its final status (ADRs 0012 and 0019).
+"""Run one queued job to its final status (ADRs 0012, 0019 and 0020).
 
 queued -> processing -> completed, or failed when the recognizer or the stroke-order evaluator
-fails. Unordered jobs never call the evaluator; ordered jobs evaluate every candidate.
+fails. Unordered jobs never call the evaluator; ordered jobs evaluate every candidate. Every
+new state is stored first and then handed to the ResultNotifier, so a watcher that reads the
+repository never sees an older state than the one it was told about.
 """
 
 import logging
@@ -10,6 +12,7 @@ from dataclasses import replace
 from kanjilens.application.ports.clock import Clock
 from kanjilens.application.ports.job_repository import JobRepository
 from kanjilens.application.ports.kanji_recognizer import KanjiRecognizer
+from kanjilens.application.ports.result_notifier import ResultNotifier
 from kanjilens.application.ports.stroke_order_evaluator import StrokeOrderEvaluator
 from kanjilens.domain.job import JobFailure, RecognitionJob
 from kanjilens.domain.prediction import RecognitionResult
@@ -24,11 +27,13 @@ class ProcessRecognition:
         repository: JobRepository,
         recognizer: KanjiRecognizer,
         evaluator: StrokeOrderEvaluator,
+        notifier: ResultNotifier,
         clock: Clock,
     ) -> None:
         self._repository = repository
         self._recognizer = recognizer
         self._evaluator = evaluator
+        self._notifier = notifier
         self._clock = clock
 
     async def execute(self, job_id: str) -> RecognitionJob | None:
@@ -38,7 +43,7 @@ class ProcessRecognition:
             _log.warning("job %s left the queue but is no longer stored", job_id)
             return None
         job = job.start(self._clock.now())
-        self._repository.save(job)
+        self._publish(job)
         try:
             result = await self._recognize(job)
             job = job.complete(result, self._clock.now())
@@ -47,8 +52,12 @@ class ProcessRecognition:
             # A crash of the inference process (BrokenProcessPool) lands here too (ADR 0019).
             _log.exception("job %s failed", job.id)
             job = job.fail(JobFailure.INFERENCE_FAILED, self._clock.now())
-        self._repository.save(job)
+        self._publish(job)
         return job
+
+    def _publish(self, job: RecognitionJob) -> None:
+        self._repository.save(job)
+        self._notifier.notify(job)
 
     async def _recognize(self, job: RecognitionJob) -> RecognitionResult:
         result = await self._recognizer.recognize(job.drawing)
