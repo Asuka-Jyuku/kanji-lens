@@ -60,6 +60,12 @@ source_modules = ["kanjilens_ml.stroke_order"]
 forbidden_modules = ["torch"]
 
 [[tool.importlinter.contracts]]
+name = "The stroke normalization does not use PyTorch: the stroke-order check imports it (ADR 0012)"
+type = "forbidden"
+source_modules = ["kanjilens_ml.preprocessing.strokes"]
+forbidden_modules = ["torch"]
+
+[[tool.importlinter.contracts]]
 name = "Layers inside kanjilens_ml: preprocessing is the base, training and evaluation are on top"
 type = "layers"
 layers = [
