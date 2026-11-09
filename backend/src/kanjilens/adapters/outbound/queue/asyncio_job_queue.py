@@ -18,5 +18,9 @@ class AsyncioJobQueue:
         except asyncio.QueueFull:
             raise QueueFull(f"the queue holds {self._queue.maxsize} jobs") from None
 
+    async def take(self) -> str:
+        """The oldest job id, waiting while the queue is empty; for the queue consumer."""
+        return await self._queue.get()
+
     def __len__(self) -> int:
         return self._queue.qsize()
