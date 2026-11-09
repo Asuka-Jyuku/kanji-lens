@@ -145,6 +145,15 @@ Resposta após o processamento:
 
 > As confianças são probabilidades da saída Softmax. Por isso a soma das previsões top-K nunca passa de 1.
 
+O `GET /api/recognitions/{id}` e cada evento do SSE (seção 5.2) devolvem **esse mesmo formato**, em qualquer estado. **Campo que não se aplica não vem, nem como `null`:**
+- **`queued` e `processing`:** só `job_id`, `status` e `stroke_order_mode`, porque ainda não há `predictions`;
+- **`unordered`:** os candidatos não têm `stroke_order`;
+- **`failed`:** sem `predictions`, e com `failure`, o código da falha que o frontend traduz (hoje só `inference_failed`).
+
+```json
+{ "job_id": "abc123", "status": "failed", "stroke_order_mode": "ordered", "failure": "inference_failed" }
+```
+
 No modo `ordered`, cada candidato traz a avaliação da ordem do desenho contra a referência dele. A avaliação só anota: não muda o ranking ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
 
 ```json
@@ -371,6 +380,7 @@ Toda resposta de erro tem o corpo `{"error": "<código>"}`, com um código está
 | `400` | `invalid_drawing` | O desenho quebra uma regra de formato (do schema ou do domínio; [docs/architecture/domain.md](architecture/domain.md)) |
 | `400` | `invalid_stroke_order_mode` | O `stroke_order_mode` não é `ordered` nem `unordered` |
 | `400` | `invalid_request` | Corpo que não é JSON, ou campo desconhecido |
+| `404` | `job_not_found` | O job não existe ou o resultado expirou (5 minutos depois do fim), no `GET` e no SSE; o SSE responde `404` antes de abrir o stream |
 | `413` | `drawing_too_large` | Corpo acima de **1 MiB** (conferido antes de qualquer parsing, inclusive em envio *chunked*), ou traços e pontos acima dos limites da [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md) |
 | `503` | `queue_full` | A fila tem 16 jobs esperando; vem com `Retry-After` ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md)) |
 | outros | derivado do status (`not_found`, `method_not_allowed`) | Rota ou método que não existe |
@@ -583,7 +593,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [x] Criar o domínio: desenho, modo, job e estados ([#44](https://github.com/Asuka-Jyuku/kanji-lens/issues/44); [architecture/domain.md](architecture/domain.md)).
 - [x] Criar o endpoint de reconhecimento, gerar o `job_id` e pôr o job na fila ([#45](https://github.com/Asuka-Jyuku/kanji-lens/issues/45)).
 - [x] Processar os jobs no processo de inferência e armazenar os resultados, com um reconhecedor falso ([#46](https://github.com/Asuka-Jyuku/kanji-lens/issues/46)).
-- [ ] Implementar a notificação por SSE, com o polling de reserva ([#47](https://github.com/Asuka-Jyuku/kanji-lens/issues/47)).
+- [x] Implementar a notificação por SSE, com o polling de reserva ([#47](https://github.com/Asuka-Jyuku/kanji-lens/issues/47)).
 - [ ] Integrar o modelo e a avaliação da ordem no processo de inferência ([#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48)).
 
 ### Etapa 3: Frontend

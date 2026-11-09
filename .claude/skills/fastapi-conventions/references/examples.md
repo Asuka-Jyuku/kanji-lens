@@ -25,4 +25,7 @@ Antes de escrever, abra o exemplo do mesmo tipo e siga a forma dele. Exemplo nov
 | Consumidor da fila | `backend/src/kanjilens/adapters/inbound/queue/consumer.py` (`QueueConsumer`) | um job por vez, um job com erro não para o consumidor; a fila entra por um `Protocol` local (`JobSource`), não pelo port do use case |
 | Ligação no `lifespan` | `backend/src/kanjilens/bootstrap/app.py` | `create_app(inference)` recebe as funções do worker (`InferenceFunctions`); o teste passa as dele |
 | Teste com o processo de verdade | `backend/tests/adapters/test_queue_consumer.py`, `test_app_lifespan.py` | as funções do worker em `tests/worker_functions.py`; medir o event loop durante um job lento; derrubar o worker com `os._exit` |
-| SSE | *a criar* (#47) | — |
+| Schema de saída com campos opcionais | `backend/src/kanjilens/adapters/inbound/http/recognition_state.py` (`RecognitionStateResponse`) | `from_job()` do domínio, `to_json()` sem os `None`; o mesmo schema no `GET` (`response_model_exclude_none`) e no SSE |
+| SSE | `backend/src/kanjilens/adapters/inbound/http/recognition_events.py` | `404` numa dependência antes do stream; gerador `job_events` testável sem HTTP; inscrever antes de ler; o notifier entra por um `Protocol` local (`JobUpdates`) |
+| Notifier em memória | `backend/src/kanjilens/adapters/outbound/notifier/in_memory_result_notifier.py` | uma fila por inscrito, `subscribe()` como context manager, que desinscreve até em erro |
+| Teste do SSE | `backend/tests/adapters/test_result_endpoints.py`, `test_recognition_events.py` | ler o stream numa thread com prazo (stream que não termina falha, não trava o CI); um primeiro job lento segura o worker para ver o `queued` |

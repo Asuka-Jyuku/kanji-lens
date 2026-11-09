@@ -48,3 +48,10 @@ O [spike](../spikes/queue-and-notification.md) conferiu duas coisas:
   - o use case `GetRecognition` serve aos dois caminhos;
   - o notifier (`ResultNotifier`) avisa as conexões abertas quando o estado muda;
   - os testes do backend usam o test client do FastAPI lendo o stream até o estado final.
+- *Atualização de 2026-11-08 (#47), detalhes da implementação:*
+  - **Inscrever antes de ler.** O stream se inscreve no notifier (`InMemoryResultNotifier`, uma fila por conexão) e só então lê o estado atual pelo `GetRecognition`. Assim nenhuma mudança cai entre a leitura e a espera. Uma mudança lida e também avisada não sai duas vezes: o stream só manda um evento quando o estado muda.
+  - **O `ProcessRecognition` grava e depois avisa.** Quem é avisado nunca lê um estado mais antigo do que o do aviso.
+  - **O `404` sai antes de o stream abrir.** O job é conferido numa dependência da rota. O cliente recebe `404` com `job_not_found`, e não um stream vazio.
+  - **Cliente que desconecta** fecha o gerador, e a inscrição sai junto. Nada fica pendurado.
+  - **Campo que não se aplica não vem**, nem como `null` (ARCHITECTURE.md, seção 2.2). O `GET` e o SSE usam o mesmo schema (`RecognitionStateResponse`).
+  - **O lado do stream lê o notifier por um `Protocol` local** (`JobUpdates`). O port `ResultNotifier` é o que o use case precisa, e ele só avisa.

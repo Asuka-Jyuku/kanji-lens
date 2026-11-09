@@ -41,6 +41,12 @@ class InvalidJobTransition(DomainError):
     code = "invalid_job_transition"
 
 
+class JobNotFound(DomainError):
+    """No job has this id, or its result has expired (HTTP 404)."""
+
+    code = "job_not_found"
+
+
 class QueueFull(DomainError):
     """The job queue is at its limit; the client should retry later (HTTP 503)."""
 
