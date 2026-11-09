@@ -5,6 +5,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Funcionalidades
+- **A ordem dos traços é comparada com o KanjiVG** (parte da #29):
+  - **o que diz:** se a ordem está certa, quais traços estão fora de ordem ou na direção errada, e quais foram unidos ou quebrados, sem acusar erro de ordem por isso; um traço a mais ou a menos também não vira erro;
+  - **quando não avalia:** com mais de 2 traços de diferença, ou kanji fora do KanjiVG, a resposta diz o motivo;
+  - **referências:** `ml/scripts/prepare_kanjivg.py` baixa o KanjiVG `r20260714`, confere o checksum e gera os traços de referência fora do git, com a atribuição e a licença (CC BY-SA 3.0);
+  - **medição:** em desenhos sintéticos, menos de 1 ms por candidato e os acertos e falsos alarmes no [docs/MODEL.md](docs/MODEL.md#avaliação-da-ordem-dos-traços). O conjunto de desenhos reais vem depois da exportação do canvas (#66), e a ligação com a API, na #48.
 - **Antes de desenhar, a tela pergunta se a ordem dos traços importa** (#57):
   - **"Ordem dos traços: Importa / Não importa"**, sempre à vista acima do canvas (ao lado, com o celular deitado), começando em "Não importa";
   - **trocar o modo não apaga o desenho**; funciona pelo toque e só pelo teclado (Tab e setas);

@@ -42,7 +42,7 @@ def normalize_strokes(
         return []
     to_unit = _unit_square_transform(polylines)
     return [
-        [to_unit(point) for point in _resample(polyline, points_per_stroke)]
+        [to_unit(point) for point in resample_polyline(polyline, points_per_stroke)]
         for polyline in polylines
     ]
 
@@ -87,8 +87,11 @@ def _unit_square_transform(polylines: list[list[Point]]) -> _Transform:
     return _Transform(centre_x, centre_y, scale)
 
 
-def _resample(polyline: list[Point], count: int) -> list[Point]:
-    """count points equally spaced along the polyline, from its first to its last point."""
+def resample_polyline(polyline: Sequence[Point], count: int) -> list[Point]:
+    """count points equally spaced along the polyline, from its first to its last point.
+
+    Also used by the stroke-order check to resample neighbouring strokes joined into one path.
+    """
     # Cumulative length at each vertex; repeated points add nothing.
     lengths = [0.0]
     for (x0, y0), (x1, y1) in itertools.pairwise(polyline):

@@ -50,6 +50,15 @@ O [spike #28](../spikes/stroke-order-evaluation.md) conferiu o KanjiVG na fonte 
   Os parâmetros iniciais do protótipo (24 pontos por traço, margem 0,75, comprimento mínimo 0,08) se ajustam na [#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29), com desenhos reais.
 
   *Atualização de 2026-11-09 (#14):* os passos 1 e 2 da normalização estão em `kanjilens_ml.preprocessing.strokes`, a mesma função para o desenho e para a referência do KanjiVG. O que ficou fixado ali: a caixa é a de todos os pontos desenhados, antes da reamostragem; o caractere é escalado pelo **lado maior** da caixa, mantendo a proporção, e centrado no quadrado `[0, 1]`; a reamostragem é pelo comprimento, e o `t` é ignorado. Os passos e os casos de borda estão no [docs/MODEL.md](../MODEL.md#traços-normalizados-avaliação-da-ordem).
+
+  *Atualização de 2026-11-09 (#29):* o algoritmo está em `kanjilens_ml.stroke_order`. A implementação fixou estes detalhes, com os números no [docs/MODEL.md](../MODEL.md#avaliação-da-ordem-dos-traços):
+  - **Traço a mais ou a menos:** o que nenhuma união explica fica fora da correspondência, com um custo fixo por traço (`unmatched_stroke_cost` = 0,05, medido). Sem ele, deixar de fora um pedaço de traço quebrado não custava nada, e o traço quebrado virava "traço a mais".
+  - **Ordem:** é contada pela posição entre os traços pareados, então um traço que faltou não desloca os outros.
+  - **Direção:** não é conferida em traço quebrado.
+  - **Margem e comprimento mínimo:** ficaram com os valores do protótipo.
+  - **Abstenção por custo alto:** fica para o conjunto de desenhos reais ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)), porque precisa de um limiar medido e de um motivo novo em `not_evaluated`. O resultado já traz o custo médio, fora da API.
+  - **KanjiVG:** o SHA-256 do `kanjivg-20260714-main.zip` é `b5df6cd2bc249dd49b8041eb99e38ba9f8dc6b9ea57962a80084b4a315d1a7fc`. O `ml/scripts/prepare_kanjivg.py` gera `ml/artifacts/kanjivg/`, com 6.422 kanjis do CJK unificado, contando os blocos de extensão, quando não recebe a lista de classes.
+  - **mypy:** o `scipy-stubs` entra no grupo de desenvolvimento, para o modo strict.
 - **Candidatos:** a ordem é avaliada para **todos os candidatos devolvidos** (top-K), e a tela mostra a do candidato escolhido. A avaliação **só anota: não reordena** o ranking do reconhecimento.
 - **Formato da requisição** (`POST /api/recognitions`):
 

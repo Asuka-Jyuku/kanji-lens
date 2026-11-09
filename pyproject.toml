@@ -8,7 +8,7 @@ members = ["ml", "backend"]
 [tool.ruff]
 target-version = "py315"
 line-length = 100
-src = ["ml/src", "ml/tests", "backend/src", "backend/tests"]
+src = ["ml/src", "ml/tests", "ml/scripts", "backend/src", "backend/tests"]
 
 [tool.ruff.lint]
 select = [

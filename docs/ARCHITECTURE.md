@@ -203,7 +203,7 @@ Os dois modos usam **um único modelo**, a CNN 2D compacta, que não depende da 
 | Parte | O que é | Entrada | Alternativas / em aberto |
 |---|---|---|---|
 | Reconhecimento (os dois modos) | CNN 2D customizada compacta | Imagem rasterizada final, em tons de cinza; resoluções a comparar: 64×64, 96×96 e 128×128 | Comparadores: MobileNetV3-Small, ResNet-18, HOG + SVM |
-| Avaliação da ordem (só `ordered`) | Correspondência bipartite (algoritmo húngaro) entre os traços desenhados e os do KanjiVG, com hipóteses de traços unidos e quebrados (até 2) e checagem de direção, para cada candidato ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md); [spike](spikes/stroke-order-evaluation.md)) | Traços normalizados e reamostrados, e a referência do KanjiVG | Parâmetros (margem de direção, comprimento mínimo, abstenção por custo alto) ajustados com desenhos reais (#29) |
+| Avaliação da ordem (só `ordered`) | Correspondência bipartite (algoritmo húngaro) entre os traços desenhados e os do KanjiVG, com hipóteses de traços unidos e quebrados (até 2) e checagem de direção, para cada candidato ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md); [spike](spikes/stroke-order-evaluation.md)) | Traços normalizados e reamostrados, e a referência do KanjiVG | Implementada, com parâmetros medidos em desenhos sintéticos ([docs/MODEL.md](MODEL.md#avaliação-da-ordem-dos-traços)); margem de direção, comprimento mínimo e abstenção por custo alto se ajustam com desenhos reais (#29, #66) |
 
 Ponto de partida da CNN (não fechado; tamanho e profundidade saem dos benchmarks):
 
@@ -221,7 +221,7 @@ Traços do canvas → Validação → Pré-processamento compartilhado → raste
                                                          contra o KanjiVG dos candidatos ─▶ resultado traço a traço
 ```
 
-**Dados de referência:** o KanjiVG (vetores, ordem e direção de cada traço). Ele fica numa versão fixada (`r20260714`, com checksum), e um script de preparação gera os traços de referência fora do git, porque a aplicação não sai para a rede ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)). A licença, **CC BY-SA 3.0** (confirmada na fonte), exige atribuição, inclusive na interface, e vale também para os dados derivados, à parte da licença MIT do código.
+**Dados de referência:** o KanjiVG (vetores, ordem e direção de cada traço). Ele fica numa versão fixada (`r20260714`, com checksum), e um script de preparação (`ml/scripts/prepare_kanjivg.py`) gera os traços de referência em `ml/artifacts/kanjivg/`, fora do git, porque a aplicação não sai para a rede ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md); [docs/MODEL.md](MODEL.md#dados-de-referência-kanjivg)). A licença, **CC BY-SA 3.0** (confirmada na fonte), exige atribuição, inclusive na interface, e vale também para os dados derivados, à parte da licença MIT do código.
 
 O modelo retorna as K classes mais prováveis, e não apenas a de maior probabilidade. Os dois modos compartilham:
 - o contrato da API;
@@ -296,7 +296,7 @@ Os adapters são ligados aos ports nos providers de `app.config.ts`. Componente 
 
 ### 3.3 ML (`ml/src/kanjilens_ml/`)
 
-O código de ML é uma biblioteca usada em dois lugares: os scripts de treino em `ml/` e os adapters outbound do backend (o recognizer e o avaliador da ordem). **O pré-processamento existe uma vez só**, em `kanjilens_ml/preprocessing/`, e os dois lados o importam. Ele gera, a partir da mesma lista de traços, a imagem que a CNN recebe e os traços normalizados que a avaliação da ordem usa. `kanjilens_ml/models/` tem a CNN 2D. A avaliação da ordem é um módulo puro, sem PyTorch (proposta: `kanjilens_ml/stroke_order/`), que compara os traços com o KanjiVG. Duas implementações paralelas divergiriam, e o modelo erraria calado em produção (*train/serve skew*).
+O código de ML é uma biblioteca usada em dois lugares: os scripts de treino em `ml/` e os adapters outbound do backend (o recognizer e o avaliador da ordem). **O pré-processamento existe uma vez só**, em `kanjilens_ml/preprocessing/`, e os dois lados o importam. Ele gera, a partir da mesma lista de traços, a imagem que a CNN recebe e os traços normalizados que a avaliação da ordem usa. `kanjilens_ml/models/` tem a CNN 2D. A avaliação da ordem é um módulo puro, sem PyTorch (`kanjilens_ml/stroke_order/`), que compara os traços com o KanjiVG. Duas implementações paralelas divergiriam, e o modelo erraria calado em produção (*train/serve skew*).
 
 ---
 
@@ -531,7 +531,7 @@ A Top-5 é a métrica mais próxima da experiência do usuário, já que a inter
 
 ## 8. Estrutura do repositório
 
-As pastas das três partes existem desde as ADRs [0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md), [0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) e [0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md). As de `ml/` sem código ainda (`configs/`, `notebooks/`, `datasets/`, `artifacts/`) nascem com a primeira issue que precisar delas:
+As pastas das três partes existem desde as ADRs [0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md), [0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) e [0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md). As de `ml/` sem código ainda (`configs/`, `notebooks/`) nascem com a primeira issue que precisar delas. `scripts/` nasceu com a avaliação da ordem (#29), que também cria `datasets/` e `artifacts/` na máquina, fora do git:
 
 ```text
 kanji-lens/
@@ -569,10 +569,11 @@ kanji-lens/
 │   │   ├── stroke_order/    # avaliação da ordem contra o KanjiVG (sem PyTorch)
 │   │   ├── training/
 │   │   └── evaluation/
+│   ├── scripts/             # preparação de dados e medições (KanjiVG, benchmark da ordem)
 │   ├── configs/             # configurações de treino, versionadas
 │   ├── notebooks/           # só exploração; nada importa daqui
 │   ├── datasets/            # fora do git
-│   └── artifacts/           # pesos treinados, fora do git
+│   └── artifacts/           # pesos treinados e referências do KanjiVG, fora do git
 ├── docs/
 ├── pyproject.toml           # raiz do workspace do uv e configuração do Ruff (não é pacote)
 ├── uv.lock                  # lock único das partes Python
@@ -596,7 +597,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [x] Escolher o algoritmo de avaliação da ordem e o formato de captura dos pontos ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
 - [ ] Criar o pré-processamento compartilhado (imagem e traços normalizados). Os traços normalizados já existem ([docs/MODEL.md](MODEL.md#traços-normalizados-avaliação-da-ordem)); falta a imagem da CNN ([#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14)).
 - [ ] Implementar e treinar a CNN 2D compacta.
-- [ ] Implementar a avaliação da ordem contra o KanjiVG (`ordered`).
+- [ ] Implementar a avaliação da ordem contra o KanjiVG (`ordered`). O algoritmo e os dados de referência existem ([docs/MODEL.md](MODEL.md#avaliação-da-ordem-dos-traços)); falta o conjunto de desenhos reais ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29), depois da [#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)).
 - [ ] Avaliar o reconhecimento (Top-1/Top-5) e a avaliação da ordem (conjunto com ordem certa e errada).
 - [ ] Implementar inferência top-K.
 - [ ] Medir no notebook da escola, depois de o modelo e o código ficarem prontos (runtimes, resolução, INT8, concorrência).
