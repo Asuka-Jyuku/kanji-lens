@@ -114,7 +114,14 @@ module.exports = defineConfig([
       // Every visible text in a component template goes through i18n (ADR 0009 and 0017).
       '@angular-eslint/template/i18n': [
         'error',
-        { checkId: true, checkText: true, checkAttributes: true, requireDescription: false },
+        {
+          checkId: true,
+          checkText: true,
+          checkAttributes: true,
+          requireDescription: false,
+          // These ARIA attributes hold element ids, not text: nothing to translate.
+          ignoreAttributes: ['aria-describedby', 'aria-labelledby', 'aria-controls', 'aria-owns'],
+        },
       ],
     },
   },

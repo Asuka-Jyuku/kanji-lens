@@ -5,6 +5,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Funcionalidades
+- **A tela tem a área de desenho** (#56):
+  - **desenhar:** com o mouse, o dedo ou a caneta, um dedo por vez, sem rolar nem dar zoom na página, e com o traço nítido em tela de alta densidade;
+  - **os traços ficam como foram desenhados**, no formato que a API recebe (`[x, y, t]`), com os mesmos limites dela; ao chegar num limite, a tela diz o que fazer;
+  - **Desfazer traço e Limpar**, que ficam desligados com o canvas vazio;
+  - **em pé ou deitado:** girar o celular não apaga o desenho, e deitado os botões vão para o lado do canvas;
+  - o envio para o reconhecimento vem na #58.
 - **Os traços desenhados são normalizados para a avaliação da ordem** (parte da #14):
   - **o que faz:** põe o desenho num quadrado de lado 1, mantendo a proporção, e reamostra cada traço em 24 pontos igualmente espaçados. A ordem, a separação e a direção dos traços ficam como foram desenhadas;
   - **para quem:** é a entrada da avaliação da ordem contra o KanjiVG (#29), que usa a mesma função para os traços de referência;

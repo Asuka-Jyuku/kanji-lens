@@ -287,8 +287,8 @@ A fila e a notificação são **adapters atrás de um port** ([ADR 0019](adr/001
 
 | Camada | O que contém | Pode importar |
 |---|---|---|
-| `domain/` | Modelos (`Drawing` feito de traços, `StrokeOrderMode`, `Prediction`, `StrokeOrderEvaluation`, `RecognitionJob`) e funções puras | nada do Angular |
-| `application/` | Use cases / facades (`RecognizeDrawing`) e ports como classes abstratas usadas como token de DI (`RecognitionGateway`, `ResultStream`) | `domain`, e só o `@angular/core` (signals e DI; [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
+| `domain/` | Modelos (`Drawing` feito de traços e a captura deles, com os mesmos limites da API, `StrokeOrderMode`, `Prediction`, `StrokeOrderEvaluation`, `RecognitionJob`) e funções puras | nada do Angular |
+| `application/` | Use cases / facades (`DrawingSession`, o desenho em andamento; `RecognizeDrawing`) e ports como classes abstratas usadas como token de DI (`RecognitionGateway`, `ResultStream`) | `domain`, e só o `@angular/core` (signals e DI; [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
 | `infrastructure/` | Implementações dos ports: `HttpRecognitionGateway` (`HttpClient`), `SseResultStream` (`EventSource`) | `application`, `domain`, Angular |
 | `presentation/` | Componentes, páginas e rotas: o canvas e a tela de resultados | `application`, `domain`, Angular |
 
@@ -614,13 +614,13 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 ### Etapa 3: Frontend
 
 - [x] Criar a aplicação Angular ([ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)).
-- [ ] Implementar o canvas responsivo.
-- [ ] Implementar desenho com mouse e touch, capturando os traços.
-- [ ] Implementar a escolha do modo (ordem importa / não importa).
-- [ ] Implementar a limpeza do canvas.
-- [ ] Integrar com a REST API.
-- [ ] Implementar o indicador de processamento.
-- [ ] Exibir as previsões.
+- [x] Implementar o canvas responsivo ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
+- [x] Implementar desenho com mouse e touch, capturando os traços ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
+- [ ] Implementar a escolha do modo (ordem importa / não importa) ([#57](https://github.com/Asuka-Jyuku/kanji-lens/issues/57)).
+- [x] Implementar a limpeza do canvas e o desfazer do último traço ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
+- [ ] Integrar com a REST API e o SSE ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
+- [ ] Implementar o indicador de processamento ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
+- [ ] Exibir as previsões e a avaliação da ordem ([#59](https://github.com/Asuka-Jyuku/kanji-lens/issues/59)).
 - [ ] Abrir o verbete do kanji escolhido no dicionário externo, com o padrão configurável ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)).
 
 ### Etapa 4: Infraestrutura
