@@ -1,136 +1,45 @@
 # Changelog
 
-Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [versionamento semântico](https://semver.org/lang/pt-BR/). Todo PR para o `develop` põe a sua entrada em `[Não publicado]`; a versão é definida no release ([ADR 0008](docs/adr/0008-git-flow-and-changelog-by-release.md)).
+Formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [versionamento semântico](https://semver.org/lang/pt-BR/). Cada PR para a `develop` põe uma linha em `[Não publicado]`; a versão sai no release ([ADR 0008](docs/adr/0008-git-flow-and-changelog-by-release.md)).
 
 ## [Não publicado]
 
 ### Funcionalidades
-- **"Reconhecer" manda o desenho para a API e a tela acompanha o reconhecimento** (#58):
-  - **o estado sempre à vista e anunciado:** "Enviando…", "Na fila", "Reconhecendo…" e, no fim, o candidato mais provável (a lista completa vem na #59);
-  - **cada erro diz o que fazer:** fila cheia (o botão volta sozinho depois dos segundos que a API pede), falha do reconhecimento, desenho recusado ou grande demais, resultado expirado, sem conexão com o servidor e servidor que demorou;
-  - **"Reconhecer" fica desligado** com o canvas vazio e enquanto o reconhecimento anterior não termina;
-  - **o resultado chega pelo SSE**; se a conexão falhar várias vezes, a tela passa a perguntar à API a cada segundo;
-  - **para rodar:** `npm start` encaminha `/api` para a API em `127.0.0.1:8000` (outra porta com `KANJILENS_API_URL`). Para testar pelo celular, só o frontend precisa de `--host 0.0.0.0`, e só a porta 4200 no firewall; a API continua fechada para a rede.
-- **Num celular pequeno em pé, o canvas encolhe** para "Reconhecer" e o estado caberem na tela sem rolar (#58).
-- **No build de desenvolvimento, o desenho pode ser salvo como JSON** para os conjuntos de teste (#66):
-  - **como:** o painel "Exportar desenho (desenvolvimento)", abaixo do canvas, pede o kanji desenhado e a ordem usada (certa, ou qual erro e em quais traços) e baixa o arquivo no aparelho, sem passar por servidor;
-  - **o arquivo** traz o corpo do `POST /api/recognitions` sem mudança, com o gabarito ao lado; o formato e as pastas estão no [docs/MODEL.md](docs/MODEL.md#desenhos-do-canvas), e um teste do backend manda cada desenho versionado à API;
-  - **no build de produção, o painel não existe**, e o CI confere o bundle depois do build (`npm run check:production-bundle`).
-- **A ordem dos traços é comparada com o KanjiVG** (parte da #29):
-  - **o que diz:** se a ordem está certa, quais traços estão fora de ordem ou na direção errada, e quais foram unidos ou quebrados, sem acusar erro de ordem por isso; um traço a mais ou a menos também não vira erro;
-  - **quando não avalia:** com mais de 2 traços de diferença, ou kanji fora do KanjiVG, a resposta diz o motivo;
-  - **referências:** `ml/scripts/prepare_kanjivg.py` baixa o KanjiVG `r20260714`, confere o checksum e gera os traços de referência fora do git, com a atribuição e a licença (CC BY-SA 3.0);
-  - **medição:** em desenhos sintéticos, menos de 1 ms por candidato e os acertos e falsos alarmes no [docs/MODEL.md](docs/MODEL.md#avaliação-da-ordem-dos-traços). O conjunto de desenhos reais vem depois da exportação do canvas (#66), e a ligação com a API, na #48.
-- **Antes de desenhar, a tela pergunta se a ordem dos traços importa** (#57):
-  - **"Ordem dos traços: Importa / Não importa"**, sempre à vista acima do canvas (ao lado, com o celular deitado), começando em "Não importa";
-  - **trocar o modo não apaga o desenho**; funciona pelo toque e só pelo teclado (Tab e setas);
-  - o modo vai junto com o desenho no envio, que vem na #58.
-- **Com o celular deitado, a mensagem de limite do desenho fica ao lado do canvas**, embaixo dos botões, e a página não rola mais (#57).
-- **A tela tem a área de desenho** (#56):
-  - **desenhar:** com o mouse, o dedo ou a caneta, um dedo por vez, sem rolar nem dar zoom na página, e com o traço nítido em tela de alta densidade;
-  - **os traços ficam como foram desenhados**, no formato que a API recebe (`[x, y, t]`), com os mesmos limites dela; ao chegar num limite, a tela diz o que fazer;
-  - **Desfazer traço e Limpar**, que ficam desligados com o canvas vazio;
-  - **em pé ou deitado:** girar o celular não apaga o desenho, e deitado os botões vão para o lado do canvas;
-  - o envio para o reconhecimento vem na #58.
-- **Os traços desenhados são normalizados para a avaliação da ordem** (parte da #14):
-  - **o que faz:** põe o desenho num quadrado de lado 1, mantendo a proporção, e reamostra cada traço em 24 pontos igualmente espaçados. A ordem, a separação e a direção dos traços ficam como foram desenhadas;
-  - **para quem:** é a entrada da avaliação da ordem contra o KanjiVG (#29), que usa a mesma função para os traços de referência;
-  - **documentação:** o [docs/MODEL.md](docs/MODEL.md) nasce aqui, com os passos e os casos de borda. A imagem da CNN entra num segundo PR da #14.
-- **O resultado do reconhecimento pode ser lido** (#47):
-  - **SSE em `GET /api/recognitions/{id}/events`:** um evento por mudança de estado (`queued`, `processing`, `completed`, `failed`), cada um com o estado completo, e o stream fecha no estado final. Quem conecta depois do fim recebe o estado final;
-  - **`GET /api/recognitions/{id}`:** o estado atual, no mesmo formato, para o frontend consultar quando o SSE falhar;
-  - **formato:** igual ao do [ARCHITECTURE.md, seção 2.2](docs/ARCHITECTURE.md#22-backend). Campo que não se aplica não vem, e um job `failed` traz o código da falha (`inference_failed`);
-  - **job inexistente ou expirado:** `404` com `job_not_found`, nos dois endpoints.
-- **A API processa os jobs** (#46):
-  - **fila:** os jobs saem da fila um por vez, então ela não enche mais depois de 16 envios;
-  - **processo de inferência:** um processo separado, que deixa a API e o SSE respondendo enquanto reconhece. Ele sobe com a API e, se cair, o job em curso termina como `failed` e o processo seguinte assume;
-  - **reconhecedor provisório:** ainda devolve os mesmos candidatos (日, 目, 白) para qualquer desenho e, no modo `ordered`, diz que a ordem está correta. O modelo e a avaliação da ordem de verdade entram na #48;
-  - **sem leitura do resultado ainda:** o `GET` e o SSE entram na #47.
-- **A API recebe o desenho** em `POST /api/recognitions` e responde na hora com o `job_id` (#45):
-  - **limites:** corpo de até 1 MiB e os limites de traços e pontos;
-  - **erros:** desenho inválido ou modo desconhecido → `400`, desenho grande demais → `413`, sempre com um código estável no corpo (`{"error": "..."}`) para o frontend traduzir;
-  - **fila:** até 16 jobs esperando; cheia, `503` com `Retry-After` e `queue_full`;
-  - **expiração:** o job e o desenho somem 5 minutos depois de terminados.
-- **O domínio do reconhecimento existe no backend** (#44):
-  - **regras:** o desenho, o modo, o job com os estados, os candidatos e a avaliação da ordem, cada um com as próprias regras;
-  - **desenho fora dos limites:** é recusado com um código estável, `drawing_too_large` (muito grande) ou `invalid_drawing` (formato errado), que o frontend vai traduzir;
-  - **job:** só passa por `queued` → `processing` → `completed` ou `failed`, e o resultado expira 5 minutos depois do fim;
-  - **documentação:** glossário e diagrama de estados em [docs/architecture/domain.md](docs/architecture/domain.md).
+- "Reconhecer" envia o desenho, mostra o estado do job ("Na fila", "Reconhecendo…") e o candidato mais provável; cada erro diz o que fazer (#58).
+- Num celular pequeno em pé, o canvas encolhe para tudo caber sem rolar (#58).
+- No build de desenvolvimento, dá para salvar o desenho como JSON, com o kanji e a ordem usada, para montar os conjuntos de teste (#66).
+- A ordem e a direção dos traços são comparadas com o KanjiVG, sem acusar erro por traço unido ou quebrado (parte da #29).
+- Antes de desenhar, o aluno escolhe se a ordem dos traços importa; o padrão é "não importa" (#57).
+- Com o celular deitado, a mensagem de limite do desenho não faz mais a página rolar (#57).
+- A tela tem a área de desenho, com mouse, dedo ou caneta, "Desfazer traço" e "Limpar" (#56).
+- Os traços desenhados são normalizados para a avaliação da ordem (parte da #14).
+- O resultado sai pelo SSE em `/api/recognitions/{id}/events` e pelo `GET /api/recognitions/{id}`, no mesmo formato (#47).
+- A API processa os jobs um por vez num processo separado, ainda com um reconhecedor provisório (#46).
+- A API recebe o desenho em `POST /api/recognitions`, com limites de tamanho e fila de até 16 jobs (#45).
+- O domínio do reconhecimento existe no backend: desenho, modo, job, candidatos e avaliação da ordem (#44).
 
 ### Publicação e documentação
-- **O frontend ficou mais simples por dentro, sem mudar nada na tela** (#80): a exportação de desenho mora numa pasta só, o router (sem nenhuma rota) saiu e o modo escolhido fica junto do desenho.
-- **O backend e o ML perderam peças que não se pagavam, sem mudar a API** (#81): testes que só conferiam constantes, o port `Clock` e os pacotes vazios do ML.
-- **Como treinar sem o ETL, enquanto o site dele estiver fora do ar** (spike em [docs/spikes/training-without-etl.md](docs/spikes/training-without-etl.md), #78):
-  - **proposta:** desenhos sintéticos gerados a partir do KanjiVG e do Kanji alive (CC BY 4.0), no mesmo formato do canvas, com fontes renderizadas como complemento. A validação é só em escrita humana: os desenhos da #66 e, se liberado, o subconjunto gratuito de 10 escritores do TUAT;
-  - **alternativas conferidas:**
-    - o TUAT Kuchibue/Nakayosi é pago, com um subconjunto de 10 escritores gratuito para pesquisa;
-    - o CASIA é gratuito para pesquisa acadêmica, mas é escrita chinesa: 48 dos 240 kanji do MVP não existem lá;
-    - o Kuzushiji-Kanji é cursiva clássica;
-  - **licença:** se os pesos herdam o ShareAlike do KanjiVG fica para a ADR. No MVP, os pesos não são publicados;
-  - **ainda não é decisão:** a ADR 0021 continua valendo até uma ADR nova.
-- **O `docs/SECURITY.md` reúne o que fica exposto na rede local:** portas, CORS, limites de entrada e da fila, o que acontece com os desenhos dos alunos e a regra de nenhuma saída de rede (#58).
-- **Como rodar o KanjiLens está num lugar só, o [docs/RUNNING.md](docs/RUNNING.md)** (#61):
-  - **o que cobre:** pré-requisitos (uv e Node 26), instalação, subir a API e o frontend, conferir com `curl`, preparar o KanjiVG e abrir pelo celular na rede local, com o firewall;
-  - **problemas comuns:** Node na versão errada, porta ocupada e, quando o celular não abre a página, como saber se o problema é o firewall, a rede (rede de convidados, isolamento de clientes) ou o celular (VPN, DNS privado), com o `adb reverse` como contorno;
-  - a instalação no notebook da escola entra depois (#62, #63).
-- **O andamento das issues aparece no Project** ([CONTRIBUTING.md, "Status no Project"](CONTRIBUTING.md#status-no-project)): a issue passa para `In progress` quando alguém a pega, para `In review` quando o PR abre, e fecha sozinha em `Done`; a etapa de cada item do escopo do MVP aponta para a issue dele ([ARCHITECTURE.md, seção 9](docs/ARCHITECTURE.md#9-escopo-do-mvp)).
-- **O modelo vai aprender com o ETL9G e reconhecer, na primeira versão, os 1.026 kanji ensinados no ensino fundamental japonês** ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md); pesquisa em [docs/spikes/dataset-selection.md](docs/spikes/dataset-selection.md), #11):
-  - **classes:** primeiro os 240 kanji da 1ª e da 2ª série, para validar o treino; depois os 1.026; mais tarde, os 2.106 kanji do Jōyō que o ETL9G tem;
-  - **licença do ETL:** o uso é livre, sem cadastro, mas o dataset só pode ser obtido pelo site oficial. Por isso nenhuma imagem dele fica no repositório, e cada máquina baixa do site. A citação exigida está nos READMEs;
-  - **download pendente:** o site oficial está fora do ar desde 08/11/2026, e baixar os arquivos e conferir a lista de classes ficam para quando ele voltar (#13).
-- **Documentação alinhada com a fila, o SSE e as ferramentas**:
-  - as ADRs 0003 e 0004, as skills e o `CLAUDE.md` deixam de tratar a fila e a notificação como decisões em aberto e descrevem o processo de inferência no lugar dos "workers";
-  - as skills do backend e do ML ganham as regras da fronteira entre processos (só dados serializáveis, falha do processo vira `failed`) e do SSE;
-  - o README mostra o endpoint `/events` e aponta os comandos de desenvolvimento;
-  - o escopo do MVP marca o que já foi feito e liga as etapas do backend às histórias #44–#48;
-  - o `CONTRIBUTING.md` explica que o PR precisa estar atualizado com o `develop` antes do merge.
-- **Todo desenvolvimento termina com os documentos em dia:** a regra está no `CLAUDE.md`, nas skills e no checklist do PR.
-- **Fila e notificação decididas** (spike em [docs/spikes/queue-and-notification.md](docs/spikes/queue-and-notification.md), #19, #20):
-  - **fila** ([ADR 0019](docs/adr/0019-in-memory-job-queue-with-one-inference-process.md)): `asyncio.Queue` limitada; os jobs rodam um por vez num processo de inferência separado, e a API segue respondendo enquanto o modelo trabalha. Sem Redis, que não roda nativo no Windows;
-  - **notificação** ([ADR 0020](docs/adr/0020-result-notification-by-server-sent-events.md)): o resultado chega por SSE, com consulta periódica (polling) de reserva.
-- **A prioridade fica num campo só, o `Priority` do Project, de 0 a 4**, com o significado de cada valor no [CONTRIBUTING.md](CONTRIBUTING.md#backlog-no-project) e nas próprias opções do campo. As etiquetas `priority:` foram apagadas (#41).
-- **CI no GitHub Actions** ([ADR 0018](docs/adr/0018-ci-with-github-actions-and-a-single-required-check.md)), em todo PR para o `develop` ou a `main`:
-  - **Python:** lint, tipos, testes e arquitetura do ML e do backend, no Linux e no Windows;
-  - **frontend:** lint, formatação, testes e build;
-  - **documentação:** links dos `.md`;
-  - **filtro por parte:** cada uma roda só quando muda;
-  - **merge:** um único check, `CI`, decide (#32).
-- **A estrutura do frontend existe** ([ADR 0017](docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)):
-  - **plataforma:** Angular 22 com Node 26 LTS;
-  - **textos:** pelo `@angular/localize`, em português; o lint falha com texto sem marcação, e o japonês vai virar um segundo build;
-  - **testes e lint:** Vitest, ESLint e Prettier;
-  - **teste de arquitetura:** falha quando um componente usa `HttpClient` ou quando o domínio importa o Angular;
-  - **comandos:** no `CLAUDE.md` (#21).
-- **Como a ordem dos traços é avaliada** ([ADR 0016](docs/adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md); spike em [docs/spikes/stroke-order-evaluation.md](docs/spikes/stroke-order-evaluation.md), #28):
-  - **algoritmo:** correspondência bipartite contra o KanjiVG, que também trata traços unidos ou quebrados;
-  - **candidatos:** a avaliação vale para todos os candidatos e não muda o ranking;
-  - **requisição:** o canvas manda os pontos como desenhados (`[x, y, t]`), com limites de tamanho;
-  - **resposta:** diz, por candidato, que traço está fora de ordem ou na direção errada;
-  - **KanjiVG:** licença confirmada (CC BY-SA 3.0) e versão fixada.
-- **A estrutura do backend existe** ([ADR 0015](docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md)): API FastAPI com Uvicorn, no mesmo workspace do ML. O backend usa o `kanjilens_ml` com as mesmas versões do treino. Por enquanto, a API só responde a `GET /api/health`. Seis contratos de arquitetura falham quando um import quebra as camadas. Os comandos, inclusive o de subir a API, estão no `CLAUDE.md` (#18).
-- **A estrutura de `ml/` existe, com as ferramentas do ML** ([ADR 0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md)): Python 3.15 instalado pelo uv, um lock só para as partes Python e o PyTorch só-CPU. Ruff, mypy e pytest cuidam de lint, tipos e testes, e um teste de arquitetura (Import Linter) falha quando um import quebra as regras de dependência. Os comandos estão no `CLAUDE.md` (#12).
-- **O KanjiLens roda direto no notebook da escola, sem Docker** ([ADR 0013](docs/adr/0013-run-directly-on-the-school-notebook-without-docker.md)): ambiente Python isolado, frontend como build estático e os processos como serviço do sistema. Sobra mais memória para o modelo. A instalação passo a passo vai para o `docs/RUNNING.md` (#33).
-- **O notebook da escola roda Windows**, e a instalação passo a passo no `docs/RUNNING.md` vai ser para ele (#33).
-- **O modo padrão é "ordem dos traços não importa".** Quem quer treinar a ordem troca a opção antes de desenhar ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
-- **O verbete do kanji escolhido abre num dicionário externo, em nova aba.** O padrão é o Takoboto, e o aluno pode escolher outro numa configuração guardada no aparelho (#35). O dicionário próprio fica para depois (#33).
-- **Documentação revisada depois das ADRs 0010–0012** (#30):
-  - **Avaliação da ordem nas regras de qualidade:** erros detectados × falsos alarmes passam a ser medidos como o Top-1/Top-5, com item próprio no checklist do PR.
-  - **Padrões de tela para o seletor de modo e para o resultado da avaliação da ordem**, este em texto, e não só em cor ([docs/UI-UX.md](docs/UI-UX.md)).
-  - **Produção separada do desenvolvimento na execução local:** o build estático na mesma origem da API dispensa CORS; a proposta de QR Code na parede foi registrada.
-  - **Licença do KanjiVG nos READMEs.**
-  - **O verbete do kanji escolhido** entra como decisão em aberto.
-- **Dois modos de reconhecimento: a ordem dos traços importa ou não** ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a [ADR 0010](docs/adr/0010-two-recognition-modes-with-specialized-models.md)). O aluno escolhe o modo a cada reconhecimento, e o canvas envia a lista de traços, não uma imagem.
-  - Os dois modos reconhecem o kanji com a mesma CNN 2D compacta, que não depende da ordem.
-  - Quando a ordem importa, o KanjiLens também confere a ordem e a direção dos traços contra a referência do KanjiVG e diz quais traços estão fora de ordem, como se faz em sistemas de ensino de kanji. Não há modelo temporal, nem dataset de escrita *online* para treinar.
-  - A investigação está em [docs/spikes/model-and-runtime-evaluation.md](docs/spikes/model-and-runtime-evaluation.md) (#23, #26). Ela traz candidatos, runtimes, plano de benchmark, projetos do GitHub para estudo e, na seção 5.3, como o modo com ordem costuma ser feito.
-- **O notebook da escola é o servidor** ([ADR 0011](docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md)): Dell Inspiron 3501 (i7-1165G7, 16 GB).
-  - A inferência roda só na CPU, e o frontend é servido como build estático.
-  - O dimensionamento é para 3–5 alunos enviando desenhos ao mesmo tempo, com 10 clientes como teste de estresse.
-  - O treino roda noutra máquina. Os números de desempenho valem só quando medidos no notebook (#24).
-- **Referências de UI/UX para o frontend** ([docs/UI-UX.md](docs/UI-UX.md)): as fontes obrigatórias (heurísticas de Nielsen, NN/g, WCAG 2.2, WAI-ARIA) aplicadas ao canvas e ao toque, e os padrões propostos para a tela de reconhecimento. O agente `dev-angular` ganha o modo de avaliação de tela, com o checklist na skill `angular-conventions`.
-- **A interface vai ser em português, com o japonês depois** ([ADR 0009](docs/adr/0009-portuguese-ui-first-then-japanese.md)). Todo texto da tela passa pelo i18n desde a primeira tela, para o japonês ser só uma tradução, e os kanjis aparecem sempre marcados como japonês, para o leitor de tela pronunciar certo e o navegador usar a forma japonesa do caractere.
-- **Fluxo de trabalho e documentação do projeto organizados.** O documento de design passa a ser o [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), com as camadas de Clean Architecture / ports and adapters do backend, do frontend e do ML. As decisões já tomadas estão registradas nas ADRs 0001 a 0008, em [docs/adr/](docs/adr/README.md). O [CONTRIBUTING.md](CONTRIBUTING.md) descreve as branches `main` + `develop`, as issues, os épicos, o Project, as etiquetas, os commits e os releases. Os templates de issue e de PR estão em `.github/`. A configuração do Claude Code está em `.claude/`: uma skill e um agente por stack.
-- **Código sob a licença MIT** ([LICENSE](LICENSE)). A licença cobre só o código; datasets e pesos treinados ficam de fora e seguem os termos de cada dataset.
-- **README bilíngue** (`README.md` em inglês e `README.pt-BR.md`), com visão geral, fluxo, stack, API planejada, estrutura do repositório, roadmap e decisões em aberto.
-- **Regra do tipo de merge** ([CONTRIBUTING.md, "Tipo de merge"](CONTRIBUTING.md#tipo-de-merge); ADR 0008): squash nos PRs para o `develop` e merge commit no release, no hotfix e na volta `main` → `develop`, para o histórico das duas branches não divergir.
-- **Épicos têm um Status próprio no Project** ([CONTRIBUTING.md, "Épicos"](CONTRIBUTING.md#épicos)): todo épico fica em `Epic`, fora do fluxo Backlog → Done, para o workflow de fechamento automático não fechar um épico por engano. O link do [Project](https://github.com/orgs/Asuka-Jyuku/projects/6) entra no CONTRIBUTING (#10).
+- O frontend ficou mais simples por dentro, sem mudar a tela: a exportação de desenho numa pasta só, sem router e sem `@angular/forms`, e o modo junto do desenho (#80).
+- O backend e o ML perderam peças que não se pagavam, sem mudar a API: o port `Clock`, testes que só conferiam constantes e os pacotes vazios do ML (#81).
+- Documentação de processo mais curta e simples (`CLAUDE.md`, `CONTRIBUTING.md`, skills, templates). Regras novas: atualizar só o que ficou falso, andamento só no Project, nada de port novo sem uma segunda implementação e ADR só para decisão difícil de desfazer. Os agentes dev foram removidos; as skills continuam (#82).
+- Spike sobre treinar sem o ETL: desenhos sintéticos do KanjiVG e do Kanji alive, validados só em escrita humana ([docs/spikes/training-without-etl.md](docs/spikes/training-without-etl.md), #78).
+- O `docs/SECURITY.md` reúne portas, CORS, limites e o que acontece com os desenhos dos alunos (#58).
+- O `docs/RUNNING.md` explica como rodar o KanjiLens e abrir pelo celular na rede local (#61).
+- O andamento das issues aparece no Status do Project (#61).
+- O dataset escolhido é o ETL9G, com os 1.026 kanji escolares como classes, começando pelos 240 da 1ª e 2ª série; o download espera o site oficial voltar ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md), #11).
+- Fila em memória com um processo de inferência, e o resultado por SSE com polling de reserva ([ADR 0019](docs/adr/0019-in-memory-job-queue-with-one-inference-process.md), [ADR 0020](docs/adr/0020-result-notification-by-server-sent-events.md), #19, #20).
+- A prioridade fica só no campo `Priority` do Project, de 0 a 4 (#41).
+- CI no GitHub Actions, com Python no Linux e no Windows, frontend e links das docs, e um único check obrigatório ([ADR 0018](docs/adr/0018-ci-with-github-actions-and-a-single-required-check.md), #32).
+- Estrutura do frontend: Angular 22, i18n, Vitest, ESLint e Prettier ([ADR 0017](docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md), #21).
+- A ordem dos traços é avaliada por correspondência bipartite contra o KanjiVG ([ADR 0016](docs/adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md), #28).
+- Estrutura do backend: FastAPI com Uvicorn, no mesmo workspace do ML ([ADR 0015](docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md), #18).
+- Estrutura do ML: Python 3.15, uv, Ruff, mypy, pytest e PyTorch só-CPU ([ADR 0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md), #12).
+- O KanjiLens roda direto no notebook da escola (Windows), sem Docker ([ADR 0013](docs/adr/0013-run-directly-on-the-school-notebook-without-docker.md), #33).
+- O verbete do kanji escolhido abre num dicionário externo, o Takoboto por padrão (#35).
+- Dois modos: a ordem dos traços importa ou não, e a mesma CNN reconhece nos dois ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a 0010; #23, #26, #30).
+- O notebook da escola é o servidor, com inferência só na CPU, para 3–5 alunos ao mesmo tempo ([ADR 0011](docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md), #24).
+- Referências de UI/UX para o frontend ([docs/UI-UX.md](docs/UI-UX.md)).
+- A interface é em português, com o japonês depois, e todo texto passa pelo i18n ([ADR 0009](docs/adr/0009-portuguese-ui-first-then-japanese.md)).
+- Fluxo de trabalho organizado: ADRs, branches `main` e `develop`, issues, épicos, Project e templates (#10).
+- Código sob a licença MIT; datasets e pesos ficam de fora ([LICENSE](LICENSE)).
+- README em inglês e em português.

@@ -1,36 +1,31 @@
 # Experimentos: splits, reprodutibilidade e versões do modelo
 
-O que torna um número deste projeto confiável e comparável. O porquê está na ADR 0006 e no ARCHITECTURE.md, seção 7.
+O que torna um número deste projeto confiável e comparável.
 
 ## Splits
 
-| Ponto | Por quê | Fonte |
-|---|---|---|
-| **Split por pessoa que escreveu, não por amostra** (o ETL não identifica quem escreveu: o split por *data set* é a aproximação, a confirmar no `ETL9INFO`; [ADR 0021](../../../../docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)) | as amostras da mesma pessoa no treino e no teste vazam o estilo de letra dela, e a acurácia no teste parece melhor do que vai ser para um usuário novo | — (julgamento; prática comum em datasets de escrita à mão) |
-| O split de teste é definido uma vez, com a definição versionada (arquivo ou seed + regra), e nunca usado para ajustar hiperparâmetro | números de splits diferentes não são comparáveis | [scikit-learn: cross-validation](https://scikit-learn.org/stable/modules/cross_validation.html) |
-| Um **conjunto do canvas** à parte: desenhos reais feitos no app, com o kanji esperado | mede a diferença entre dataset e canvas, o principal risco do projeto | ARCHITECTURE.md, seção 7.4 |
-| O subconjunto de classes (enquanto a quantidade estiver em aberto) é uma lista versionada, não "as N primeiras" | a lista define os índices dos rótulos | ARCHITECTURE.md, seção 7.2 |
+- **Por pessoa que escreveu, não por amostra.** Senão o estilo de letra de alguém vaza do treino para o teste, e o número fica melhor do que vai ser com um aluno novo. No ETL, a aproximação é o *data set*, a confirmar no `ETL9INFO` ([ADR 0021](../../../../docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)).
+- **O split de teste é definido uma vez,** com a regra versionada, e nunca serve para ajustar hiperparâmetro.
+- **Os desenhos do canvas são um conjunto à parte,** feitos no app, com o kanji esperado ([`docs/MODEL.md`](../../../../docs/MODEL.md)). Medem a diferença entre dataset e canvas.
+- **A lista de classes é versionada** (não "as N primeiras"): ela define os índices dos rótulos.
 
 ## Reprodutibilidade
 
-| Ponto | Como | Fonte |
-|---|---|---|
-| Seeds | `torch.manual_seed`, `numpy.random.seed`, `random.seed` e a seed dos workers do `DataLoader`, todas vindas da configuração | [PyTorch: reproducibility](https://pytorch.org/docs/stable/notes/randomness.html) |
-| Configuração | tudo de que o treino depende em `ml/configs/<name>.yaml` (ou o formato escolhido na ADR de ferramentas), commitado | — |
-| Ambiente | o lock file de `ml/`; a versão do PyTorch faz parte da versão do modelo | — |
-| Notebooks | só exploração; nada importa de `notebooks/`, e nenhum número reportado sai só de um notebook | ARCHITECTURE.md, seção 8 |
+- **Seeds** de `torch`, `numpy`, `random` e dos workers do `DataLoader`, todas da configuração ([PyTorch](https://pytorch.org/docs/stable/notes/randomness.html)).
+- **Configuração:** tudo de que o treino depende em `ml/configs/`, commitado.
+- **Ambiente:** o `uv.lock`. A versão do PyTorch faz parte da versão do modelo.
+- **Notebooks** são só exploração: nada importa deles, e nenhum número reportado sai só de um.
 
 ## O que é uma versão do modelo
 
-Uma versão do modelo é **o conjunto**, salvo junto em `ml/artifacts/<version>/`:
-- os pesos;
-- a configuração usada para treiná-los;
-- a **lista de classes** (índice → kanji), na ordem;
-- a **versão do pré-processamento** (tamanho da entrada, normalização, versão do módulo de pré-processamento);
-- as métricas: Top-1/Top-5 no split de teste e no conjunto do canvas.
+Tudo salvo junto em `ml/artifacts/<version>/`:
+- os pesos e a configuração do treino;
+- a **lista de classes**, na ordem;
+- a **versão do pré-processamento** (tamanho da entrada, normalização);
+- as métricas: Top-1/Top-5 no split de teste e nos desenhos do canvas.
 
-O adapter do recognizer carrega o conjunto e se recusa a subir se a lista de classes ou a versão do pré-processamento não bater com o código. Uma divergência não quebraria nada: devolveria o kanji errado, com confiança alta.
+O recognizer se recusa a subir se a lista de classes ou o pré-processamento não baterem com o código. A divergência não quebraria nada: daria o kanji errado, com confiança alta.
 
 ## Reportar números
 
-Todo número num PR, numa issue ou no `docs/MODEL.md` vem com: o split (split de teste ou conjunto do canvas), a versão do modelo, a configuração e a seed. Antes e depois, no mesmo split. Uma queda só é aceita com um "aceito porque..." explícito.
+Todo número vem com o conjunto (split de teste ou canvas), a versão do modelo, a configuração e a seed. Antes e depois, no mesmo conjunto. Queda só com um "aceito porque...".
