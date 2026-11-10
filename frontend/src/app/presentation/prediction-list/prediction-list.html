@@ -1,0 +1,116 @@
+@if (predictions().length > 0) {
+  <section class="predictions" aria-labelledby="predictions-title">
+    @if (ordered()) {
+      <h2 id="predictions-title" class="title" i18n="@@predictions.pickTitle">
+        Qual você quis escrever?
+      </h2>
+    } @else {
+      <h2 id="predictions-title" class="title" i18n="@@predictions.title">Candidatos</h2>
+    }
+    <ol class="list">
+      @for (prediction of predictions(); track $index) {
+        <li>
+          @if (ordered()) {
+            <button
+              type="button"
+              class="candidate"
+              [attr.aria-pressed]="$index === picked()"
+              (click)="picked.set($index)"
+            >
+              <span class="kanji" lang="ja">{{ prediction.kanji }}</span>
+              <span class="confidence" i18n="@@predictions.confidence"
+                >{{ percent(prediction.confidence) }}%</span
+              >
+            </button>
+          } @else {
+            <span class="candidate">
+              <span class="kanji" lang="ja">{{ prediction.kanji }}</span>
+              <span class="confidence" i18n="@@predictions.confidence"
+                >{{ percent(prediction.confidence) }}%</span
+              >
+            </span>
+          }
+        </li>
+      }
+    </ol>
+  </section>
+}
+<!-- Always in the page, so screen readers announce what is written into it (WCAG 4.1.3). -->
+<div class="feedback" role="status">
+  @if (feedback(); as feedback) {
+    @switch (feedback.verdict) {
+      @case ('correct') {
+        <p class="verdict correct" i18n="@@strokeOrder.correct">
+          Ordem dos traços certa para <span lang="ja">{{ pickedKanji() }}</span
+          >.
+        </p>
+      }
+      @case ('mistakes') {
+        <p class="verdict mistakes" i18n="@@strokeOrder.mistakes">
+          Ordem dos traços de <span lang="ja">{{ pickedKanji() }}</span
+          >, com o que corrigir:
+        </p>
+        <ul class="lines">
+          @for (mistake of feedback.mistakes; track $index) {
+            @switch (mistake.type) {
+              @case ('order') {
+                <li i18n="@@strokeOrder.order">
+                  {{ mistake.drawnStroke }}º traço: deveria ser o {{ mistake.expectedPosition }}º.
+                </li>
+              }
+              @case ('direction') {
+                <li i18n="@@strokeOrder.direction">
+                  {{ mistake.drawnStroke }}º traço: direção invertida.
+                </li>
+              }
+            }
+          }
+        </ul>
+      }
+      @case ('not_evaluated') {
+        @switch (feedback.reason) {
+          @case ('stroke_count_mismatch') {
+            <p class="verdict" i18n="@@strokeOrder.notEvaluated.strokeCount">
+              Não deu para avaliar a ordem: o número de traços ficou muito diferente do de
+              <span lang="ja">{{ pickedKanji() }}</span
+              >.
+            </p>
+          }
+          @default {
+            <p class="verdict" i18n="@@strokeOrder.notEvaluated.reference">
+              Não deu para avaliar a ordem de <span lang="ja">{{ pickedKanji() }}</span
+              >: ele não está na referência de traços.
+            </p>
+          }
+        }
+      }
+    }
+    @if (feedback.notes.length > 0 || feedback.strokeCount) {
+      <ul class="lines notes">
+        @if (feedback.strokeCount; as count) {
+          <li i18n="@@strokeOrder.note.count">
+            Você fez {{ count.drawn }} traços; o kanji tem {{ count.expected }}.
+          </li>
+        }
+        @for (note of feedback.notes; track $index) {
+          @switch (note.type) {
+            @case ('joined') {
+              <li i18n="@@strokeOrder.note.joined">
+                {{ note.drawnStroke }}º traço: juntou do {{ note.expectedStrokes[0] }}º ao
+                {{ note.expectedStrokes[note.expectedStrokes.length - 1] }}º traço do kanji. Não
+                conta como erro.
+              </li>
+            }
+            @case ('broken') {
+              <li i18n="@@strokeOrder.note.broken">
+                Do {{ note.drawnStrokes[0] }}º ao
+                {{ note.drawnStrokes[note.drawnStrokes.length - 1] }}º traço: dividiu o
+                {{ note.expectedStroke }}º traço do kanji em partes. Não conta como erro.
+              </li>
+            }
+          }
+        }
+      </ul>
+    }
+  }
+</div>

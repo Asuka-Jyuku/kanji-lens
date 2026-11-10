@@ -122,6 +122,7 @@ module.exports = defineConfig([
           // These hold element ids (the ARIA ones) or a keyboard type (inputmode), not text:
           // nothing to translate.
           ignoreAttributes: [
+            'rel',
             'aria-describedby',
             'aria-labelledby',
             'aria-controls',

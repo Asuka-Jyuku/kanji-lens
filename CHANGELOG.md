@@ -5,6 +5,7 @@ Formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [versio
 ## [Não publicado]
 
 ### Funcionalidades
+- A tela mostra os candidatos com a confiança em porcentagem e, quando a ordem importa, diz em texto se a ordem dos traços está certa e o que corrigir, para o kanji que o aluno escolher; o rodapé dá o crédito do KanjiVG (#59).
 - "Reconhecer" envia o desenho, mostra o estado do job ("Na fila", "Reconhecendo…") e o candidato mais provável; cada erro diz o que fazer (#58).
 - Num celular pequeno em pé, o canvas encolhe para tudo caber sem rolar (#58).
 - No build de desenvolvimento, dá para salvar o desenho como JSON, com o kanji e a ordem usada, para montar os conjuntos de teste (#66).

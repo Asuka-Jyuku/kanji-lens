@@ -4,11 +4,12 @@ import { NgComponentOutlet } from '@angular/common';
 import { DEV_TOOL } from './app.dev-tools';
 import { DrawingPad } from './presentation/drawing-pad/drawing-pad';
 import { ModeSelector } from './presentation/mode-selector/mode-selector';
+import { PredictionList } from './presentation/prediction-list/prediction-list';
 import { RecognitionPanel } from './presentation/recognition-panel/recognition-panel';
 
 @Component({
   selector: 'app-root',
-  imports: [NgComponentOutlet, ModeSelector, DrawingPad, RecognitionPanel],
+  imports: [NgComponentOutlet, ModeSelector, DrawingPad, RecognitionPanel, PredictionList],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

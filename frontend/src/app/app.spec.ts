@@ -42,6 +42,11 @@ describe('App', () => {
     const order = Array.from(page.querySelectorAll('.workspace > *')).map((each) =>
       each.tagName.toLowerCase(),
     );
-    expect(order).toEqual(['app-mode-selector', 'app-drawing-pad', 'app-recognition-panel']);
+    expect(order).toEqual([
+      'app-mode-selector',
+      'app-drawing-pad',
+      'app-recognition-panel',
+      'app-prediction-list',
+    ]);
   });
 });
