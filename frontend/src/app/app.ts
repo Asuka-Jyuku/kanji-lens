@@ -5,10 +5,11 @@ import { RouterOutlet } from '@angular/router';
 import { DEV_TOOLS } from './app.dev-tools';
 import { DrawingPad } from './presentation/drawing-pad/drawing-pad';
 import { ModeSelector } from './presentation/mode-selector/mode-selector';
+import { RecognitionPanel } from './presentation/recognition-panel/recognition-panel';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, NgComponentOutlet, ModeSelector, DrawingPad],
+  imports: [RouterOutlet, NgComponentOutlet, ModeSelector, DrawingPad, RecognitionPanel],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

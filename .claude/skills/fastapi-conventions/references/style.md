@@ -29,4 +29,4 @@ O que se espera de Python e FastAPI idiomáticos aqui, com a fonte de cada ponto
 - `uvicorn --workers > 1` enquanto a fila for `asyncio.Queue` (ADR 0019).
 - Thread pool para a inferência: o PyTorch e a avaliação da ordem disputariam o GIL e a CPU com a API (ADR 0019).
 - WebSocket para o resultado: o canal é o SSE (ADR 0020).
-- Aceitar um desenho antes de conferir tamanho e formato (`CLAUDE.md`, "Segurança").
+- Aceitar um desenho antes de conferir tamanho e formato ([`docs/SECURITY.md`](../../../../docs/SECURITY.md), "Limites de entrada").

@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Funcionalidades
+- **"Reconhecer" manda o desenho para a API e a tela acompanha o reconhecimento** (#58):
+  - **o estado sempre à vista e anunciado:** "Enviando…", "Na fila", "Reconhecendo…" e, no fim, o candidato mais provável (a lista completa vem na #59);
+  - **cada erro diz o que fazer:** fila cheia (o botão volta sozinho depois dos segundos que a API pede), falha do reconhecimento, desenho recusado ou grande demais, resultado expirado, sem conexão com o servidor e servidor que demorou;
+  - **"Reconhecer" fica desligado** com o canvas vazio e enquanto o reconhecimento anterior não termina;
+  - **o resultado chega pelo SSE**; se a conexão falhar várias vezes, a tela passa a perguntar à API a cada segundo;
+  - **para rodar:** `npm start` encaminha `/api` para a API em `127.0.0.1:8000` (outra porta com `KANJILENS_API_URL`). Para testar pelo celular, só o frontend precisa de `--host 0.0.0.0`, e só a porta 4200 no firewall; a API continua fechada para a rede.
+- **Num celular pequeno em pé, o canvas encolhe** para "Reconhecer" e o estado caberem na tela sem rolar (#58).
 - **No build de desenvolvimento, o desenho pode ser salvo como JSON** para os conjuntos de teste (#66):
   - **como:** o painel "Exportar desenho (desenvolvimento)", abaixo do canvas, pede o kanji desenhado e a ordem usada (certa, ou qual erro e em quais traços) e baixa o arquivo no aparelho, sem passar por servidor;
   - **o arquivo** traz o corpo do `POST /api/recognitions` sem mudança, com o gabarito ao lado; o formato e as pastas estão no [docs/MODEL.md](docs/MODEL.md#desenhos-do-canvas), e um teste do backend manda cada desenho versionado à API;
@@ -51,6 +58,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   - **documentação:** glossário e diagrama de estados em [docs/architecture/domain.md](docs/architecture/domain.md).
 
 ### Publicação e documentação
+- **O `docs/SECURITY.md` reúne o que fica exposto na rede local:** portas, CORS, limites de entrada e da fila, o que acontece com os desenhos dos alunos e a regra de nenhuma saída de rede (#58).
 - **Como rodar o KanjiLens está num lugar só, o [docs/RUNNING.md](docs/RUNNING.md)** (#61):
   - **o que cobre:** pré-requisitos (uv e Node 26), instalação, subir a API e o frontend, conferir com `curl`, preparar o KanjiVG e abrir pelo celular na rede local, com o firewall;
   - **problemas comuns:** Node na versão errada, porta ocupada e, quando o celular não abre a página, como saber se o problema é o firewall, a rede (rede de convidados, isolamento de clientes) ou o celular (VPN, DNS privado), com o `adb reverse` como contorno;

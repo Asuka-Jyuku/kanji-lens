@@ -55,3 +55,9 @@ O [spike](../spikes/queue-and-notification.md) conferiu duas coisas:
   - **Cliente que desconecta** fecha o gerador, e a inscrição sai junto. Nada fica pendurado.
   - **Campo que não se aplica não vem**, nem como `null` (ARCHITECTURE.md, seção 2.2). O `GET` e o SSE usam o mesmo schema (`RecognitionStateResponse`).
   - **O lado do stream lê o notifier por um `Protocol` local** (`JobUpdates`). O port `ResultNotifier` é o que o use case precisa, e ele só avisa.
+- *Atualização de 2026-11-10 (#58), o lado do frontend:*
+  - **"Falhar repetidamente"** é: 3 erros seguidos do `EventSource` sem um estado novo entre eles, ou o navegador desistir da conexão (`readyState` `CLOSED`, como num `404`), ou um evento que não dá para ler. Aí o use case `RecognizeDrawing` fecha o stream e passa ao polling.
+  - **O polling** consulta o `GET /api/recognitions/{id}` na hora e depois a cada 1 s, até o estado final. Três consultas seguidas sem conexão encerram com "sem conexão"; qualquer outro erro (como `job_not_found`) encerra na hora.
+  - **Limite de 60 s** do envio ao estado final, pelo SSE ou pelo polling; passado ele, a tela diz que o servidor demorou.
+  - **Os dois caminhos leem o estado pela mesma função** (`frontend/src/app/infrastructure/recognition-api.ts`), testada com os corpos que o backend manda.
+  - **O proxy do `ng serve` não faz buffering do SSE** (conferido com o `curl` e no navegador). O proxy de produção, se houver, ainda precisa ser conferido (#62).

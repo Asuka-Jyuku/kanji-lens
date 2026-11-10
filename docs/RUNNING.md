@@ -4,7 +4,7 @@ O passo a passo para rodar o KanjiLens numa máquina de desenvolvimento e abrir 
 
 **O que roda hoje:**
 - **API:** recebe o desenho, põe o job na fila e devolve o resultado por `GET` e por SSE, ainda com um reconhecedor falso, que sempre responde 日, 目 e 白 ([ARCHITECTURE.md, seção 5](ARCHITECTURE.md#5-comunicação-entre-frontend-e-backend)).
-- **Frontend:** mostra a escolha do modo e o canvas, mas ainda não envia o desenho para a API; isso entra com a [#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58).
+- **Frontend:** mostra a escolha do modo e o canvas; "Reconhecer" envia o desenho para a API, acompanha o job pelo SSE e mostra o candidato mais provável ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)). A lista completa de candidatos é a [#59](https://github.com/Asuka-Jyuku/kanji-lens/issues/59). No build de desenvolvimento, há também a exportação do desenho em JSON ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)).
 
 A instalação no notebook da escola (Windows, serviço do sistema, build estático, IP reservado) entra depois, com a [#62](https://github.com/Asuka-Jyuku/kanji-lens/issues/62) e a [#63](https://github.com/Asuka-Jyuku/kanji-lens/issues/63).
 
@@ -55,7 +55,13 @@ Noutro terminal, dentro de `frontend/`:
 npm start
 ```
 
-O frontend fica em `http://localhost:4200`. O aviso `Locale data for 'pt-BR' cannot be found. Using locale data for 'pt'` é esperado e não muda nada na tela.
+O frontend fica em `http://localhost:4200`. O `ng serve` encaminha `/api` para a API em `http://127.0.0.1:8000` (`frontend/proxy.conf.mjs`), então o navegador fala só com a porta 4200 e não há CORS. API noutro endereço ou porta? Aponte o proxy com a variável `KANJILENS_API_URL`:
+
+```bash
+KANJILENS_API_URL=http://127.0.0.1:8001 npm start
+```
+
+O aviso `Locale data for 'pt-BR' cannot be found. Using locale data for 'pt'` é esperado e não muda nada na tela.
 
 ## 5. Conferir que está tudo de pé
 
@@ -72,7 +78,14 @@ curl http://127.0.0.1:8000/api/recognitions/<id>          # o estado do job, com
 curl -N http://127.0.0.1:8000/api/recognitions/<id>/events  # o mesmo pelo SSE (Ctrl+C para sair)
 ```
 
-Abra `http://localhost:4200` no navegador: o título, a escolha "Ordem dos traços" e o canvas aparecem.
+Pelo proxy do frontend, a mesma API responde na porta 4200:
+
+```bash
+curl http://localhost:4200/api/health
+# {"status":"ok"}
+```
+
+Abra `http://localhost:4200` no navegador: o título, a escolha "Ordem dos traços" e o canvas aparecem. Desenhe e toque em "Reconhecer": a tela mostra "Na fila" e depois "Mais provável: 日", a resposta do reconhecedor falso. Com a API parada, ela diz "Sem conexão com o servidor".
 
 ## 6. Referências do KanjiVG (opcional)
 
@@ -89,30 +102,30 @@ O arquivo baixado fica em `ml/datasets/kanjivg/` (12 MB), e as referências em `
 
 O celular e a máquina precisam estar na mesma rede. Qualquer um nessa rede alcança o app, sem login ([ARCHITECTURE.md, 6.2](ARCHITECTURE.md#62-exposição-na-rede-local)).
 
-1. **Suba os servidores escutando na rede**, não só em `localhost`:
+1. **Suba o frontend escutando na rede**, não só em `localhost`. A API continua como na seção 3, só em `127.0.0.1`: o celular chega a ela pelo proxy de `/api` do frontend, e ela fica fechada para a rede ([docs/SECURITY.md](SECURITY.md)).
 
    ```bash
-   uv run --directory backend uvicorn kanjilens.bootstrap.app:create_app --factory --reload --host 0.0.0.0
+   uv run --directory backend uvicorn kanjilens.bootstrap.app:create_app --factory --reload   # da raiz, como na seção 3
    npm start -- --host 0.0.0.0      # dentro de frontend/
    ```
 
    O `ng serve` mostra os endereços em `Network:`; use o da interface da rede local (Wi‑Fi ou cabo, por exemplo `192.168.15.114`), não o de redes virtuais do Docker.
-2. **Libere as portas no firewall**, só para a rede local. No Linux com o `ufw`:
+2. **Libere a porta 4200 no firewall**, só para a rede local; a 8000 não precisa. No Linux com o `ufw`:
 
    ```bash
-   sudo ufw allow from 192.168.15.0/24 to any port 4200,8000 proto tcp   # troque pela faixa da sua rede
+   sudo ufw allow from 192.168.15.0/24 to any port 4200 proto tcp   # troque pela faixa da sua rede
    ```
 
    Ao terminar, tire a regra:
 
    ```bash
-   sudo ufw delete allow from 192.168.15.0/24 to any port 4200,8000 proto tcp
+   sudo ufw delete allow from 192.168.15.0/24 to any port 4200 proto tcp
    ```
 
-   No Windows, o Firewall do Windows pergunta na primeira vez que o Python ou o Node escutam na rede: libere só para **redes privadas**.
+   No Windows, o Firewall do Windows pergunta na primeira vez que o Node escuta na rede: libere só para **redes privadas**.
 3. **No celular**, abra `http://<IP da máquina>:4200`.
 
-> **O proxy de `/api` ainda não existe.** O frontend vai chamar a API pela URL relativa `/api`, com o `ng serve` encaminhando para a porta 8000; assim o celular usa só a porta 4200 e não precisa de CORS ([ARCHITECTURE.md, 6.1](ARCHITECTURE.md#61-configuração-necessária)). Isso entra com a [#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58), que atualiza este passo.
+Desenhe e toque em "Reconhecer" no celular: o pedido vai para `http://<IP da máquina>:4200/api/...`, e o `ng serve` o repassa à API na própria máquina.
 
 ## 8. Problemas comuns
 
@@ -122,10 +135,12 @@ O celular e a máquina precisam estar na mesma rede. Qualquer um nessa rede alca
 
 **`warning: VIRTUAL_ENV=... does not match the project environment path`:** há outro ambiente Python ativado no shell (de outro clone, por exemplo). O uv ignora esse ambiente e usa o `.venv` do projeto; para o aviso sumir, rode `deactivate`.
 
-**`Address already in use`:** outro processo já usa a porta. Pare o servidor antigo ou suba noutra porta (`--port 8001` no Uvicorn; `npm start -- --port 4201`).
+**`Address already in use`:** outro processo já usa a porta. Pare o servidor antigo ou suba noutra porta (`--port 8001` no Uvicorn, com `KANJILENS_API_URL=http://127.0.0.1:8001` no `npm start`; `npm start -- --port 4201`).
+
+**A tela diz "Sem conexão com o servidor":** o frontend abriu, mas o proxy não alcança a API. Confira se a API está de pé (`curl http://127.0.0.1:8000/api/health`) e, se ela estiver noutra porta, se o `KANJILENS_API_URL` aponta para ela.
 
 **O celular não abre a página** (`ERR_CONNECTION_TIMED_OUT`, `ERR_TOO_MANY_RETRIES`, ou carrega para sempre):
-1. **Confira o básico:** na própria máquina, `http://<IP da máquina>:4200` abre? Os servidores foram subidos com `--host 0.0.0.0`? A regra do firewall cobre a porta e a faixa da rede?
+1. **Confira o básico:** na própria máquina, `http://<IP da máquina>:4200` abre? O frontend foi subido com `--host 0.0.0.0`? A regra do firewall cobre a porta e a faixa da rede?
 2. **Confira se o pedido chega à máquina.** No Linux, enquanto o celular tenta abrir:
    - com o `ufw`, `sudo ufw logging on` e depois `sudo journalctl -kf | grep 'UFW BLOCK'`: uma linha com `DPT=4200` é o firewall barrando, então a regra da seção 7 não cobre a faixa do celular;
    - ou, com o `tcpdump` instalado, `sudo tcpdump -ni any tcp port 4200`.
@@ -138,7 +153,6 @@ O celular e a máquina precisam estar na mesma rede. Qualquer um nessa rede alca
 
 ## O que ainda não está aqui
 
-- **Proxy de `/api` no `ng serve`:** [#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58).
 - **Quem serve o build estático em produção e como a API roda como serviço no Windows:** [#62](https://github.com/Asuka-Jyuku/kanji-lens/issues/62).
 - **Instalação no notebook da escola**, com o Firewall do Windows e o IP reservado: [#63](https://github.com/Asuka-Jyuku/kanji-lens/issues/63).
 - **Acesso pelo Wi‑Fi da escola:** [#64](https://github.com/Asuka-Jyuku/kanji-lens/issues/64).

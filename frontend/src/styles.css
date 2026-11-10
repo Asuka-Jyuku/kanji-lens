@@ -1,5 +1,5 @@
 /* Global tokens and base. Contrast on --pad-background (white): ink 17.2:1, border 6.1:1,
-   focus 6.7:1; on the page background: border 5.5:1, which is what marks the canvas edge, since
+   focus 6.7:1; white on --action-background 6.7:1; on the page background: border 5.5:1, which is what marks the canvas edge, since
    white on the page is only 1.09:1 (WCAG 1.4.3 and 1.4.11). Japanese fonts come from the system,
    never a CDN (ADRs 0007 and 0009). */
 :root {
@@ -7,6 +7,8 @@
   --pad-background: #ffffff;
   --pad-border: #5c6370;
   --pad-focus: #1d4ed8;
+  --action-background: #1d4ed8;
+  --action-ink: #ffffff;
   color: var(--pad-ink);
   background: #f4f5f7;
   font-family: system-ui, 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
