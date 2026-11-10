@@ -1,6 +1,6 @@
 # KanjiLens: Arquitetura
 
-Como o KanjiLens é montado hoje e o que ainda está em aberto. O resumo do projeto está no [README](../README.pt-BR.md). O porquê de cada decisão está nas [ADRs](adr/README.md).
+Como o KanjiLens é montado hoje e o que ainda está em aberto. O resumo do projeto está no [README](../README.md). O porquê de cada decisão está nas [ADRs](adr/README.md).
 
 ## 1. Visão geral
 
@@ -142,7 +142,7 @@ O `GET /api/recognitions/{id}` e cada evento do SSE devolvem **esse mesmo format
 
 Python, PyTorch para treino e avaliação, NumPy e SciPy ([ADR 0006](adr/0006-cnn-with-pytorch.md)). O runtime de inferência ainda está em aberto (seção 4.2).
 
-- **Reconhecimento (os dois modos):** uma CNN 2D compacta, que recebe a imagem do desenho em tons de cinza (64, 96 ou 128 px, a comparar). Espera o dataset ([#13](https://github.com/Asuka-Jyuku/kanji-lens/issues/13), [#15](https://github.com/Asuka-Jyuku/kanji-lens/issues/15)).
+- **Reconhecimento (os dois modos):** uma CNN 2D compacta, que recebe a imagem do desenho em tons de cinza (64, 96 ou 128 px, a comparar). Vai treinar com desenhos sintéticos do KanjiVG enquanto o ETL estiver fora ([ADR 0022](adr/0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md); [#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14), [#92](https://github.com/Asuka-Jyuku/kanji-lens/issues/92), [#13](https://github.com/Asuka-Jyuku/kanji-lens/issues/13), [#15](https://github.com/Asuka-Jyuku/kanji-lens/issues/15)).
 - **Avaliação da ordem (só `ordered`):** pareia os traços desenhados com os do KanjiVG pelo algoritmo húngaro, aceitando até 2 traços unidos ou quebrados, e confere a direção ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)). Está pronta e medida em desenhos sintéticos ([MODEL.md](MODEL.md#avaliação-da-ordem-dos-traços)); o ajuste fino espera desenhos reais ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29)).
 
 Ponto de partida da CNN (o tamanho sai dos benchmarks):
@@ -292,7 +292,7 @@ Qualquer um na rede chega à API, sem login. Portas, limites, fila, dados dos al
 **ETL9G**, com o ETL9B junto como alternativa leve ([ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)):
 - 2.965 kanji, 200 amostras por kanji, 128×127 em 16 tons de cinza. Cobre todos os 1.026 教育漢字.
 - **Licença:** uso livre, mas só pode ser baixado do site oficial. Nenhuma imagem do ETL entra no repositório, e cada máquina baixa do site. A citação é obrigatória.
-- **O site está fora do ar desde 08/11/2026.** O [spike "treinar sem o ETL"](spikes/training-without-etl.md) ([#78](https://github.com/Asuka-Jyuku/kanji-lens/issues/78)) propõe treinar com desenhos sintéticos do KanjiVG e do Kanji alive e validar só em escrita humana. A decisão vai para uma ADR nova.
+- **O site está fora do ar desde 08/11/2026.** O [spike "treinar sem o ETL"](spikes/training-without-etl.md) ([#78](https://github.com/Asuka-Jyuku/kanji-lens/issues/78)) levou à [ADR 0022](adr/0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md): o MVP treina com desenhos sintéticos do KanjiVG (e do Kanji alive, se servir), validados só com desenhos reais feitos pela equipe no canvas ([#93](https://github.com/Asuka-Jyuku/kanji-lens/issues/93)). Lista de classes, entrada da CNN e conjunto real são fixos, então o ETL entra depois como mais uma fonte, sem mudar o resto.
 
 A avaliação da ordem não treina nada: usa o KanjiVG. O ETL é papel escaneado, sem a trajetória da caneta, e isso basta, porque a CNN não usa a ordem.
 

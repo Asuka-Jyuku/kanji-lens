@@ -20,6 +20,8 @@ Formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [versio
 - O domínio do reconhecimento existe no backend: desenho, modo, job, candidatos e avaliação da ordem (#44).
 
 ### Publicação e documentação
+- O README principal do repositório passa a ser em português (`README.md`), com a versão em inglês em `README.en.md`.
+- O MVP vai treinar com desenhos sintéticos do KanjiVG enquanto o site do ETL estiver fora, medidos só em desenhos reais; o ETL entra depois como mais uma fonte ([ADR 0022](docs/adr/0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md), #95).
 - O `docs/UI-UX.md` registra que a tela de reconhecimento foi testada num celular de verdade; falta o leitor de tela (#59).
 - O processo de inferência devolve as classes do domínio direto, sem a ponte de dicionários (`wire.py`), o que prepara a #48 (#88).
 - Documentação de referência mais curta e simples (`ARCHITECTURE.md`, `MODEL.md`, `RUNNING.md`, `UI-UX.md`, `SECURITY.md`, `domain.md` e os READMEs); a §9 da arquitetura não tem mais caixas para marcar, porque o andamento fica no Project (#83).

@@ -1,73 +1,73 @@
 # KanjiLens
 
-**Draw a kanji on your phone and get the most likely characters back, ranked by confidence.**
+**Desenhe um kanji no celular e receba os caracteres mais prováveis, ordenados por confiança.**
 
-[Português](README.pt-BR.md) · [Architecture (pt-BR)](docs/ARCHITECTURE.md) · [Decisions (ADRs, pt-BR)](docs/adr/README.md) · [Contributing (pt-BR)](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+[English](README.en.md) · [Arquitetura](docs/ARCHITECTURE.md) · [Decisões (ADRs)](docs/adr/README.md) · [Como contribuir](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-> **Status:** the drawing screen, the API and the job pipeline work end to end, with a placeholder recognizer. The model waits for the training dataset. Progress is tracked in the [GitHub Project](https://github.com/orgs/Asuka-Jyuku/projects/6).
+> **Status:** a tela de desenho, a API e o processamento dos jobs funcionam de ponta a ponta, com um reconhecedor falso. O modelo vai ser treinado com desenhos sintéticos, gerados a partir do KanjiVG, enquanto o dataset ETL estiver fora do ar. O andamento está no [GitHub Project](https://github.com/orgs/Asuka-Jyuku/projects/6).
 
-## What it does
+## O que faz
 
-KanjiLens is a small web app for a local school. Students draw a kanji on a canvas and get the top candidates, so they can pick the one they meant. It doesn't need to guess right every time, only to have the right kanji near the top.
+O KanjiLens é um app web pequeno, feito para uma escola. O aluno desenha um kanji no canvas e recebe os candidatos mais prováveis, para escolher o que queria escrever. Não precisa acertar sempre: basta o kanji certo aparecer entre os primeiros.
 
-Before drawing, you choose whether **stroke order matters**:
-- **It doesn't (default):** recognition only, with a compact 2D CNN that looks at the final image.
-- **It does:** KanjiLens also compares the order and direction of your strokes with KanjiVG and tells you which strokes are wrong.
+Antes de desenhar, você escolhe se **a ordem dos traços importa**:
+- **Não importa (padrão):** só o reconhecimento, com uma CNN 2D compacta que olha a imagem final.
+- **Importa:** o KanjiLens também compara a ordem e a direção dos traços com o KanjiVG e diz quais traços estão errados.
 
-Everything runs on one school laptop on the local network, with CPU-only inference. There's no cloud and no login.
+Tudo roda num notebook da escola, na rede local, com inferência só na CPU. Sem nuvem e sem login.
 
 ```text
 ┌──────────────────────────────┐
 │          KanjiLens           │
-│ Stroke order:                │
-│   ( ) Matters (•) Doesn't    │
+│ Ordem dos traços:            │
+│   ( ) Importa (•) Não importa│
 │   ┌──────────────────────┐   │
 │   │          日          │   │
 │   └──────────────────────┘   │
-│ [Undo] [Clear]               │
-│ [Recognize]                  │
+│ [Desfazer] [Limpar]          │
+│ [Reconhecer]                 │
 │   日  81%                    │
 │   目  12%                    │
 │   白   4%                    │
 └──────────────────────────────┘
 ```
 
-## How it works
+## Como funciona
 
-1. The frontend sends the strokes (points in drawing order) and the mode to the API.
-2. The API queues a job and answers right away with its `job_id`.
-3. A separate inference process runs the model and, if order matters, the stroke-order check.
-4. The result reaches the phone over SSE (Server-Sent Events), with polling as a fallback.
+1. O frontend manda os traços (os pontos, na ordem do desenho) e o modo para a API.
+2. A API põe um job na fila e responde na hora com o `job_id`.
+3. Um processo de inferência separado roda o modelo e, se a ordem importa, a avaliação da ordem.
+4. O resultado chega ao celular por SSE (Server-Sent Events), com polling de reserva.
 
 ```text
- Phone ──▶ Angular ──REST──▶ FastAPI ──▶ Queue ──▶ Inference process ──▶ 2D CNN
-   ▲                                                  (+ stroke-order check vs KanjiVG)
-   └──────────────── SSE ◀──────── job result ◀───────┘
+ Celular ──▶ Angular ──REST──▶ FastAPI ──▶ Fila ──▶ Processo de inferência ──▶ CNN 2D
+   ▲                                                  (+ avaliação da ordem com o KanjiVG)
+   └──────────────── SSE ◀──────── resultado ◀───────┘
 ```
 
-## Tech stack
+## Stack
 
-| Part | Technologies |
+| Parte | Tecnologias |
 |---|---|
 | Frontend | Angular 22, TypeScript, HTML Canvas, Pointer Events |
-| Backend | Python 3.15, FastAPI, SSE, `asyncio.Queue` and one inference process |
-| Machine Learning | PyTorch (2D CNN), NumPy and SciPy (stroke-order check against KanjiVG) |
-| Tooling | uv, Ruff, mypy, pytest, Vitest, ESLint, GitHub Actions |
-| Deployment | The school's Windows laptop, without Docker, over the LAN |
+| Backend | Python 3.15, FastAPI, SSE, `asyncio.Queue` e um processo de inferência |
+| Machine Learning | PyTorch (CNN 2D), NumPy e SciPy (avaliação da ordem com o KanjiVG) |
+| Ferramentas | uv, Ruff, mypy, pytest, Vitest, ESLint, GitHub Actions |
+| Execução | O notebook Windows da escola, sem Docker, pela rede local |
 
-The code follows Clean Architecture with ports and adapters ([ADR 0004](docs/adr/0004-clean-and-hexagonal-architecture.md)), in a single repository ([ADR 0002](docs/adr/0002-monorepo-for-frontend-backend-and-ml.md)). Every decision is recorded as an ADR.
+O código segue Clean Architecture com ports and adapters ([ADR 0004](docs/adr/0004-clean-and-hexagonal-architecture.md)), num repositório só ([ADR 0002](docs/adr/0002-monorepo-for-frontend-backend-and-ml.md)). Cada decisão fica registrada numa ADR.
 
-## Running locally
+## Como rodar
 
-Follow [`docs/RUNNING.md`](docs/RUNNING.md) (pt-BR) to install, start the API and the frontend, and open the app from a phone on the same network. The test, lint and build commands are in [`CLAUDE.md`](CLAUDE.md#comandos).
+Siga o [`docs/RUNNING.md`](docs/RUNNING.md) para instalar, subir a API e o frontend e abrir pelo celular na mesma rede. Os comandos de teste, lint e build estão no [`CLAUDE.md`](CLAUDE.md#comandos).
 
-## What this project explores
+## O que o projeto explora
 
-Computer Vision and CNNs, stroke matching for stroke-order checking, asynchronous job processing, real-time updates over SSE, a touch-first accessible UI, and keeping training and inference on the same preprocessing.
+Visão computacional e CNN, correspondência entre traços para avaliar a ordem, processamento assíncrono de jobs, atualização em tempo real por SSE, uma tela acessível pensada para o toque, e treino e inferência usando o mesmo pré-processamento.
 
-## License and credits
+## Licença e créditos
 
-The source code is under the [MIT License](LICENSE). It covers only the code in this repository. Datasets and trained weights are not in the repository: each dataset keeps its own terms, and weights trained on it may inherit them.
+O código-fonte está sob a [licença MIT](LICENSE), que cobre só o código deste repositório. Datasets e pesos treinados não ficam no repositório: cada dataset mantém os próprios termos, e pesos treinados com ele podem herdá-los.
 
-- **KanjiVG:** the stroke-order reference data keeps its own license (CC BY-SA 3.0, © Ulrich Apel, [kanjivg.tagaini.net](https://kanjivg.tagaini.net)), with attribution.
-- **ETL Character Database (ETL9G):** the recognition model will be trained on it (while the site is down, see the [spike](docs/spikes/training-without-etl.md)). It's free to use but may only be obtained from [its official site](https://etlcdb.db.aist.go.jp/), so this repository holds none of its images ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md), pt-BR). Reference: Electrotechnical Laboratory, Japanese Technical Committee for Optical Character Recognition, ETL Character Database, 1973-1984.
+- **KanjiVG:** os dados de referência da ordem dos traços mantêm a própria licença (CC BY-SA 3.0, © Ulrich Apel, [kanjivg.tagaini.net](https://kanjivg.tagaini.net)), com atribuição.
+- **ETL Character Database (ETL9G):** é a base preferida do modelo de reconhecimento quando o site voltar; até lá, o treino usa desenhos sintéticos do KanjiVG ([ADR 0022](docs/adr/0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md)). É de uso livre, mas só pode ser obtido pelo [site oficial](https://etlcdb.db.aist.go.jp/), por isso este repositório não tem nenhuma imagem dele ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)). Referência: Electrotechnical Laboratory, Japanese Technical Committee for Optical Character Recognition, ETL Character Database, 1973-1984.
