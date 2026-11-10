@@ -135,7 +135,7 @@ O checklist completo está em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-esco
 
 ## Como executar
 
-O app ainda não reconhece kanjis. Para desenvolver, os comandos (instalar, testar, subir a API e o frontend) estão no [`CLAUDE.md`, "Comandos"](CLAUDE.md#comandos). O passo a passo para rodar no notebook da escola e na rede local vai para o `docs/RUNNING.md` quando a primeira versão rodar.
+O app ainda não reconhece kanjis: a API responde com um reconhecedor falso. Para instalar, subir a API e o frontend e abrir pelo celular na rede local, siga o [`docs/RUNNING.md`](docs/RUNNING.md). Os comandos de teste, lint e build estão no [`CLAUDE.md`, "Comandos"](CLAUDE.md#comandos). A instalação no notebook da escola entra depois.
 
 ## O que o projeto explora
 
