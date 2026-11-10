@@ -36,7 +36,7 @@ def make(
         recognizer or FakeKanjiRecognizer(),
         evaluator,
         notifier or FakeResultNotifier(),
-        clock,
+        clock.now,
     )
     return process, repository, evaluator, job
 

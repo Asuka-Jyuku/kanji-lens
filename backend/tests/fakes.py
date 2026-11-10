@@ -25,6 +25,8 @@ EVALUATIONS: tuple[StrokeOrderEvaluation, ...] = (
 
 
 class FakeClock:
+    """A time that tests set and move; pass its now method where the app takes a now function."""
+
     def __init__(self, now: datetime = T0) -> None:
         self.current = now
 

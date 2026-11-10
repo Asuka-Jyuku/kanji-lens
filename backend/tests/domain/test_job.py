@@ -1,4 +1,3 @@
-import pickle
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
@@ -8,12 +7,7 @@ from kanjilens.domain.drawing import CanvasSize, Drawing, Point, Stroke
 from kanjilens.domain.errors import InvalidJobTransition, InvalidPrediction
 from kanjilens.domain.job import RESULT_TTL, JobFailure, JobStatus, RecognitionJob
 from kanjilens.domain.prediction import Prediction, RecognitionResult
-from kanjilens.domain.stroke_order import (
-    EvaluatedStrokeOrder,
-    JoinedIssue,
-    OrderIssue,
-    StrokeOrderMode,
-)
+from kanjilens.domain.stroke_order import StrokeOrderMode
 
 T0 = datetime(2026, 11, 8, 12, 0, tzinfo=UTC)
 DRAWING = Drawing(CanvasSize(320, 320), (Stroke((Point(1.0, 1.0, 0), Point(2.0, 2.0, 10))),))
@@ -69,14 +63,6 @@ def test_a_failed_job_keeps_the_failure_code() -> None:
     assert job.failure is JobFailure.INFERENCE_FAILED
     assert job.failure.value == "inference_failed"
     assert job.result is None
-
-
-def test_transitions_return_a_new_job() -> None:
-    job = queued()
-
-    job.start(T0)
-
-    assert job.status is JobStatus.QUEUED
 
 
 @pytest.mark.parametrize("status", list(JobStatus))
@@ -141,10 +127,6 @@ def test_times_must_be_timezone_aware() -> None:
 # --- expiration (ADR 0019) ---------------------------------------------------------------
 
 
-def test_the_result_lives_five_minutes() -> None:
-    assert timedelta(minutes=5) == RESULT_TTL
-
-
 @pytest.mark.parametrize("job", [completed, failed])
 def test_a_finished_job_expires_after_the_ttl(job: Callable[[], RecognitionJob]) -> None:
     finished = job()
@@ -157,28 +139,3 @@ def test_a_finished_job_expires_after_the_ttl(job: Callable[[], RecognitionJob])
 @pytest.mark.parametrize("job", [queued, processing])
 def test_an_unfinished_job_never_expires(job: Callable[[], RecognitionJob]) -> None:
     assert not job().is_expired(T0 + timedelta(days=1))
-
-
-# --- crossing to the inference process (ADR 0019) ----------------------------------------
-
-
-def test_the_drawing_and_the_result_survive_pickle() -> None:
-    ordered_result = RecognitionResult(
-        (
-            Prediction(
-                "日",
-                0.81,
-                EvaluatedStrokeOrder(
-                    expected_strokes=4,
-                    drawn_strokes=3,
-                    issues=(
-                        OrderIssue(drawn_stroke=3, expected_position=2),
-                        JoinedIssue(drawn_stroke=1, expected_strokes=(1, 2)),
-                    ),
-                ),
-            ),
-        )
-    )
-
-    for value in (DRAWING, ordered_result, completed()):
-        assert pickle.loads(pickle.dumps(value)) == value

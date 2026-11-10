@@ -171,6 +171,29 @@ def test_get_a_failed_job(app_with: TestClient) -> None:
     }
 
 
+@pytest.mark.parametrize("app_with", [CRASHING], indirect=True)
+def test_a_crash_fails_its_job_and_the_next_job_still_completes(app_with: TestClient) -> None:
+    crashed = submit(app_with, drawing(strokes=worker_functions.CRASH_STROKES))
+    after = submit(app_with, drawing(strokes=1))
+
+    assert wait_for(app_with, crashed, final)["failure"] == "inference_failed"
+    assert wait_for(app_with, after, final)["status"] == "completed"
+
+
+@pytest.mark.parametrize("app_with", [SLOW], indirect=True)
+def test_jobs_run_one_at_a_time(app_with: TestClient) -> None:
+    # One inference at a time (ADR 0011): while the first job runs, the second one waits.
+    first = submit(app_with, drawing())
+    second = submit(app_with, drawing("ordered"))
+
+    wait_for(app_with, first, lambda s: s["status"] == "processing")
+    assert app_with.get(f"/api/recognitions/{second}").json()["status"] == "queued"
+
+    wait_for(app_with, second, lambda s: s["status"] != "queued")
+    assert app_with.get(f"/api/recognitions/{first}").json()["status"] == "completed"
+    assert wait_for(app_with, second, final)["status"] == "completed"
+
+
 @pytest.mark.parametrize("path", ["/api/recognitions/{}", "/api/recognitions/{}/events"])
 def test_an_unknown_or_expired_job_is_404_on_both(path: str) -> None:
     response = TestClient(create_app()).get(path.format("0" * 32))

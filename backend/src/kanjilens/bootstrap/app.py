@@ -4,17 +4,16 @@ import asyncio
 import contextlib
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from fastapi import FastAPI
 
 from kanjilens import __version__
 from kanjilens.adapters.inbound.http.body_limit import BodySizeLimitMiddleware
 from kanjilens.adapters.inbound.http.errors import install_error_handlers
-from kanjilens.adapters.inbound.http.health import router as health_router
 from kanjilens.adapters.inbound.http.recognition_events import recognition_events_router
 from kanjilens.adapters.inbound.http.recognitions import recognitions_router
 from kanjilens.adapters.inbound.queue.consumer import QueueConsumer
-from kanjilens.adapters.outbound.clock import SystemClock
 from kanjilens.adapters.outbound.inference.process import InferenceProcess
 from kanjilens.adapters.outbound.jobs.in_memory_job_repository import InMemoryJobRepository
 from kanjilens.adapters.outbound.notifier.in_memory_result_notifier import InMemoryResultNotifier
@@ -52,20 +51,23 @@ PLACEHOLDER_INFERENCE = InferenceFunctions(
 )
 
 
+def utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
 def create_app(inference: InferenceFunctions = PLACEHOLDER_INFERENCE) -> FastAPI:
-    clock = SystemClock()
-    repository = InMemoryJobRepository(clock)
+    repository = InMemoryJobRepository(utc_now)
     queue = AsyncioJobQueue()
     notifier = InMemoryResultNotifier()
     process = InferenceProcess(inference.initializer)
-    submit_recognition = SubmitRecognition(repository, queue, clock)
+    submit_recognition = SubmitRecognition(repository, queue, utc_now)
     get_recognition = GetRecognition(repository)
     process_recognition = ProcessRecognition(
         repository,
         ProcessPoolKanjiRecognizer(process, inference.recognize),
         ProcessPoolStrokeOrderEvaluator(process, inference.evaluate),
         notifier,
-        clock,
+        utc_now,
     )
     consumer = QueueConsumer(queue, process_recognition)
 
@@ -85,7 +87,11 @@ def create_app(inference: InferenceFunctions = PLACEHOLDER_INFERENCE) -> FastAPI
     app = FastAPI(title="KanjiLens", version=__version__, lifespan=lifespan)
     app.add_middleware(BodySizeLimitMiddleware)
     install_error_handlers(app)
-    app.include_router(health_router)
+
+    @app.get("/api/health")
+    async def get_health() -> dict[str, str]:
+        return {"status": "ok"}
+
     app.include_router(recognitions_router(submit_recognition, get_recognition))
     app.include_router(recognition_events_router(get_recognition, notifier))
     return app

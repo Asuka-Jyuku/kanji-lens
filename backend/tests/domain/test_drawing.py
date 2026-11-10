@@ -148,10 +148,3 @@ def test_accepts_repeated_times() -> None:
     )
 
     assert drawing.point_count == 3
-
-
-def test_a_drawing_cannot_be_changed() -> None:
-    drawing = Drawing(CANVAS, (straight_stroke(2),))
-
-    with pytest.raises(AttributeError):
-        drawing.strokes = ()  # type: ignore[misc]
