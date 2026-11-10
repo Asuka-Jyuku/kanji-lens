@@ -52,4 +52,18 @@ describe('DrawingSession', () => {
     expect(drawing.limit()).toBeNull();
     expect(drawing.drawing().canvas).toEqual({ width: 320, height: 320 });
   });
+
+  it('starts with the order not mattering, and changing the mode keeps the drawing', () => {
+    const drawing = session();
+    drawing.startStroke({ x: 10, y: 10, time: 0 });
+    drawing.extendStroke({ x: 50, y: 60, time: 16 });
+    drawing.endStroke();
+    const before = drawing.drawing();
+    expect(drawing.mode()).toBe('unordered');
+
+    drawing.chooseMode('ordered');
+
+    expect(drawing.mode()).toBe('ordered');
+    expect(drawing.drawing()).toBe(before);
+  });
 });

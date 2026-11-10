@@ -13,7 +13,6 @@ import {
 import { DrawingSession } from './drawing-session';
 import { RecognitionGateway } from './recognition.gateway';
 import { ResultStream, ResultStreamConnection } from './result-stream';
-import { StrokeOrderModeSelection } from './stroke-order-mode-selection';
 
 /**
  * When the job is followed by polling instead of SSE, and when it is given up (ADR 0020;
@@ -42,7 +41,6 @@ export class RecognizeDrawing {
   private readonly gateway = inject(RecognitionGateway);
   private readonly stream = inject(ResultStream);
   private readonly drawing = inject(DrawingSession);
-  private readonly modes = inject(StrokeOrderModeSelection);
 
   private readonly current = signal<RecognitionState>(IDLE);
   private readonly waitingForQueue = signal(false);
@@ -73,7 +71,7 @@ export class RecognizeDrawing {
     }
     this.watch?.stop();
     this.watch = null;
-    const request = toRecognitionRequest(this.drawing.drawing(), this.modes.mode());
+    const request = toRecognitionRequest(this.drawing.drawing(), this.drawing.mode());
     this.current.set({ phase: 'sending' });
     try {
       const job = await this.gateway.submit(request);

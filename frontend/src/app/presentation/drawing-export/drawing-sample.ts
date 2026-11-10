@@ -1,6 +1,6 @@
-import type { Drawing } from './drawing';
-import { RecognitionRequest, toRecognitionRequest } from './recognition-request';
-import type { StrokeOrderMode } from './stroke-order-mode';
+import type { Drawing } from '../../domain/drawing';
+import { RecognitionRequest, toRecognitionRequest } from '../../domain/recognition-request';
+import type { StrokeOrderMode } from '../../domain/stroke-order-mode';
 
 /**
  * A drawing saved as a test sample (#66): the API body, unchanged, next to the answer key the
@@ -15,10 +15,7 @@ export const DRAWING_SAMPLE_VERSION = 1;
  * issue types (`order`, `direction`, `joined`, `broken`), plus a stroke too many or too few,
  * which the API answers as `stroke_count_mismatch` when the difference is over 2.
  */
-export type StrokeOrderLabel =
-  'correct' | 'order' | 'direction' | 'joined' | 'broken' | 'extra' | 'missing';
-
-export const STROKE_ORDER_LABELS: readonly StrokeOrderLabel[] = [
+export const STROKE_ORDER_LABELS = [
   'correct',
   'order',
   'direction',
@@ -26,10 +23,12 @@ export const STROKE_ORDER_LABELS: readonly StrokeOrderLabel[] = [
   'broken',
   'extra',
   'missing',
-];
+] as const;
+
+export type StrokeOrderLabel = (typeof STROKE_ORDER_LABELS)[number];
 
 export function isStrokeOrderLabel(value: unknown): value is StrokeOrderLabel {
-  return STROKE_ORDER_LABELS.includes(value as StrokeOrderLabel);
+  return (STROKE_ORDER_LABELS as readonly unknown[]).includes(value);
 }
 
 /** The answer key of a sample. */

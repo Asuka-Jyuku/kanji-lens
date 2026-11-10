@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import { StrokeOrderModeSelection } from '../../application/stroke-order-mode-selection';
+import { DrawingSession } from '../../application/drawing-session';
 import { isStrokeOrderMode } from '../../domain/stroke-order-mode';
 
 /**
@@ -15,12 +15,12 @@ import { isStrokeOrderMode } from '../../domain/stroke-order-mode';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ModeSelector {
-  protected readonly selection = inject(StrokeOrderModeSelection);
+  protected readonly session = inject(DrawingSession);
 
   protected onChange(event: Event): void {
     const { value } = event.target as HTMLInputElement;
     if (isStrokeOrderMode(value)) {
-      this.selection.choose(value);
+      this.session.chooseMode(value);
     }
   }
 }

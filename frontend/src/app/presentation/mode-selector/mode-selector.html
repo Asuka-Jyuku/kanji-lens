@@ -6,7 +6,7 @@
         type="radio"
         name="stroke-order-mode"
         value="ordered"
-        [checked]="selection.mode() === 'ordered'"
+        [checked]="session.mode() === 'ordered'"
         (change)="onChange($event)"
       />
       <span i18n="@@modeSelector.ordered">Importa</span>
@@ -16,7 +16,7 @@
         type="radio"
         name="stroke-order-mode"
         value="unordered"
-        [checked]="selection.mode() === 'unordered'"
+        [checked]="session.mode() === 'unordered'"
         (change)="onChange($event)"
       />
       <span i18n="@@modeSelector.unordered">Não importa</span>

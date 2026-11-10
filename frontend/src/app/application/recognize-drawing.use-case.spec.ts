@@ -7,7 +7,6 @@ import { DrawingSession } from './drawing-session';
 import { RecognitionGateway } from './recognition.gateway';
 import { FOLLOW_POLICY, RecognizeDrawing } from './recognize-drawing.use-case';
 import { ResultStream, ResultStreamConnection, ResultStreamHandlers } from './result-stream';
-import { StrokeOrderModeSelection } from './stroke-order-mode-selection';
 
 /** The API, answering what each test tells it to. */
 class FakeGateway extends RecognitionGateway {
@@ -97,7 +96,7 @@ describe('RecognizeDrawing', () => {
   });
 
   it('sends the drawing as drawn, with the chosen mode', async () => {
-    TestBed.inject(StrokeOrderModeSelection).choose('ordered');
+    TestBed.inject(DrawingSession).chooseMode('ordered');
 
     await sendAndQueue();
 
