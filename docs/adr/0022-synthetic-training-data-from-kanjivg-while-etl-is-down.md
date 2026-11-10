@@ -13,7 +13,7 @@ O app recebe traços desenhados no canvas (`[x, y, t]`), não papel escaneado. O
 ## Alternativas consideradas
 
 - **Esperar o ETL:** a melhor base (200 amostras humanas por classe), mas sem data para voltar. O treino, a avaliação e a #48 ficariam parados.
-- **TUAT Kuchibue/Nakayosi:** escrita japonesa *online*, com traços. É paga (¥200 mil no preço acadêmico); só um subconjunto de 10 escritores é grátis para pesquisa. Serve para validar, não para treinar.
+- **TUAT Kuchibue/Nakayosi:** escrita japonesa *online*, com traços. É paga: ¥200 mil no preço acadêmico e ¥2 milhões no comercial. O contrato só libera de graça um uso de teste (試用) dos dados de 10 escritores, para pesquisa e sem condições definidas. Fica fora por enquanto ([#94](https://github.com/Asuka-Jyuku/kanji-lens/issues/94)).
 - **CASIA OLHWDB/HWDB:** grátis para pesquisa, mas é escrita chinesa: 48 dos 240 kanji não existem lá, por estarem na forma simplificada. No máximo, um pré-treino.
 - **Só fontes tipográficas renderizadas:** licença livre (OFL), mas a variação é pequena e longe da escrita à mão.
 - **Kuzushiji-Kanji:** cursiva clássica; não serve.
