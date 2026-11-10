@@ -1,39 +1,37 @@
 # Registros de decisão de arquitetura (ADRs)
 
-Cada ADR registra **uma** decisão técnica que afeta a forma do sistema: o problema, as alternativas consideradas, o que foi escolhido e o custo dessa escolha. O objetivo é que quem chegar depois (inclusive o Claude Code) entenda **por que** o código é como é antes de mudar.
+Cada ADR registra **uma** decisão: o problema, as alternativas, o que foi escolhido e o custo. Serve para quem chega depois entender **por que** o código é assim antes de mudar.
 
-## Quando escrever uma ADR
+## Quando escrever
 
-Escreva (ou atualize) uma ADR quando a mudança:
+Para **decisão difícil de desfazer**:
+- o dataset, o modelo ou o pré-processamento (tamanho da entrada, normalização, lista de classes);
+- o contrato da API;
+- exposição na rede ou segurança (portas, CORS, limites, autenticação, saída de rede nova);
+- a stack de cada parte, ou como o app roda e é instalado;
+- uma decisão em aberto do [ARCHITECTURE.md](../ARCHITECTURE.md) que se fecha;
+- um padrão de código que vale para o projeto todo.
 
-- adiciona ou troca uma **dependência, biblioteca, ferramenta ou integração externa** (inclusive uma saída de rede nova);
-- muda o **modelo, o dataset ou o pré-processamento** além de um ajuste de rotina (arquitetura, tamanho da entrada, normalização, lista de classes, fonte dos dados);
-- muda **segurança** ou exposição na rede: portas, CORS, limites de entrada, autenticação;
-- muda **infraestrutura** ou entrega: como roda, contêineres, scripts, CI;
-- **fecha uma decisão em aberto** listada em [ARCHITECTURE.md, "Decisões em resumo"](../ARCHITECTURE.md#10-decisões-em-resumo);
-- estabelece ou quebra um **padrão de código** que vale para o projeto todo (camadas, nomes, como uma camada fala com outra).
-
-Não precisa de ADR: correção de bug, refatoração local, ajuste visual, tela ou endpoint novo que só segue padrões já registrados.
+Não precisa: dependência ou ferramenta pequena, correção, refatoração, ajuste visual, tela ou endpoint que segue o padrão.
 
 ## Como escrever
 
-1. Copie [0000-template.md](0000-template.md) para `NNNN-title-in-kebab-case.md`, com o próximo número livre. O nome do arquivo fica em inglês; o texto, em português.
-2. Preencha contexto, alternativas, decisão e consequências — **as consequências negativas são obrigatórias**.
-3. Adicione a linha no índice abaixo.
-4. Inclua a ADR no mesmo pull request da mudança que ela justifica.
+1. Copie [0000-template.md](0000-template.md) para `NNNN-title-in-kebab-case.md`, com o próximo número. Nome do arquivo em inglês, texto em português.
+2. Preencha contexto, alternativas, decisão e consequências. **As negativas são obrigatórias.**
+3. Ponha a linha no índice abaixo e a ADR no mesmo PR da mudança.
 
-## Ciclo de vida
+## Status
 
 | Status | Significado |
 |---|---|
-| Proposta | Em discussão (pull request aberto). |
-| Aceita | Vale para o código atual. |
-| Substituída por NNNN | Trocada por outra decisão. A ADR antiga **não é apagada**: muda o status e aponta para a nova. |
-| Descontinuada | Deixou de valer sem substituta (ex.: a funcionalidade foi removida). |
+| Proposta | Em discussão (PR aberto) |
+| Aceita | Vale para o código atual |
+| Substituída por NNNN | Trocada por outra. A antiga **não é apagada**: muda o status e aponta para a nova |
+| Descontinuada | Deixou de valer, sem substituta |
 
-Uma ADR aceita só é **editada** para correções, novos detalhes da mesma decisão ou atualização de consequências. Se a decisão em si mudou, crie uma ADR nova e marque a antiga como substituída.
+ADR aceita só se edita com uma nota de atualização: correção, detalhe da mesma decisão ou consequência nova. Se a decisão mudou, é ADR nova.
 
-As ADRs 0002, 0003 e 0005 a 0007 foram escritas depois das decisões, a partir do desenho em [ARCHITECTURE.md](../ARCHITECTURE.md) (commit `d72a4d4`). O contexto delas é reconstruído; o que não estava registrado está marcado como *inferido*.
+As ADRs 0002, 0003 e 0005 a 0007 foram escritas depois das decisões; o que não estava registrado está marcado como *inferido*.
 
 ## Índice
 

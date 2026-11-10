@@ -1,31 +1,23 @@
 # Código que serve de modelo
 
-Antes de escrever, abra o exemplo do mesmo tipo e siga a forma dele. Exemplo novo entra aqui no PR que cria o primeiro código daquele tipo.
+Antes de escrever, abra o exemplo do mesmo tipo e siga a forma dele. Os caminhos são de `backend/src/kanjilens/`, e os testes, de `backend/tests/`.
 
 | Tipo | Modelo | O que copiar |
 |---|---|---|
-| Value object que se valida ao nascer | `backend/src/kanjilens/domain/drawing.py` (`Drawing`) | `@dataclass(frozen=True, slots=True)`, regras no `__post_init__`, erro do domínio com código estável; limites como constante do domínio, reaproveitados pelo adapter |
-| Entidade com estados | `backend/src/kanjilens/domain/job.py` (`RecognitionJob`) | transições como métodos que devolvem um objeto novo (`dataclasses.replace`), `InvalidJobTransition` para o resto, horário recebido de fora (sem relógio no domínio) |
-| União de variantes | `backend/src/kanjilens/domain/stroke_order.py` (`StrokeOrderEvaluation`, `StrokeOrderIssue`) | `type X = A \| B` com dataclasses, `match` por classe, valor derivado como `property` (`correct`) em vez de campo |
-| Erros do domínio | `backend/src/kanjilens/domain/errors.py` | uma classe por caso, herdando de `DomainError`, com `code` estável |
-| Teste do domínio | `backend/tests/domain/test_job.py` | um teste por regra, `parametrize` com `id` legível para as transições proibidas, pickle de ida e volta do que cruza para o processo de inferência |
-| Port | `backend/src/kanjilens/application/ports/job_repository.py` | `typing.Protocol` pequeno, só tipos do domínio, docstring dizendo o contrato (o que devolve quando não acha) |
-| Use case | `backend/src/kanjilens/application/use_cases/submit_recognition.py` (`SubmitRecognition`) | ports pelo `__init__`, um método `execute`, horário vindo do `Clock`, desfazer o que fez quando um port falha (`QueueFull`) |
-| Adapter inbound HTTP | `backend/src/kanjilens/adapters/inbound/http/recognitions.py` | schema Pydantic com `to_drawing()` para o domínio, fábrica de router recebendo o use case, `responses` com os códigos de erro |
-| Erros na borda HTTP | `backend/src/kanjilens/adapters/inbound/http/errors.py` | erro do domínio → status, validação → `400`/`413` com código, corpo `{"error": "<código>"}` |
-| Adapter outbound em memória | `backend/src/kanjilens/adapters/outbound/jobs/in_memory_job_repository.py` | implementa o port sem herdar dele, recebe o `Clock`, aplica a regra do domínio (`is_expired`) |
-| Fakes dos ports | `backend/tests/fakes.py` | uma classe simples por port, com o estado à mostra para o teste conferir |
-| Teste do use case | `backend/tests/application/test_submit_recognition.py` | só fakes, sem FastAPI |
-| Teste do endpoint | `backend/tests/adapters/test_recognitions_endpoint.py` | `TestClient(create_app())` fora do `with`, para não subir o processo de inferência, um caso por status, `pytest.param(..., id=...)` dizendo de onde vem o erro (schema ou domínio) |
-| Port que roda no processo de inferência | `backend/src/kanjilens/application/ports/kanji_recognizer.py` | `async def`, porque a chamada cruza para outro processo; só tipos do domínio, nada do formato que cruza |
-| Use case que espera outro processo | `backend/src/kanjilens/application/use_cases/process_recognition.py` (`ProcessRecognition`) | toda falha vira `failed` (nenhum job fica `processing` para sempre), o `job_id` no log, o avaliador só no `ordered` |
-| Processo de inferência | `backend/src/kanjilens/adapters/outbound/inference/process.py` (`InferenceProcess`) | `spawn` explícito, o `initializer` rodado no `start()` (falha impede a partida), `BrokenProcessPool` recria o pool, `stop()` sem esperar a chamada em curso |
-| O que cruza para o processo de inferência | `backend/src/kanjilens/adapters/outbound/inference/wire.py` | tuplas, listas e dicts; a conversão de e para o domínio fica aqui, e o domínio confere o resultado ao recebê-lo |
-| Adapter que roda no processo de inferência | `backend/src/kanjilens/adapters/outbound/recognizer/process_pool_recognizer.py` | recebe a função de nível de módulo que roda no worker; converte com o `wire.py` |
-| Consumidor da fila | `backend/src/kanjilens/adapters/inbound/queue/consumer.py` (`QueueConsumer`) | um job por vez, um job com erro não para o consumidor; a fila entra por um `Protocol` local (`JobSource`), não pelo port do use case |
-| Ligação no `lifespan` | `backend/src/kanjilens/bootstrap/app.py` | `create_app(inference)` recebe as funções do worker (`InferenceFunctions`); o teste passa as dele |
-| Teste com o processo de verdade | `backend/tests/adapters/test_queue_consumer.py`, `test_app_lifespan.py` | as funções do worker em `tests/worker_functions.py`; medir o event loop durante um job lento; derrubar o worker com `os._exit` |
-| Schema de saída com campos opcionais | `backend/src/kanjilens/adapters/inbound/http/recognition_state.py` (`RecognitionStateResponse`) | `from_job()` do domínio, `to_json()` sem os `None`; o mesmo schema no `GET` (`response_model_exclude_none`) e no SSE |
-| SSE | `backend/src/kanjilens/adapters/inbound/http/recognition_events.py` | `404` numa dependência antes do stream; gerador `job_events` testável sem HTTP; inscrever antes de ler; o notifier entra por um `Protocol` local (`JobUpdates`) |
-| Notifier em memória | `backend/src/kanjilens/adapters/outbound/notifier/in_memory_result_notifier.py` | uma fila por inscrito, `subscribe()` como context manager, que desinscreve até em erro |
-| Teste do SSE | `backend/tests/adapters/test_result_endpoints.py`, `test_recognition_events.py` | ler o stream numa thread com prazo (stream que não termina falha, não trava o CI); um primeiro job lento segura o worker para ver o `queued` |
+| Value object que se valida | `domain/drawing.py` (`Drawing`) | `@dataclass(frozen=True, slots=True)`, regras no `__post_init__`, erro com código estável; limites como constante, reaproveitados pelo schema |
+| Entidade com estados | `domain/job.py` (`RecognitionJob`) | transições que devolvem um objeto novo, `InvalidJobTransition` para o resto, o horário vindo de fora |
+| União de variantes | `domain/stroke_order.py` | `type X = A \| B` com dataclasses, `match` por classe, valor derivado como `property` |
+| Erros do domínio | `domain/errors.py` | uma classe por caso, com `code` estável |
+| Use case | `application/use_cases/submit_recognition.py` | dependências pelo `__init__`, um método `execute`, o horário de um `now` recebido, desfazer o que fez quando algo falha (`QueueFull`) |
+| Use case que espera outro processo | `application/use_cases/process_recognition.py` | toda falha vira `failed` (nenhum job fica `processing` para sempre), o `job_id` no log |
+| Rota HTTP | `adapters/inbound/http/recognitions.py` | schema com `to_drawing()`, fábrica de router que recebe o use case, `responses` com os erros |
+| Erros na borda HTTP | `adapters/inbound/http/errors.py` | erro do domínio → status; validação → `400`/`413` com código; corpo `{"error": "<código>"}` |
+| Schema de saída | `adapters/inbound/http/recognition_state.py` | `from_job()`, sem os `None`; o mesmo schema no `GET` e no SSE |
+| SSE | `adapters/inbound/http/recognition_events.py` | `404` antes do stream; inscrever antes de ler; gerador testável sem HTTP |
+| Processo de inferência | `adapters/outbound/inference/process.py` | `spawn` explícito, o `initializer` rodado no `start()`, `BrokenProcessPool` recria o pool |
+| O que cruza processos | `adapters/outbound/inference/wire.py` | só tuplas, listas e dicts; a conversão de e para o domínio fica aqui |
+| Ligação | `bootstrap/app.py` | `create_app(inference)` recebe as funções do worker; o teste passa as dele; o `/api/health` mora aqui |
+| Fakes | `tests/fakes.py` | uma classe simples por port, com o estado à mostra |
+| Teste do endpoint | `tests/adapters/test_recognitions_endpoint.py` | `TestClient(create_app())` sem subir o processo de inferência; um caso por status |
+| Teste com o processo de verdade | `tests/adapters/test_app_lifespan.py` | as funções do worker em `tests/worker_functions.py`; derrubar o worker com `os._exit` |
+| Teste do SSE | `tests/adapters/test_result_endpoints.py` | ler o stream numa thread com prazo, para não travar o CI |
