@@ -4,7 +4,7 @@
 
 [English](README.md) · [Arquitetura](docs/ARCHITECTURE.md) · [Decisões (ADRs)](docs/adr/README.md) · [Como contribuir](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-> **Status:** a tela de desenho, a API e o processamento dos jobs funcionam de ponta a ponta, com um reconhecedor falso. O modelo espera o dataset de treino. O andamento está no [GitHub Project](https://github.com/orgs/Asuka-Jyuku/projects/6).
+> **Status:** a tela de desenho, a API e o processamento dos jobs funcionam de ponta a ponta, com um reconhecedor falso. O modelo vai ser treinado com desenhos sintéticos, gerados a partir do KanjiVG, enquanto o dataset ETL estiver fora do ar. O andamento está no [GitHub Project](https://github.com/orgs/Asuka-Jyuku/projects/6).
 
 ## O que faz
 
@@ -70,4 +70,4 @@ Visão computacional e CNN, correspondência entre traços para avaliar a ordem,
 O código-fonte está sob a [licença MIT](LICENSE), que cobre só o código deste repositório. Datasets e pesos treinados não ficam no repositório: cada dataset mantém os próprios termos, e pesos treinados com ele podem herdá-los.
 
 - **KanjiVG:** os dados de referência da ordem dos traços mantêm a própria licença (CC BY-SA 3.0, © Ulrich Apel, [kanjivg.tagaini.net](https://kanjivg.tagaini.net)), com atribuição.
-- **ETL Character Database (ETL9G):** o modelo de reconhecimento vai ser treinado com ele (enquanto o site estiver fora do ar, veja o [spike](docs/spikes/training-without-etl.md)). É de uso livre, mas só pode ser obtido pelo [site oficial](https://etlcdb.db.aist.go.jp/), por isso este repositório não tem nenhuma imagem dele ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)). Referência: Electrotechnical Laboratory, Japanese Technical Committee for Optical Character Recognition, ETL Character Database, 1973-1984.
+- **ETL Character Database (ETL9G):** é a base preferida do modelo de reconhecimento quando o site voltar; até lá, o treino usa desenhos sintéticos do KanjiVG ([ADR 0022](docs/adr/0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md)). É de uso livre, mas só pode ser obtido pelo [site oficial](https://etlcdb.db.aist.go.jp/), por isso este repositório não tem nenhuma imagem dele ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)). Referência: Electrotechnical Laboratory, Japanese Technical Committee for Optical Character Recognition, ETL Character Database, 1973-1984.

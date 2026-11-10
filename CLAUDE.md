@@ -19,7 +19,7 @@ O KanjiLens reconhece kanjis desenhados à mão. O aluno escolhe se a ordem dos 
 
 É um monorepo: `frontend/` (Angular), `backend/` (FastAPI) e `ml/` (dataset, treino e o pré-processamento compartilhado). Tudo roda no notebook da escola (i7, 16 GB, sem GPU), acessado pela rede local, sem nuvem. Por isso a inferência é só na CPU, e número de desempenho só vale medido lá ([ADR 0011](docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md)).
 
-**Andamento:** fica no [GitHub Project](https://github.com/orgs/Asuka-Jyuku/projects/6) e nos épicos, não aqui. Hoje o fluxo completo funciona com um reconhecedor falso; o modelo de verdade espera o dataset (#13, #78).
+**Andamento:** fica no [GitHub Project](https://github.com/orgs/Asuka-Jyuku/projects/6) e nos épicos, não aqui. Hoje o fluxo completo funciona com um reconhecedor falso; o modelo de verdade vai treinar com desenhos sintéticos do KanjiVG enquanto o ETL estiver fora ([ADR 0022](docs/adr/0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md)).
 
 Visão geral no [README.pt-BR.md](README.pt-BR.md), desenho no [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) e o porquê das decisões em [docs/adr/](docs/adr/README.md).
 

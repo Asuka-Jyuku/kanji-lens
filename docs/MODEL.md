@@ -1,6 +1,6 @@
 # Modelo e pré-processamento
 
-O que o KanjiLens faz com os traços antes de avaliar, como a avaliação da ordem funciona, e os desenhos do canvas usados nos testes. O dataset, o treino e o modelo entram aqui quando existirem. O dataset (ETL9G) e as classes estão na [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md).
+O que o KanjiLens faz com os traços antes de avaliar, como a avaliação da ordem funciona, e os desenhos do canvas usados nos testes. O dataset, o treino e o modelo entram aqui quando existirem. As classes e o ETL9G estão na [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md). Enquanto o site do ETL estiver fora, o treino usa desenhos sintéticos do KanjiVG, medidos só em desenhos reais ([ADR 0022](adr/0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md)).
 
 ## Pré-processamento
 

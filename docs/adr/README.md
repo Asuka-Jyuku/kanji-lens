@@ -58,3 +58,4 @@ As ADRs 0002, 0003 e 0005 a 0007 foram escritas depois das decisões; o que não
 | [0019](0019-in-memory-job-queue-with-one-inference-process.md) | Fila em memória (`asyncio.Queue`) com um processo de inferência | Aceita |
 | [0020](0020-result-notification-by-server-sent-events.md) | Notificação do resultado por SSE, com polling como reserva | Aceita |
 | [0021](0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md) | ETL9G como dataset do reconhecimento e os 1.026 kanji escolares como primeiras classes | Aceita |
+| [0022](0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md) | Treino com desenhos sintéticos do KanjiVG enquanto o ETL estiver fora | Aceita |
