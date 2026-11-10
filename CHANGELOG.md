@@ -58,6 +58,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   - **documentação:** glossário e diagrama de estados em [docs/architecture/domain.md](docs/architecture/domain.md).
 
 ### Publicação e documentação
+- **Como treinar sem o ETL, enquanto o site dele estiver fora do ar** (spike em [docs/spikes/training-without-etl.md](docs/spikes/training-without-etl.md), #78):
+  - **proposta:** desenhos sintéticos gerados a partir do KanjiVG e do Kanji alive (CC BY 4.0), no mesmo formato do canvas, com fontes renderizadas como complemento. A validação é só em escrita humana: os desenhos da #66 e, se liberado, o subconjunto gratuito de 10 escritores do TUAT;
+  - **alternativas conferidas:**
+    - o TUAT Kuchibue/Nakayosi é pago, com um subconjunto de 10 escritores gratuito para pesquisa;
+    - o CASIA é gratuito para pesquisa acadêmica, mas é escrita chinesa: 48 dos 240 kanji do MVP não existem lá;
+    - o Kuzushiji-Kanji é cursiva clássica;
+  - **licença:** se os pesos herdam o ShareAlike do KanjiVG fica para a ADR. No MVP, os pesos não são publicados;
+  - **ainda não é decisão:** a ADR 0021 continua valendo até uma ADR nova.
 - **O `docs/SECURITY.md` reúne o que fica exposto na rede local:** portas, CORS, limites de entrada e da fila, o que acontece com os desenhos dos alunos e a regra de nenhuma saída de rede (#58).
 - **Como rodar o KanjiLens está num lugar só, o [docs/RUNNING.md](docs/RUNNING.md)** (#61):
   - **o que cobre:** pré-requisitos (uv e Node 26), instalação, subir a API e o frontend, conferir com `curl`, preparar o KanjiVG e abrir pelo celular na rede local, com o firewall;

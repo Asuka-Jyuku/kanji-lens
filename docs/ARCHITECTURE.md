@@ -470,6 +470,7 @@ O resultado:
   - uso livre e gratuito, sem cadastro;
   - distribuição **só pelo site oficial**: nenhuma imagem do ETL entra no repositório, e cada máquina baixa do site;
   - citação obrigatória (texto na ADR).
+- **Site fora do ar:** o site do ETL responde `503` desde 08/11/2026. O [spike "treinar o reconhecimento sem o ETL"](spikes/training-without-etl.md) (#78) propõe, enquanto ele estiver fora, treinar com desenhos sintéticos do KanjiVG e do Kanji alive, validados só em escrita humana (os desenhos da #66 e, se liberado, o subconjunto gratuito do TUAT). A decisão vai para uma ADR nova.
 - **Descartados:**
   - o ETL8G, com só cerca de 41% do Jōyō;
   - o ETL9B como base, por ser binarizado na digitalização;
@@ -596,6 +597,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [x] Avaliar famílias de modelos e runtimes ([spike](spikes/model-and-runtime-evaluation.md)) e definir o modo `ordered` como avaliação da ordem ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
 - [x] Definir as ferramentas e criar a estrutura de `ml/` ([ADR 0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md)).
 - [x] Pesquisar e selecionar o dataset e a quantidade de classes ([ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md); [spike](spikes/dataset-selection.md)).
+- [ ] Decidir como treinar sem o ETL enquanto o site estiver fora do ar ([spike](spikes/training-without-etl.md); [#78](https://github.com/Asuka-Jyuku/kanji-lens/issues/78)).
 - [x] Escolher o algoritmo de avaliação da ordem e o formato de captura dos pontos ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
 - [ ] Criar o pré-processamento compartilhado (imagem e traços normalizados). Os traços normalizados já existem ([docs/MODEL.md](MODEL.md#traços-normalizados-avaliação-da-ordem)); falta a imagem da CNN ([#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14)).
 - [ ] Carregar o dataset com split fixo de treino, validação e teste ([#13](https://github.com/Asuka-Jyuku/kanji-lens/issues/13)).
