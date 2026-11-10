@@ -1,6 +1,6 @@
 # Modelo e pré-processamento
 
-O que o KanjiLens faz com os traços e as imagens antes do modelo, a avaliação da ordem dos traços e, a partir da etapa 1, o dataset, o treino, as métricas e as versões do modelo. Este documento muda junto com o código: toda mudança em dataset, pré-processamento, treino ou modelo atualiza esta página no mesmo PR (`CLAUDE.md`, "Documentos nascem com o assunto").
+O que o KanjiLens faz com os traços e as imagens antes do modelo, a avaliação da ordem dos traços, os desenhos do canvas usados nos testes e, a partir da etapa 1, o dataset, o treino, as métricas e as versões do modelo. Este documento muda junto com o código: toda mudança em dataset, pré-processamento, treino ou modelo atualiza esta página no mesmo PR (`CLAUDE.md`, "Documentos nascem com o assunto").
 
 O dataset (ETL9G) e as classes (os 1.026 教育漢字) estão decididos na [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md). A seção do dataset nasce com o carregamento dele ([#13](https://github.com/Asuka-Jyuku/kanji-lens/issues/13)).
 
@@ -157,5 +157,56 @@ A medição no notebook da escola fica para o benchmark ([ADR 0011](adr/0011-sch
 
 ### Falta (parte da #29)
 
-- **O conjunto fixo de desenhos reais**, com ordem certa e errada, feitos de propósito, com erros detectados × falsos alarmes. Ele depende da exportação do canvas ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)) e é onde os parâmetros e a abstenção se ajustam.
+- **O conjunto fixo de desenhos reais**, com ordem certa e errada, feitos de propósito, com erros detectados × falsos alarmes. Os desenhos são gravados pela exportação do canvas (veja [Desenhos do canvas](#desenhos-do-canvas)), e é nesse conjunto que os parâmetros e a abstenção se ajustam.
 - **O adapter do backend**, que liga o avaliador ao processo de inferência, é a [#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48).
+
+## Desenhos do canvas
+
+Os conjuntos fixos de teste são desenhos feitos no próprio app, gravados pela exportação do canvas ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)). Eles servem a três trabalhos:
+- o conjunto da avaliação da ordem, com ordem certa e errada ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29));
+- a comparação do pré-processamento de um desenho do canvas com uma amostra do ETL ([#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14), parte 2);
+- a acurácia com desenhos reais, o principal risco do projeto ([ARCHITECTURE.md, 7.4](ARCHITECTURE.md#74-pontos-de-atenção)), e o teste de carga.
+
+### Como gravar
+
+**Só no build de desenvolvimento** (`npm start`): abaixo do canvas fica o painel "Exportar desenho (desenvolvimento)".
+1. Desenhe e escolha o modo, como num reconhecimento. Para o conjunto da ordem, use "Importa".
+2. No painel, informe o kanji desenhado e a ordem usada. Se houve erro, informe também os números dos traços com o erro, contados como a API conta (a partir de 1, na ordem desenhada).
+3. "Baixar JSON" salva o arquivo no aparelho, sem passar por servidor nenhum.
+
+O build de produção não tem o painel: ele troca `app.dev-tools.development.ts` por `app.dev-tools.ts`, que não lista ferramenta nenhuma, e o CI confere o bundle depois do build (`npm run check:production-bundle`). Na escola, nenhum desenho de aluno sai do aparelho (`CLAUDE.md`, "Segurança").
+
+### Formato
+
+Um arquivo por desenho, com o nome `u<código do kanji>-<ordem>-<data UTC>.json` (por exemplo, `u5341-order-20261110T052243Z.json` para 十 fora de ordem):
+
+```json
+{
+  "format": "kanjilens-drawing",
+  "version": 1,
+  "exported_at": "2026-11-10T05:22:43.650Z",
+  "label": { "kanji": "十", "stroke_order": "order", "strokes": [1, 2] },
+  "request": {
+    "stroke_order_mode": "ordered",
+    "canvas": { "width": 358, "height": 358 },
+    "strokes": [[[179, 53.7, 0], [179, 74.58, 18]], [[71.6, 161.1, 466]]]
+  }
+}
+```
+
+(Encurtado: o arquivo real tem 13 pontos por traço, um ponto por linha, com os números como o navegador os mediu.)
+
+- **`request`** é o corpo do `POST /api/recognitions`, sem mudança nenhuma: os traços como foram desenhados ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)). A API recusa campo desconhecido, por isso o gabarito fica ao lado, e não dentro dele.
+- **`label`** é o gabarito, preenchido por quem desenhou:
+  - `kanji`: o kanji pretendido, um caractere;
+  - `stroke_order`: `correct`, ou o erro feito de propósito. Os erros são os tipos da ADR 0016 (`order`, `direction`, `joined`, `broken`) e mais `extra` e `missing`, um traço a mais ou a menos;
+  - `strokes`: os traços desenhados com o erro, a partir de 1; vazio quando a ordem está certa.
+- **`format` e `version`** identificam o formato. Mudança incompatível sobe a versão, e quem lê confere os dois.
+
+### Onde ficam
+
+- **Conjuntos de teste:** `ml/drawings/<conjunto>/`, versionados. O primeiro, o da ordem dos traços, vai em `ml/drawings/stroke-order/`. A pasta nasce com os primeiros desenhos reais.
+- **Amostras do formato:** `backend/tests/fixtures/drawings/`, dois desenhos de 十 gravados pelo painel no Chromium com toque emulado. Não são desenhos de pessoa e não entram em conjunto nenhum.
+- **Teste:** `backend/tests/adapters/test_exported_drawings.py` manda o `request` de cada arquivo das duas pastas ao `POST /api/recognitions` e confere o gabarito. Um arquivo que a API não aceita sem mudança quebra o teste.
+
+**Só desenhos da equipe.** Desenho de aluno só entra com ADR antes (`CLAUDE.md`, "Segurança"). Os conjuntos não têm nome nem dado de quem desenhou.

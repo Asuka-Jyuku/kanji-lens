@@ -1,0 +1,100 @@
+<details class="export">
+  <summary i18n="@@drawingExport.summary">Exportar desenho (desenvolvimento)</summary>
+  <form class="fields" novalidate (submit)="onSubmit($event)">
+    <p class="hint" i18n="@@drawingExport.hint">
+      Salva o desenho em JSON, com o kanji e a ordem usada, para os conjuntos de teste. Só desenhos
+      da equipe; desenhos de alunos precisam de ADR.
+    </p>
+    <label class="field">
+      <span i18n="@@drawingExport.kanji">Kanji desenhado</span>
+      <input
+        type="text"
+        lang="ja"
+        autocomplete="off"
+        maxlength="2"
+        required
+        [value]="kanji()"
+        (input)="onKanji($event)"
+      />
+    </label>
+    <label class="field">
+      <span i18n="@@drawingExport.strokeOrder">Ordem dos traços usada</span>
+      <select (change)="onStrokeOrder($event)">
+        <option
+          value="correct"
+          [selected]="strokeOrder() === 'correct'"
+          i18n="@@drawingExport.order.correct"
+        >
+          Certa
+        </option>
+        <option
+          value="order"
+          [selected]="strokeOrder() === 'order'"
+          i18n="@@drawingExport.order.order"
+        >
+          Traço fora de ordem
+        </option>
+        <option
+          value="direction"
+          [selected]="strokeOrder() === 'direction'"
+          i18n="@@drawingExport.order.direction"
+        >
+          Traço na direção errada
+        </option>
+        <option
+          value="joined"
+          [selected]="strokeOrder() === 'joined'"
+          i18n="@@drawingExport.order.joined"
+        >
+          Traços unidos
+        </option>
+        <option
+          value="broken"
+          [selected]="strokeOrder() === 'broken'"
+          i18n="@@drawingExport.order.broken"
+        >
+          Traço quebrado
+        </option>
+        <option
+          value="extra"
+          [selected]="strokeOrder() === 'extra'"
+          i18n="@@drawingExport.order.extra"
+        >
+          Traço a mais
+        </option>
+        <option
+          value="missing"
+          [selected]="strokeOrder() === 'missing'"
+          i18n="@@drawingExport.order.missing"
+        >
+          Traço a menos
+        </option>
+      </select>
+    </label>
+    <label class="field">
+      <span i18n="@@drawingExport.strokes">Traços com o erro (números, como 3, 4)</span>
+      <input
+        type="text"
+        inputmode="numeric"
+        autocomplete="off"
+        [disabled]="isCorrect()"
+        [value]="strokes()"
+        (input)="onStrokes($event)"
+      />
+    </label>
+    <button type="submit" class="save" [disabled]="session.empty()" i18n="@@drawingExport.save">
+      Baixar JSON
+    </button>
+    <p class="status" role="status">
+      @if (problem() === 'kanji') {
+        <span i18n="@@drawingExport.problem.kanji">Escreva um kanji só, o que você desenhou.</span>
+      } @else if (problem() === 'strokes') {
+        <span i18n="@@drawingExport.problem.strokes"
+          >Use números de traço entre 1 e o total desenhado, separados por vírgula.</span
+        >
+      } @else if (saved(); as fileName) {
+        <span i18n="@@drawingExport.saved">Arquivo salvo: {{ fileName }}</span>
+      }
+    </p>
+  </form>
+</details>

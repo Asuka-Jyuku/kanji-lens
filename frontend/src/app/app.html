@@ -4,5 +4,8 @@
     <app-mode-selector />
     <app-drawing-pad />
   </div>
+  @for (tool of devTools; track tool) {
+    <ng-container *ngComponentOutlet="tool" />
+  }
   <router-outlet />
 </main>

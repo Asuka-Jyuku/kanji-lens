@@ -5,6 +5,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Não publicado]
 
 ### Funcionalidades
+- **No build de desenvolvimento, o desenho pode ser salvo como JSON** para os conjuntos de teste (#66):
+  - **como:** o painel "Exportar desenho (desenvolvimento)", abaixo do canvas, pede o kanji desenhado e a ordem usada (certa, ou qual erro e em quais traços) e baixa o arquivo no aparelho, sem passar por servidor;
+  - **o arquivo** traz o corpo do `POST /api/recognitions` sem mudança, com o gabarito ao lado; o formato e as pastas estão no [docs/MODEL.md](docs/MODEL.md#desenhos-do-canvas), e um teste do backend manda cada desenho versionado à API;
+  - **no build de produção, o painel não existe**, e o CI confere o bundle depois do build (`npm run check:production-bundle`).
 - **A ordem dos traços é comparada com o KanjiVG** (parte da #29):
   - **o que diz:** se a ordem está certa, quais traços estão fora de ordem ou na direção errada, e quais foram unidos ou quebrados, sem acusar erro de ordem por isso; um traço a mais ou a menos também não vira erro;
   - **quando não avalia:** com mais de 2 traços de diferença, ou kanji fora do KanjiVG, a resposta diz o motivo;

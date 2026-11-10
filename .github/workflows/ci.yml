@@ -118,6 +118,8 @@ jobs:
         run: npm run test:ci
       - name: Build
         run: npm run build
+      - name: No development-only tool in the production build
+        run: npm run check:production-bundle
 
   docs:
     name: Docs links

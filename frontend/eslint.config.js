@@ -119,8 +119,15 @@ module.exports = defineConfig([
           checkText: true,
           checkAttributes: true,
           requireDescription: false,
-          // These ARIA attributes hold element ids, not text: nothing to translate.
-          ignoreAttributes: ['aria-describedby', 'aria-labelledby', 'aria-controls', 'aria-owns'],
+          // These hold element ids (the ARIA ones) or a keyboard type (inputmode), not text:
+          // nothing to translate.
+          ignoreAttributes: [
+            'aria-describedby',
+            'aria-labelledby',
+            'aria-controls',
+            'aria-owns',
+            'inputmode',
+          ],
         },
       ],
     },
