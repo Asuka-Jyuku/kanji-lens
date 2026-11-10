@@ -35,7 +35,7 @@ Formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [versio
 - Estrutura do backend: FastAPI com Uvicorn, no mesmo workspace do ML ([ADR 0015](docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md), #18).
 - Estrutura do ML: Python 3.15, uv, Ruff, mypy, pytest e PyTorch só-CPU ([ADR 0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md), #12).
 - O KanjiLens roda direto no notebook da escola (Windows), sem Docker ([ADR 0013](docs/adr/0013-run-directly-on-the-school-notebook-without-docker.md), #33).
-- O verbete do kanji escolhido abre num dicionário externo, o Takoboto por padrão (#35).
+- Decidido: o verbete do kanji escolhido vai abrir num dicionário externo, o Takoboto por padrão (#35).
 - Dois modos: a ordem dos traços importa ou não, e a mesma CNN reconhece nos dois ([ADR 0012](docs/adr/0012-ordered-mode-as-stroke-order-evaluation.md), que substitui a 0010; #23, #26, #30).
 - O notebook da escola é o servidor, com inferência só na CPU, para 3–5 alunos ao mesmo tempo ([ADR 0011](docs/adr/0011-school-notebook-as-server-with-cpu-first-inference.md), #24).
 - Referências de UI/UX para o frontend ([docs/UI-UX.md](docs/UI-UX.md)).
