@@ -7,9 +7,10 @@ repository never sees an older state than the one it was told about.
 """
 
 import logging
+from collections.abc import Callable
 from dataclasses import replace
+from datetime import datetime
 
-from kanjilens.application.ports.clock import Clock
 from kanjilens.application.ports.job_repository import JobRepository
 from kanjilens.application.ports.kanji_recognizer import KanjiRecognizer
 from kanjilens.application.ports.result_notifier import ResultNotifier
@@ -28,13 +29,13 @@ class ProcessRecognition:
         recognizer: KanjiRecognizer,
         evaluator: StrokeOrderEvaluator,
         notifier: ResultNotifier,
-        clock: Clock,
+        now: Callable[[], datetime],
     ) -> None:
         self._repository = repository
         self._recognizer = recognizer
         self._evaluator = evaluator
         self._notifier = notifier
-        self._clock = clock
+        self._now = now
 
     async def execute(self, job_id: str) -> RecognitionJob | None:
         """The job in its final status, or None when the job is no longer stored."""
@@ -42,16 +43,16 @@ class ProcessRecognition:
         if job is None:
             _log.warning("job %s left the queue but is no longer stored", job_id)
             return None
-        job = job.start(self._clock.now())
+        job = job.start(self._now())
         self._publish(job)
         try:
             result = await self._recognize(job)
-            job = job.complete(result, self._clock.now())
+            job = job.complete(result, self._now())
         except Exception:
             # Any failure ends the job: a job left in processing would be awaited forever.
             # A crash of the inference process (BrokenProcessPool) lands here too (ADR 0019).
             _log.exception("job %s failed", job.id)
-            job = job.fail(JobFailure.INFERENCE_FAILED, self._clock.now())
+            job = job.fail(JobFailure.INFERENCE_FAILED, self._now())
         self._publish(job)
         return job
 

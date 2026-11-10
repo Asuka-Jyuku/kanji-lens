@@ -9,7 +9,7 @@ from kanjilens.domain.stroke_order import StrokeOrderMode
 
 def make(capacity: int = 16) -> tuple[SubmitRecognition, FakeJobRepository, FakeJobQueue]:
     repository, queue = FakeJobRepository(), FakeJobQueue(capacity)
-    return SubmitRecognition(repository, queue, FakeClock()), repository, queue
+    return SubmitRecognition(repository, queue, FakeClock().now), repository, queue
 
 
 def test_a_submitted_drawing_becomes_a_stored_queued_job() -> None:

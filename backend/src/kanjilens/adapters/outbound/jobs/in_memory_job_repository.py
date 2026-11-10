@@ -4,15 +4,15 @@ Expired jobs are dropped, with their drawing, whenever the repository is used, s
 never outlives its result (docs/SECURITY.md, "Dados dos alunos").
 """
 
-from datetime import timedelta
+from collections.abc import Callable
+from datetime import datetime, timedelta
 
-from kanjilens.application.ports.clock import Clock
 from kanjilens.domain.job import RESULT_TTL, RecognitionJob
 
 
 class InMemoryJobRepository:
-    def __init__(self, clock: Clock, ttl: timedelta = RESULT_TTL) -> None:
-        self._clock = clock
+    def __init__(self, now: Callable[[], datetime], ttl: timedelta = RESULT_TTL) -> None:
+        self._now = now
         self._ttl = ttl
         self._jobs: dict[str, RecognitionJob] = {}
 
@@ -32,7 +32,7 @@ class InMemoryJobRepository:
         return len(self._jobs)
 
     def _drop_expired(self) -> None:
-        now = self._clock.now()
+        now = self._now()
         expired = [job.id for job in self._jobs.values() if job.is_expired(now, self._ttl)]
         for job_id in expired:
             del self._jobs[job_id]

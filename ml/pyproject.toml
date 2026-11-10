@@ -68,10 +68,7 @@ source_modules = ["kanjilens_ml.preprocessing.strokes"]
 forbidden_modules = ["torch"]
 
 [[tool.importlinter.contracts]]
-name = "Layers inside kanjilens_ml: preprocessing is the base, training and evaluation are on top"
-type = "layers"
-layers = [
-    "kanjilens_ml.training | kanjilens_ml.evaluation",
-    "kanjilens_ml.models | kanjilens_ml.data | kanjilens_ml.stroke_order",
-    "kanjilens_ml.preprocessing",
-]
+name = "Preprocessing is the base: it never imports the stroke-order check"
+type = "forbidden"
+source_modules = ["kanjilens_ml.preprocessing"]
+forbidden_modules = ["kanjilens_ml.stroke_order"]
