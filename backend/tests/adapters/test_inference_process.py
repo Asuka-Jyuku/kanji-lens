@@ -9,7 +9,19 @@ from concurrent.futures.process import BrokenProcessPool
 import pytest
 
 import worker_functions
+from fakes import DRAWING
 from kanjilens.adapters.outbound.inference.process import InferenceProcess
+from kanjilens.domain.errors import InvalidPrediction
+from kanjilens.domain.prediction import Prediction, RecognitionResult
+from kanjilens.domain.stroke_order import (
+    BrokenIssue,
+    DirectionIssue,
+    EvaluatedStrokeOrder,
+    JoinedIssue,
+    NotEvaluatedReason,
+    NotEvaluatedStrokeOrder,
+    OrderIssue,
+)
 
 pytestmark = pytest.mark.anyio
 
@@ -70,3 +82,32 @@ async def test_stop_does_not_wait_for_the_call_in_progress(process: InferencePro
 async def test_run_before_start_is_a_bug() -> None:
     with pytest.raises(RuntimeError):
         await InferenceProcess().run(worker_functions.process_info)
+
+
+async def test_the_drawing_and_every_kind_of_result_cross_the_process_unchanged(
+    process: InferenceProcess,
+) -> None:
+    # The recognizer and the evaluator pass domain objects to and from the worker by pickle.
+    evaluated = EvaluatedStrokeOrder(
+        5,
+        5,
+        (OrderIssue(3, 4), DirectionIssue(2), JoinedIssue(1, (1, 2)), BrokenIssue((4, 5), 5)),
+    )
+    not_evaluated = NotEvaluatedStrokeOrder(NotEvaluatedReason.REFERENCE_MISSING)
+    result = RecognitionResult(
+        (Prediction("日", 0.7, evaluated), Prediction("目", 0.2, not_evaluated))
+    )
+
+    assert await process.run(worker_functions.echo, (DRAWING, result)) == (DRAWING, result)
+
+
+async def test_a_result_that_breaks_a_domain_rule_fails_the_call_and_keeps_the_worker(
+    process: InferenceProcess,
+) -> None:
+    pid_before, _ = await process.run(worker_functions.process_info)
+
+    with pytest.raises(InvalidPrediction):
+        await process.run(worker_functions.recognize_wrongly, DRAWING)
+
+    pid_after, _ = await process.run(worker_functions.process_info)
+    assert pid_after == pid_before

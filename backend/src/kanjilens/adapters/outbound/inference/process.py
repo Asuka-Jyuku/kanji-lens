@@ -2,7 +2,8 @@
 
 The worker runs the initializer once (from #48 on, it loads the model and the KanjiVG
 references) and then one call at a time. Calls cross by pickle: the function must be importable
-by name (module level) and its arguments and result plain data (wire.py).
+by name (module level), and its arguments and result must pickle: the recognizer and the
+evaluator pass domain objects, which are frozen dataclasses.
 """
 
 import asyncio

@@ -15,7 +15,7 @@ Antes de escrever, abra o exemplo do mesmo tipo e siga a forma dele. Os caminhos
 | Schema de saída | `adapters/inbound/http/recognition_state.py` | `from_job()`, sem os `None`; o mesmo schema no `GET` e no SSE |
 | SSE | `adapters/inbound/http/recognition_events.py` | `404` antes do stream; inscrever antes de ler; gerador testável sem HTTP |
 | Processo de inferência | `adapters/outbound/inference/process.py` | `spawn` explícito, o `initializer` rodado no `start()`, `BrokenProcessPool` recria o pool |
-| O que cruza processos | `adapters/outbound/inference/wire.py` | só tuplas, listas e dicts; a conversão de e para o domínio fica aqui |
+| O que cruza processos | `adapters/outbound/recognizer/process_pool_recognizer.py` e `stroke_order/process_pool_evaluator.py` | a função do worker recebe o `Drawing` e devolve as classes do domínio, que passam pelo pickle; a conversão do resultado do ML para o domínio fica na própria função, dentro do worker |
 | Ligação | `bootstrap/app.py` | `create_app(inference)` recebe as funções do worker; o teste passa as dele; o `/api/health` mora aqui |
 | Fakes | `tests/fakes.py` | uma classe simples por port, com o estado à mostra |
 | Teste do endpoint | `tests/adapters/test_recognitions_endpoint.py` | `TestClient(create_app())` sem subir o processo de inferência; um caso por status |
