@@ -147,7 +147,7 @@ O template de PR traz a lista. O que mais escapa:
 - `Closes #N` e a linha no `CHANGELOG.md`;
 - teste para a regra nova, e para o bug corrigido;
 - modelo, pré-processamento ou avaliação da ordem mudaram: números antes e depois, no mesmo conjunto;
-- mudou o `README.md`: o `README.pt-BR.md` também.
+- mudou o `README.md`: o `README.en.md` também.
 
 ## Claude Code
 

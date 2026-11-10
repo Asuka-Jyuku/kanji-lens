@@ -1,6 +1,6 @@
 # KanjiLens: Arquitetura
 
-Como o KanjiLens é montado hoje e o que ainda está em aberto. O resumo do projeto está no [README](../README.pt-BR.md). O porquê de cada decisão está nas [ADRs](adr/README.md).
+Como o KanjiLens é montado hoje e o que ainda está em aberto. O resumo do projeto está no [README](../README.md). O porquê de cada decisão está nas [ADRs](adr/README.md).
 
 ## 1. Visão geral
 

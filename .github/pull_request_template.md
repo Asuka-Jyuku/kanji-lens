@@ -15,5 +15,5 @@ Closes #<!-- número da issue -->
 - [ ] Decisão difícil de desfazer? ADR neste PR
 - [ ] Mudou tela ou canvas? Cita o princípio do `docs/UI-UX.md` e diz o que não foi testado num celular
 - [ ] Mudou porta, CORS, limite ou fila? O `docs/SECURITY.md` continua certo
-- [ ] Documentos: só o que ficou falso foi atualizado (e o `README.pt-BR.md` junto com o `README.md`)
+- [ ] Documentos: só o que ficou falso foi atualizado (e o `README.en.md` junto com o `README.md`)
 - [ ] Nenhum dataset, peso, segredo ou `.env` no commit

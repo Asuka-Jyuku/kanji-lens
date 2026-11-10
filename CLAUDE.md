@@ -11,7 +11,7 @@ Regras que valem em qualquer tarefa neste repositório. O que é de um assunto s
 | Respostas e resumos | Etiquetas do GitHub e nomes de skills |
 | Textos da tela, sempre pelo i18n ([ADR 0009](docs/adr/0009-portuguese-ui-first-then-japanese.md)) | Códigos de erro da API (`queue_full`), que o frontend traduz |
 
-Termo técnico fica em inglês (use case, port, adapter, job, Top-5). O `README.md` tem a tradução `README.pt-BR.md`: **mudou um, muda o outro no mesmo PR**.
+Termo técnico fica em inglês (use case, port, adapter, job, Top-5). O `README.md` é em português e tem a tradução em inglês `README.en.md`: **mudou um, muda o outro no mesmo PR**.
 
 ## O que é
 
@@ -21,7 +21,7 @@ O KanjiLens reconhece kanjis desenhados à mão. O aluno escolhe se a ordem dos 
 
 **Andamento:** fica no [GitHub Project](https://github.com/orgs/Asuka-Jyuku/projects/6) e nos épicos, não aqui. Hoje o fluxo completo funciona com um reconhecedor falso; o modelo de verdade vai treinar com desenhos sintéticos do KanjiVG enquanto o ETL estiver fora ([ADR 0022](docs/adr/0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md)).
 
-Visão geral no [README.pt-BR.md](README.pt-BR.md), desenho no [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) e o porquê das decisões em [docs/adr/](docs/adr/README.md).
+Visão geral no [README.md](README.md), desenho no [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) e o porquê das decisões em [docs/adr/](docs/adr/README.md).
 
 ## Comandos
 
