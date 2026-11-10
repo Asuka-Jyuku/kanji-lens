@@ -69,6 +69,8 @@ O [spike do dataset](../spikes/dataset-selection.md) ([#11](https://github.com/A
   - o uso é livre e gratuito, sem cadastro.
 - **Negativas:**
   - **Uma fonte só, hoje fora do ar.** O ETL só pode ser obtido pelo site oficial, que responde `503` desde 08/11/2026, sem aviso. Até ele voltar, a #13 não começa com dados reais.
+
+    *Atualização de 2026-11-10 (#78):* o site continua com `503`. O [spike "treinar o reconhecimento sem o ETL"](../spikes/training-without-etl.md) propõe treinar o MVP com desenhos sintéticos do KanjiVG e do Kanji alive, validados só em escrita humana. Se a proposta for aceita, ela entra numa ADR nova, como esta ADR pede para quem troca o dataset. Até lá, esta decisão continua valendo.
   - **Não há plano B legítimo para o ETL.** As cópias de terceiros ferem a cláusula de distribuição.
   - **Nenhuma imagem do ETL entra no repositório**, nem como fixture de teste, nem no README, nem no `docs/MODEL.md` (*inferido* da cláusula de distribuição). Os testes do carregamento usam arquivos sintéticos no mesmo formato de registro.
   - **Cada máquina baixa do site.** Copiar o zip para o notebook da escola ou entre máquinas do projeto é zona cinzenta (*inferido*). A pergunta ainda vai para `etlcdb@m.aist.go.jp`.

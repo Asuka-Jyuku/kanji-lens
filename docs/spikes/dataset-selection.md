@@ -78,6 +78,12 @@ Feita com o KANJIDIC2 (EDRDG) de 2026-11-08, supondo que os 2.965 kanji do ETL9 
 
 ## 6. Alternativas
 
+> **Atualização de 2026-11-10:** com o site do ETL ainda fora do ar, o [spike "treinar o reconhecimento sem o ETL"](training-without-etl.md) ([#78](https://github.com/Asuka-Jyuku/kanji-lens/issues/78)) conferiu as linhas marcadas abaixo como *não verificado*:
+> - **TUAT:** é pago, com um subconjunto de 10 escritores gratuito para pesquisa.
+> - **CASIA:** é gratuito para pesquisa acadêmica, mas 48 dos 240 kanji do MVP não existem no conjunto chinês.
+>
+> Ele também acrescentou o Kanji alive (CC BY 4.0) como fonte de traços.
+
 | Opção | Situação | Por que não é a base |
 |---|---|---|
 | **Kuzushiji-Kanji** | Confirmado: CC BY-SA 4.0; 3.832 classes; 140.424 imagens 64×64; de 1.766 a 1 exemplo por classe | É escrita cursiva clássica, longe da escrita escolar, e muito desbalanceada |
