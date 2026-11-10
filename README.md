@@ -135,7 +135,7 @@ See the full checklist in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-escopo-d
 
 ## Running locally
 
-The app does not recognize kanji yet. For development, the commands (install, test, run the API and the frontend) are in [`CLAUDE.md`, "Comandos"](CLAUDE.md#comandos) (pt-BR). Step-by-step instructions for the school laptop and the local network will go to `docs/RUNNING.md` once the first version runs.
+The app does not recognize kanji yet: the API answers with a placeholder recognizer. To install it, start the API and the frontend, and open it from a phone on the local network, follow [`docs/RUNNING.md`](docs/RUNNING.md) (pt-BR). The test, lint and build commands are in [`CLAUDE.md`, "Comandos"](CLAUDE.md#comandos). The setup on the school laptop comes later.
 
 ## What this project explores
 

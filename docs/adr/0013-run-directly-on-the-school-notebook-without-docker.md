@@ -53,6 +53,7 @@ A escolha concreta vai para o `docs/RUNNING.md`:
 - **Na prática:**
   - `infrastructure/docker/` e `docker-compose.yml` saem da estrutura planejada;
   - o `docs/RUNNING.md` nasce com a instalação no notebook Windows: versão do Python, ambiente, serviço, build do frontend, portas, Firewall do Windows e IP reservado;
+    - **Atualização de 2026-11-10 ([#61](https://github.com/Asuka-Jyuku/kanji-lens/issues/61)):** o [`docs/RUNNING.md`](../RUNNING.md) nasceu antes, com a parte que já roda: o ambiente de desenvolvimento e o acesso pelo celular na rede local. É a regra do `CLAUDE.md`, "Documentos nascem com o assunto": o documento nasce quando a primeira parte roda. A instalação no notebook Windows entra nele depois, com a [#62](https://github.com/Asuka-Jyuku/kanji-lens/issues/62) e a [#63](https://github.com/Asuka-Jyuku/kanji-lens/issues/63). A decisão desta ADR não muda;
   - **o código de backend e de ML precisa rodar no Windows:** os testes cobrem isso, e o CI (#32) inclui um runner Windows ao menos para o backend e o ML;
   - o teste de carga do épico de Infraestrutura roda no notebook com essa instalação;
   - o CI ([#32](https://github.com/Asuka-Jyuku/kanji-lens/issues/32)) roda os testes num runner do GitHub, o que não exige Docker no notebook;

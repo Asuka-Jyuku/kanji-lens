@@ -54,7 +54,7 @@ O tipo de merge depende do destino do PR ([ADR 0008](docs/adr/0008-git-flow-and-
 
 ## Issues
 
-Não há issue? Crie uma antes, já no nome de quem pediu (`gh issue create --assignee @me`): todo PR fecha a issue dele. Ao começar a trabalhar numa issue, atribua-a a você e ponha a etiqueta `in progress` (`gh issue edit <número> --add-assignee @me --add-label "in progress"`); tire a etiqueta ao fechar.
+Não há issue? Crie uma antes, já no nome de quem pediu (`gh issue create --assignee @me`): todo PR fecha a issue dele. Ao começar a trabalhar numa issue, atribua-a a você e ponha a etiqueta `in progress` (`gh issue edit <número> --add-assignee @me --add-label "in progress"`); tire a etiqueta ao fechar. O Status no Project acompanha esses passos ("Status no Project", abaixo).
 
 Templates de issue (`.github/ISSUE_TEMPLATE/`):
 
@@ -127,6 +127,26 @@ As issues e o andamento ficam no GitHub Project do repositório, o [CNN de Kanji
   gh project item-edit --project-id PVT_kwDOEOSoQM4BqAo9 --id "$item" \
     --field-id PVTSSF_lADOEOSoQM4BqAo9zhoZnfE --single-select-option-id ddf6b0a8
   ```
+
+### Status no Project
+
+O Status mostra onde cada issue está e anda junto com a etiqueta `in progress`. Sem isso, o Project mostra tudo em `Backlog`, mesmo com trabalho em andamento ou PR esperando revisão.
+
+| Momento | Status | Etiqueta `in progress` |
+|---|---|---|
+| Pegou a issue para fazer (e se atribuiu) | `In progress` | põe |
+| Abriu o PR, mesmo um parcial ("Parte de #N") | `In review` | mantém |
+| O PR entrou e fechou a issue (`Closes #N`) | `Done`, sozinho: o workflow do Project faz isso | tira |
+| Um PR parcial entrou e a issue segue aberta, esperando outra (*blocked by*) | volta para `Backlog` | tira |
+
+`Ready` fica para a issue sem bloqueio, pronta para alguém pegar. Épico não passa por nenhum desses: fica sempre em `Epic` ("Épicos", acima).
+
+```bash
+item=$(gh project item-add 6 --owner Asuka-Jyuku --url <url da issue> --format json -q .id)   # devolve o item que já existe
+gh project item-edit --project-id PVT_kwDOEOSoQM4BqAo9 --id "$item" \
+  --field-id PVTSSF_lADOEOSoQM4BqAo9zhoZnfE --single-select-option-id <opção>
+# opções: Backlog = f75ad846, Ready = 61e4505c, In progress = 47fc9ee4, In review = df73e18b, Done = 98236657, Epic = ddf6b0a8
+```
 
 ### Etiquetas
 

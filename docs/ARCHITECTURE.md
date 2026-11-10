@@ -389,7 +389,7 @@ Toda resposta de erro tem o corpo `{"error": "<código>"}`, com um código está
 
 ## 6. Infraestrutura e execução local
 
-O projeto roda inteiramente em uma máquina local. Não são necessários domínio público, hospedagem em nuvem, servidor externo nem exposição à internet ([ADR 0007](adr/0007-local-execution-over-the-lan.md)). No notebook, ele roda **direto, sem Docker**: ambiente Python isolado, build estático do frontend e os processos como serviço do sistema operacional ([ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md)). O passo a passo vai para o `docs/RUNNING.md`.
+O projeto roda inteiramente em uma máquina local. Não são necessários domínio público, hospedagem em nuvem, servidor externo nem exposição à internet ([ADR 0007](adr/0007-local-execution-over-the-lan.md)). No notebook, ele roda **direto, sem Docker**: ambiente Python isolado, build estático do frontend e os processos como serviço do sistema operacional ([ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md)). O passo a passo do desenvolvimento e do acesso pelo celular está no [docs/RUNNING.md](RUNNING.md); o da instalação no notebook entra nele com a [#63](https://github.com/Asuka-Jyuku/kanji-lens/issues/63).
 
 O notebook da escola hospeda a aplicação e funciona como servidor (seção 6.3). Dispositivos na mesma rede Wi-Fi acessam pelo IP local:
 
@@ -596,11 +596,12 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [x] Pesquisar e selecionar o dataset e a quantidade de classes ([ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md); [spike](spikes/dataset-selection.md)).
 - [x] Escolher o algoritmo de avaliação da ordem e o formato de captura dos pontos ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
 - [ ] Criar o pré-processamento compartilhado (imagem e traços normalizados). Os traços normalizados já existem ([docs/MODEL.md](MODEL.md#traços-normalizados-avaliação-da-ordem)); falta a imagem da CNN ([#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14)).
-- [ ] Implementar e treinar a CNN 2D compacta.
+- [ ] Carregar o dataset com split fixo de treino, validação e teste ([#13](https://github.com/Asuka-Jyuku/kanji-lens/issues/13)).
+- [ ] Implementar e treinar a CNN 2D compacta ([#15](https://github.com/Asuka-Jyuku/kanji-lens/issues/15)).
 - [ ] Implementar a avaliação da ordem contra o KanjiVG (`ordered`). O algoritmo e os dados de referência existem ([docs/MODEL.md](MODEL.md#avaliação-da-ordem-dos-traços)); falta o conjunto de desenhos reais ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29), depois da [#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)).
-- [ ] Avaliar o reconhecimento (Top-1/Top-5) e a avaliação da ordem (conjunto com ordem certa e errada).
-- [ ] Implementar inferência top-K.
-- [ ] Medir no notebook da escola, depois de o modelo e o código ficarem prontos (runtimes, resolução, INT8, concorrência).
+- [ ] Avaliar o reconhecimento (Top-1/Top-5; [#16](https://github.com/Asuka-Jyuku/kanji-lens/issues/16)) e a avaliação da ordem (conjunto com ordem certa e errada; [#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29)).
+- [ ] Implementar inferência top-K ([#17](https://github.com/Asuka-Jyuku/kanji-lens/issues/17)).
+- [ ] Medir no notebook da escola, depois de o modelo e o código ficarem prontos (runtimes, resolução, INT8, concorrência; [#67](https://github.com/Asuka-Jyuku/kanji-lens/issues/67)).
 
 ### Etapa 2: Backend
 
@@ -622,16 +623,19 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [ ] Integrar com a REST API e o SSE ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
 - [ ] Implementar o indicador de processamento ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
 - [ ] Exibir as previsões e a avaliação da ordem ([#59](https://github.com/Asuka-Jyuku/kanji-lens/issues/59)).
+- [ ] Exportar o desenho do canvas como JSON, só no build de desenvolvimento, para montar os conjuntos de teste ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)).
 - [ ] Abrir o verbete do kanji escolhido no dicionário externo, com o padrão configurável ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)).
 
 ### Etapa 4: Infraestrutura
 
 - [x] Configurar o CI ([ADR 0018](adr/0018-ci-with-github-actions-and-a-single-required-check.md)).
-- [ ] Configurar a execução local no notebook da escola, com o frontend em build estático.
-- [ ] Configurar o acesso pela rede Wi-Fi.
-- [ ] Configurar a comunicação entre frontend e backend.
-- [ ] Testar 3–5 alunos enviando numa janela curta e 10 clientes como estresse.
-- [ ] Medir CPU, memória, temperatura e latência p50/p95 no notebook.
+- [x] Documentar como rodar no desenvolvimento e pelo celular na rede local ([docs/RUNNING.md](RUNNING.md); [#61](https://github.com/Asuka-Jyuku/kanji-lens/issues/61)).
+- [ ] Decidir quem serve o frontend em produção e como a API roda como serviço no Windows ([#62](https://github.com/Asuka-Jyuku/kanji-lens/issues/62)).
+- [ ] Configurar a execução local no notebook da escola, com o frontend em build estático ([#63](https://github.com/Asuka-Jyuku/kanji-lens/issues/63)).
+- [ ] Configurar o acesso pela rede Wi-Fi ([#64](https://github.com/Asuka-Jyuku/kanji-lens/issues/64)).
+- [ ] Configurar a comunicação entre frontend e backend: o proxy de `/api` no desenvolvimento ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)) e a mesma origem em produção ([#62](https://github.com/Asuka-Jyuku/kanji-lens/issues/62)).
+- [ ] Testar 3–5 alunos enviando numa janela curta e 10 clientes como estresse ([#65](https://github.com/Asuka-Jyuku/kanji-lens/issues/65)).
+- [ ] Medir CPU, memória, temperatura e latência p50/p95 no notebook ([#65](https://github.com/Asuka-Jyuku/kanji-lens/issues/65)).
 
 ---
 

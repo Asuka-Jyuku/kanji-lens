@@ -131,6 +131,6 @@ O [spike #28](../spikes/stroke-order-evaluation.md) conferiu o KanjiVG na fonte 
   - **atualizar o KanjiVG** é decisão consciente: nova versão, novo checksum e a avaliação da ordem medida de novo.
 - **Na prática:**
   - a #29 implementa o algoritmo em `kanjilens_ml/stroke_order/`, com os testes de casos fixos e o conjunto de desenhos reais;
-  - o script de preparação do KanjiVG entra no `docs/RUNNING.md` quando nascer;
+  - o script de preparação do KanjiVG entra no `docs/RUNNING.md` quando nascer (entrou: [RUNNING.md, seção 6](../RUNNING.md#6-referências-do-kanjivg-opcional));
   - os limites de entrada valem no adapter HTTP (`CLAUDE.md`, "Segurança") e vão para o `docs/SECURITY.md` quando a API for exposta;
   - o canvas segue o formato da requisição (skill `angular-conventions`).

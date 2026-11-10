@@ -23,7 +23,7 @@ O KanjiLens reconhece kanjis manuscritos: a pessoa escolhe se a ordem dos traço
 
 ## Comandos
 
-Cada etapa acrescenta os seus aqui (build, testes, lint, rodar) no PR em que o primeiro código dela entra. As ferramentas são escolhidas numa ADR no começo de cada etapa, não aqui. O CI ([ADR 0018](docs/adr/0018-ci-with-github-actions-and-a-single-required-check.md), `.github/workflows/ci.yml`) roda estes mesmos comandos em todo PR, e o Python também no Windows. Comando novo numa parte entra no job dela no mesmo PR. Os links dos `.md` são conferidos por `python3 .github/scripts/check_doc_links.py`.
+Cada etapa acrescenta os seus aqui (build, testes, lint, rodar) no PR em que o primeiro código dela entra. As ferramentas são escolhidas numa ADR no começo de cada etapa, não aqui. O CI ([ADR 0018](docs/adr/0018-ci-with-github-actions-and-a-single-required-check.md), `.github/workflows/ci.yml`) roda estes mesmos comandos em todo PR, e o Python também no Windows. Comando novo numa parte entra no job dela no mesmo PR. Os links dos `.md` são conferidos por `python3 .github/scripts/check_doc_links.py`. **Para pôr o app de pé** (pré-requisitos, ordem de subida, celular na rede local, firewall e problemas comuns), siga o [docs/RUNNING.md](docs/RUNNING.md); mudou porta, variável de ambiente ou forma de subir, ele muda no mesmo PR.
 
 **Python (ML e backend, no mesmo workspace)** — ADRs [0014](docs/adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) e [0015](docs/adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md). Pré-requisito: o [uv](https://docs.astral.sh/uv/) instalado; ele baixa o Python 3.15 sozinho. Tudo a partir da raiz do repositório:
 
@@ -40,9 +40,9 @@ uv run --directory ml python scripts/benchmark_stroke_order.py   # mede a avalia
 uv run --directory backend uvicorn kanjilens.bootstrap.app:create_app --factory --reload   # API em http://127.0.0.1:8000
 ```
 
-Para testar pelo celular na rede local, troque o endereço por `--host 0.0.0.0` (ARCHITECTURE.md, seção 6.1). Com a fila em memória, o Uvicorn roda com **um processo só** (sem `--workers`; [ADR 0019](docs/adr/0019-in-memory-job-queue-with-one-inference-process.md)).
+Para testar pelo celular na rede local, troque o endereço por `--host 0.0.0.0` e libere a porta no firewall ([docs/RUNNING.md, seção 7](docs/RUNNING.md#7-abrir-pelo-celular-na-rede-local)). Com a fila em memória, o Uvicorn roda com **um processo só** (sem `--workers`; [ADR 0019](docs/adr/0019-in-memory-job-queue-with-one-inference-process.md)).
 
-**Frontend (Angular)** — [ADR 0017](docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md). Pré-requisito: Node 26 LTS (`frontend/.nvmrc`; com o nvm, `nvm use`). Tudo dentro de `frontend/`:
+**Frontend (Angular)** — [ADR 0017](docs/adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md). Pré-requisito: Node 26 LTS (`frontend/.nvmrc`; com o fnm ou o nvm, `fnm use` / `nvm use` **dentro de `frontend/`**, ou `fnm use 26` em qualquer pasta). Tudo dentro de `frontend/`:
 
 ```bash
 npm ci                     # instala as dependências do package-lock.json
@@ -150,6 +150,7 @@ Conventional Commits **em inglês** (fluxo de branches, comandos e o Project em 
 - **Branch nova:** de preferência criada pela issue, com `gh issue develop <N> --base develop --name feature/<topic> --checkout`. Issue feita em vários PRs: crie a branch com `git switch -c`, porque a branch criada pela issue a fecha no primeiro merge; só o último PR fecha a issue.
 - **Issue nova já nasce no nome de quem pediu** (`gh issue create --assignee @me`, ou o login de quem pediu). **Exceção, os épicos:** o épico e as histórias dele não são atribuídos a ninguém — nem ao criar, nem depois, nem ao ligar uma história ao épico. Só a história que uma pessoa **pega**, pedindo aqui, vai para o nome dela, com a etiqueta `in progress`. Se o usuário pedir para não atribuir uma issue a ele, não atribua.
 - **Antes de trabalhar numa issue:** atribuir a quem pediu e pôr a etiqueta `in progress` (`gh issue edit <N> --add-assignee @me --add-label "in progress"`). Ao fechar, tirar a etiqueta.
+- **O Status no Project acompanha o trabalho**, junto com a etiqueta (comandos em [CONTRIBUTING.md, "Status no Project"](CONTRIBUTING.md#status-no-project)): pegou a issue → `In progress`; abriu o PR, mesmo um parcial ("Parte de #N") → `In review`; o PR fechou a issue → `Done` sozinho, e só se tira a etiqueta; PR parcial entrou e a issue segue aberta, esperando outra → volta para `Backlog`, sem a etiqueta.
 - **Dependência entre issues vai no GitHub, não só no texto:** issue que só pode começar depois de outra pronta ganha *blocked by* (comando em [CONTRIBUTING.md](CONTRIBUTING.md#dependências-entre-issues)), além do "Depende de: #N" no texto. Só dependência real: "de preferência antes" não bloqueia, e ligar ao épico (sub-issue) não substitui o *blocked by*. **Issue bloqueada não começa:** diga o que falta e pare.
 - **Épicos:** como se organizam (épico de entrega × épico de tema, um pai por issue, etiqueta `epic: <name>`) está em [CONTRIBUTING.md, "Épicos"](CONTRIBUTING.md#épicos).
 - **Não sabe o número da issue:** pergunte ao usuário. Se não houver issue, ofereça criar uma.

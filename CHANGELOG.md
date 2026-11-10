@@ -47,6 +47,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   - **documentação:** glossário e diagrama de estados em [docs/architecture/domain.md](docs/architecture/domain.md).
 
 ### Publicação e documentação
+- **Como rodar o KanjiLens está num lugar só, o [docs/RUNNING.md](docs/RUNNING.md)** (#61):
+  - **o que cobre:** pré-requisitos (uv e Node 26), instalação, subir a API e o frontend, conferir com `curl`, preparar o KanjiVG e abrir pelo celular na rede local, com o firewall;
+  - **problemas comuns:** Node na versão errada, porta ocupada e, quando o celular não abre a página, como saber se o problema é o firewall, a rede (rede de convidados, isolamento de clientes) ou o celular (VPN, DNS privado), com o `adb reverse` como contorno;
+  - a instalação no notebook da escola entra depois (#62, #63).
+- **O andamento das issues aparece no Project** ([CONTRIBUTING.md, "Status no Project"](CONTRIBUTING.md#status-no-project)): a issue passa para `In progress` quando alguém a pega, para `In review` quando o PR abre, e fecha sozinha em `Done`; a etapa de cada item do escopo do MVP aponta para a issue dele ([ARCHITECTURE.md, seção 9](docs/ARCHITECTURE.md#9-escopo-do-mvp)).
 - **O modelo vai aprender com o ETL9G e reconhecer, na primeira versão, os 1.026 kanji ensinados no ensino fundamental japonês** ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md); pesquisa em [docs/spikes/dataset-selection.md](docs/spikes/dataset-selection.md), #11):
   - **classes:** primeiro os 240 kanji da 1ª e da 2ª série, para validar o treino; depois os 1.026; mais tarde, os 2.106 kanji do Jōyō que o ETL9G tem;
   - **licença do ETL:** o uso é livre, sem cadastro, mas o dataset só pode ser obtido pelo site oficial. Por isso nenhuma imagem dele fica no repositório, e cada máquina baixa do site. A citação exigida está nos READMEs;
