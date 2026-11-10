@@ -2,7 +2,7 @@
 
 As fontes de UI/UX do projeto e os padrões que saem delas. Vale para quem propõe, avalia, revisa ou implementa qualquer parte da tela. O jeito de escrever o Angular está na skill `angular-conventions`.
 
-**Estado:** a tela de reconhecimento existe: escolha do modo, canvas, "Reconhecer" e a lista de candidatos com a avaliação da ordem. Os padrões marcados como *no código* foram conferidos no navegador, em vários tamanhos de tela, mas **ainda não num celular de verdade**. Os textos citados aqui são os de português, que passam pelo i18n ([ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md)).
+**Estado:** a tela de reconhecimento existe: escolha do modo, canvas, "Reconhecer" e a lista de candidatos com a avaliação da ordem. Os padrões marcados como *no código* foram conferidos no navegador, em vários tamanhos de tela, e num celular de verdade, com o dedo, em 2026-11-10 (#59). **Ainda falta testar com leitor de tela** (TalkBack ou VoiceOver). Os textos citados aqui são os de português, que passam pelo i18n ([ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md)).
 
 ## Referências
 
@@ -55,7 +55,7 @@ Desviar de um padrão pede motivo escrito, e ADR se mudar uma decisão. *Julgame
 - **Candidatos como lista,** do mais provável ao menos, com o kanji grande (`lang="ja"`) e a confiança em porcentagem ("81%", nunca "softmax 0.81"; Nielsen 2). No modo `ordered`, cada um é um botão (`aria-pressed`) de 3rem: o aluno toca no kanji que quis escrever, e a avaliação da ordem é a daquele kanji. O mais provável já começa escolhido. No `unordered`, ainda não há ação ao tocar (vem na #35), então os candidatos são só texto, sem botão que não faz nada (Nielsen 4; WCAG 2.1.1 e 2.5.8). *Julgamento próprio* sobre o toque escolher o kanji (#59).
 - **Avaliação da ordem em texto:** "Ordem dos traços certa para 日." ou a lista do que corrigir ("3º traço: deveria ser o 4º.", "2º traço: direção invertida."), numa região `role="status"` que sempre existe na página, para ser anunciada (WCAG 3.3.1 e 4.1.3). Traço juntado ou dividido e número de traços diferente aparecem como observação, não como erro. Sem avaliação, a tela diz o porquê (#59).
 - **Atribuição do KanjiVG** no rodapé, como pede a licença (CC BY-SA 3.0; ADR 0016) (#59).
-- **Celular deitado ou pequeno em pé (320×568):** o resultado fica abaixo da dobra e a página rola para mostrá-lo; a linha "Mais provável" continua à vista. *Julgamento próprio*, a validar no celular (#59).
+- **Celular deitado ou pequeno em pé (320×568):** o resultado fica abaixo da dobra e a página rola para mostrá-lo; a linha "Mais provável" continua à vista. *Julgamento próprio*, aprovado no teste no celular (#59).
 
 **A fazer:**
 - **Destaque no desenho** dos traços fora de ordem, como complemento do texto, nunca no lugar dele (#70).
