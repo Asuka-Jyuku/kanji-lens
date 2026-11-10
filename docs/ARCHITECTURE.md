@@ -1,105 +1,56 @@
 # KanjiLens: Arquitetura
 
-Documento de design do KanjiLens. Registra a arquitetura atual, as decisões já tomadas e as que ainda estão em aberto. O resumo do projeto está no [README](../README.pt-BR.md); o porquê de cada decisão está nas [ADRs](adr/README.md).
-
-> Este documento é vivo. Seções marcadas como **em aberto** ainda não têm decisão. Quando uma for fechada, vira ADR e este documento passa a apontar para ela.
-
----
+Como o KanjiLens é montado hoje e o que ainda está em aberto. O resumo do projeto está no [README](../README.pt-BR.md). O porquê de cada decisão está nas [ADRs](adr/README.md).
 
 ## 1. Visão geral
 
-O KanjiLens reconhece kanjis manuscritos. O usuário escolhe se a ordem dos traços deve importar e desenha um kanji num canvas. A aplicação envia os traços e o modo escolhido para um servidor que executa um modelo de Deep Learning, e o servidor devolve uma lista de possíveis kanjis.
+A pessoa escolhe se a ordem dos traços importa, desenha um kanji no canvas e recebe uma lista de kanjis prováveis, do mais para o menos provável. Não precisa acertar sempre: basta o kanji certo aparecer entre os primeiros.
 
-O sistema não precisa acertar o caractere com 100% de precisão. Ele apresenta as principais possibilidades, ordenadas por confiança, para que o usuário identifique qual caractere pretendia escrever.
-
-### Objetivos
-
-- Reconhecer kanjis manuscritos com um modelo compacto (CNN 2D) que não depende da ordem dos traços, em dois modos ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)):
-  - **ordem dos traços não importa** (`unordered`): só o reconhecimento;
-  - **ordem dos traços importa** (`ordered`): o reconhecimento mais a avaliação da ordem e da direção dos traços contra a referência do KanjiVG, dizendo quais traços estão fora de ordem.
-- Disponibilizar uma interface de desenho manual, acessível pelo celular.
-- Atender 3–5 alunos enviando desenhos numa janela curta. 10 clientes simultâneos são o cenário de estresse ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)).
-- Processar as solicitações de forma assíncrona.
-- Rodar toda a infraestrutura localmente, sem domínio nem hospedagem externa. O servidor é o notebook da escola, com inferência na CPU; o treino é feito numa máquina mais potente.
-
----
+- **Dois modos** ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)):
+  - `unordered` (padrão): só o reconhecimento;
+  - `ordered`: o reconhecimento mais a comparação da ordem e da direção dos traços com o KanjiVG.
+- **Um modelo só nos dois modos:** uma CNN 2D compacta, que olha a imagem final e não depende da ordem.
+- **Carga:** 3 a 5 alunos mandando desenhos quase juntos; 10 clientes é o teste de estresse ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)).
+- **Tudo local:** o servidor é o notebook da escola, sem nuvem, com inferência na CPU. O treino roda numa máquina mais forte.
 
 ## 2. Componentes
 
-A aplicação tem três partes, com responsabilidades separadas, todas neste repositório ([ADR 0002](adr/0002-monorepo-for-frontend-backend-and-ml.md)):
+Três partes no mesmo repositório ([ADR 0002](adr/0002-monorepo-for-frontend-backend-and-ml.md)):
 
-| Parte | Pasta | Responsabilidade |
+| Parte | Pasta | Faz |
 |---|---|---|
-| Frontend | `frontend/` | Interação com o usuário: canvas, envio e exibição dos resultados |
-| Backend | `backend/` | Recebimento das requisições, gerenciamento dos jobs e notificação |
-| Machine Learning | `ml/` | Dataset, pré-processamento, treino e avaliação; o modelo que o backend carrega |
+| Frontend | `frontend/` | Canvas, escolha do modo, envio e resultado |
+| Backend | `backend/` | Recebe o desenho, cuida dos jobs e avisa o resultado |
+| ML | `ml/` | Pré-processamento, avaliação da ordem, e depois dataset, treino e modelo |
 
 ```mermaid
 flowchart LR
-    clients["Celulares / desktops<br/>(mesmo Wi-Fi)"] --> fe["Frontend Angular<br/>(build estático)"]
-    fe -- "REST: POST /api/recognitions" --> api["FastAPI"]
+    clients["Celulares / computadores<br/>(mesmo Wi-Fi)"] --> fe["Frontend Angular"]
+    fe -- "POST /api/recognitions" --> api["FastAPI"]
     api --> queue[["Fila de jobs"]]
     queue --> inf["Processo de inferência"]
-    inf --> model["CNN 2D<br/>+ avaliação da ordem (KanjiVG, no ordered)"]
+    inf --> model["CNN 2D<br/>+ avaliação da ordem (ordered)"]
     inf --> store[("Resultados dos jobs")]
     store -- "SSE" --> fe
 ```
 
 ### 2.1 Frontend
 
-**Stack:** Angular, TypeScript, HTML, CSS, HTML Canvas API ([ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md)). As referências e os padrões de UI/UX estão em [UI-UX.md](UI-UX.md). A interface é em português, com o japonês depois, e todo texto passa pelo i18n desde a primeira tela ([ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md)).
-
-Funcionalidades:
-
-- Escolha do modo antes de reconhecer: a ordem dos traços importa ou não. O modo vai em cada solicitação. O padrão é **"não importa"** ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
-- Área de desenho com suporte a mouse e touch, que guarda o desenho como **lista de traços**, cada um com a sua sequência de pontos (X, Y). A separação e a ordem dos traços são preservadas ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
-- No modo `ordered`, a avaliação da ordem junto dos candidatos: se está correta e quais traços estão fora de ordem ou na direção errada.
-- Botão para limpar o canvas.
-- Botão para enviar o desenho.
-- Indicador de processamento.
-- Lista dos kanjis previstos, com a confiança de cada um.
-- Verbete do kanji escolhido: tocar num candidato abre o verbete num dicionário externo, em nova aba. O padrão é o **Takoboto**, e o usuário pode escolher outro dicionário numa configuração da interface, guardada no aparelho ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)). O dicionário próprio fica para depois (seção 10).
-
-```text
-┌──────────────────────────────┐
-│          KanjiLens           │
-│       Desenhe um kanji       │
-│                              │
-│ Ordem dos traços:            │
-│   [ importa | não importa ]  │
-│   ┌──────────────────────┐   │
-│   │                      │   │
-│   │          日          │   │
-│   │                      │   │
-│   └──────────────────────┘   │
-│                              │
-│   [Limpar]     [Reconhecer]  │
-│                              │
-│   Candidatos                 │
-│   日  81%                    │
-│   目  12%                    │
-│   白   4%                    │
-└──────────────────────────────┘
-```
+Angular e TypeScript ([ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md), [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)), numa tela só: a escolha do modo, o canvas (mouse, toque ou caneta, com "Desfazer traço" e "Limpar"), "Reconhecer" com o estado do job e, depois, a lista de candidatos ([#59](https://github.com/Asuka-Jyuku/kanji-lens/issues/59)) com link para um dicionário externo ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)). Os textos são em português, sempre pelo i18n ([ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md)). Os padrões de tela estão no [UI-UX.md](UI-UX.md).
 
 ### 2.2 Backend
 
-**Stack:** Python, FastAPI, REST e SSE ([ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md), [ADR 0020](adr/0020-result-notification-by-server-sent-events.md)).
+Python e FastAPI, com REST e SSE ([ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md), [ADR 0020](adr/0020-result-notification-by-server-sent-events.md)). A requisição não fica aberta enquanto o modelo roda ([ADR 0005](adr/0005-asynchronous-recognition-with-queue-and-workers.md)):
 
-O processamento é assíncrono: o servidor não mantém a requisição HTTP original aberta enquanto o modelo executa a inferência ([ADR 0005](adr/0005-asynchronous-recognition-with-queue-and-workers.md)).
+1. O frontend manda os traços e o modo.
+2. A API cria um job, põe na fila e responde na hora com o `job_id`.
+3. O processo de inferência pega o job, reconhece e, no `ordered`, avalia a ordem.
+4. O resultado fica em memória por 5 minutos.
+5. Cada mudança de estado vai para o frontend por SSE.
 
-Fluxo:
+Hoje o reconhecedor e a avaliação da ordem do backend ainda são falsos (`placeholder.py`): o reconhecedor sempre responde 日, 目 e 白. O modelo e o KanjiVG entram na [#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48).
 
-1. O frontend envia os traços e o modo (`stroke_order_mode`).
-2. O FastAPI recebe a solicitação.
-3. O backend gera um `job_id`.
-4. O job entra na fila de processamento.
-5. O backend responde imediatamente com a confirmação de recebimento.
-6. O processo de inferência pega o job e executa a inferência; num job `ordered`, também avalia a ordem dos traços (seção 4).
-7. O resultado é armazenado em memória até expirar.
-8. O backend avisa o frontend de cada mudança de estado do job por SSE (seção 5.2).
-
-Requisição (`POST /api/recognitions`):
+**Requisição** (`POST /api/recognitions`):
 
 ```json
 {
@@ -112,23 +63,20 @@ Requisição (`POST /api/recognitions`):
 }
 ```
 
-> Formato da [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md):
-> - **traços:** cada traço é uma lista de pontos `[x, y, t]`, na ordem em que foram desenhados;
-> - **coordenadas:** `x` e `y` em pixels CSS a partir do canto superior esquerdo do canvas, como desenhados (a normalização é do `kanjilens_ml`);
-> - **tempo:** `t` em milissegundos desde o primeiro ponto, inteiro e não decrescente;
-> - **limites iniciais**, conferidos no adapter HTTP: até 40 traços, 1.000 pontos por traço, 10.000 pontos no total, coordenadas dentro do canvas com 10% de folga e `canvas` entre 64 e 4.096 px por lado;
-> - **modo:** `stroke_order_mode` aceita `ordered` ou `unordered`; outro valor é rejeitado.
+Formato da [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md):
+- cada traço é uma lista de pontos `[x, y, t]`, na ordem do desenho;
+- `x` e `y` em pixels CSS a partir do canto superior esquerdo, como desenhados;
+- `t` em milissegundos desde o primeiro ponto, inteiro e nunca decrescente;
+- **limites:** até 40 traços, 1.000 pontos por traço e 10.000 no total; pontos até 10% fora do canvas; canvas de 64 a 4.096 px por lado;
+- `stroke_order_mode` é `ordered` ou `unordered`.
 
-Resposta inicial (`202 Accepted`):
+**Resposta inicial** (`202 Accepted`):
 
 ```json
-{
-  "job_id": "abc123",
-  "status": "queued"
-}
+{ "job_id": "abc123", "status": "queued" }
 ```
 
-Resposta após o processamento:
+**Job pronto:**
 
 ```json
 {
@@ -143,18 +91,18 @@ Resposta após o processamento:
 }
 ```
 
-> As confianças são probabilidades da saída Softmax. Por isso a soma das previsões top-K nunca passa de 1.
+As confianças saem da Softmax, então a soma nunca passa de 1.
 
-O `GET /api/recognitions/{id}` e cada evento do SSE (seção 5.2) devolvem **esse mesmo formato**, em qualquer estado. **Campo que não se aplica não vem, nem como `null`:**
-- **`queued` e `processing`:** só `job_id`, `status` e `stroke_order_mode`, porque ainda não há `predictions`;
-- **`unordered`:** os candidatos não têm `stroke_order`;
-- **`failed`:** sem `predictions`, e com `failure`, o código da falha que o frontend traduz (hoje só `inference_failed`).
+O `GET /api/recognitions/{id}` e cada evento do SSE devolvem **esse mesmo formato**, em qualquer estado. Campo que não se aplica não vem, nem como `null`:
+- `queued` e `processing`: só `job_id`, `status` e `stroke_order_mode`;
+- `unordered`: os candidatos não têm `stroke_order`;
+- `failed`: sem `predictions` e com `failure` (hoje só `inference_failed`).
 
 ```json
 { "job_id": "abc123", "status": "failed", "stroke_order_mode": "ordered", "failure": "inference_failed" }
 ```
 
-No modo `ordered`, cada candidato traz a avaliação da ordem do desenho contra a referência dele. A avaliação só anota: não muda o ranking ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
+**No `ordered`**, cada candidato traz a avaliação da ordem. Ela só anota; não muda a ordem dos candidatos:
 
 ```json
 {
@@ -185,509 +133,243 @@ No modo `ordered`, cada candidato traz a avaliação da ordem do desenho contra 
 }
 ```
 
-> - **Tipos de problema (`type`):**
->   - `order`;
->   - `direction`;
->   - `joined`, com `drawn_stroke` e `expected_strokes`: as posições vizinhas da referência que o traço une;
->   - `broken`, com `drawn_strokes` (os pedaços vizinhos) e `expected_stroke`.
-> - **Numeração:** as posições começam em 1, como na tela.
-> - **`correct`:** olha só ordem e direção; traços unidos ou quebrados aparecem como observação.
-> - **Sem avaliação:** `not_evaluated` quando a quantidade de traços difere em mais de 2 (`stroke_count_mismatch`) ou o kanji não está no KanjiVG (`reference_missing`).
+- **Tipos de problema:** `order`, `direction`, `joined` (um traço desenhado que une traços vizinhos da referência: `drawn_stroke` e `expected_strokes`) e `broken` (um traço da referência desenhado em pedaços: `drawn_strokes` e `expected_stroke`).
+- **Numeração** a partir de 1, como na tela.
+- **`correct`** olha só ordem e direção. Traço unido ou quebrado é só observação.
+- **`not_evaluated`:** a quantidade de traços difere em mais de 2 (`stroke_count_mismatch`) ou o kanji não está no KanjiVG (`reference_missing`).
 
 ### 2.3 Machine Learning
 
-**Stack:** Python e PyTorch para treino e avaliação, NumPy, OpenCV (opcional, para pré-processamento) ([ADR 0006](adr/0006-cnn-with-pytorch.md)). O runtime de inferência ainda está em aberto: PyTorch CPU, OpenVINO CPU ou ONNX Runtime CPU (seção 4.2).
+Python, PyTorch para treino e avaliação, NumPy e SciPy ([ADR 0006](adr/0006-cnn-with-pytorch.md)). O runtime de inferência ainda está em aberto (seção 4.2).
 
-Os dois modos usam **um único modelo**, a CNN 2D compacta, que não depende da ordem dos traços. O modo `ordered` acrescenta uma **avaliação da ordem contra uma referência**, sem rede neural ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md); a pesquisa está no [spike de modelos, seção 5.3](spikes/model-and-runtime-evaluation.md#53-como-o-modo-ordered-costuma-ser-feito-pesquisa-de-2026-11-08)).
+- **Reconhecimento (os dois modos):** uma CNN 2D compacta, que recebe a imagem do desenho em tons de cinza (64, 96 ou 128 px, a comparar). Espera o dataset ([#13](https://github.com/Asuka-Jyuku/kanji-lens/issues/13), [#15](https://github.com/Asuka-Jyuku/kanji-lens/issues/15)).
+- **Avaliação da ordem (só `ordered`):** pareia os traços desenhados com os do KanjiVG pelo algoritmo húngaro, aceitando até 2 traços unidos ou quebrados, e confere a direção ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)). Está pronta e medida em desenhos sintéticos ([MODEL.md](MODEL.md#avaliação-da-ordem-dos-traços)); o ajuste fino espera desenhos reais ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29)).
 
-| Parte | O que é | Entrada | Alternativas / em aberto |
-|---|---|---|---|
-| Reconhecimento (os dois modos) | CNN 2D customizada compacta | Imagem rasterizada final, em tons de cinza; resoluções a comparar: 64×64, 96×96 e 128×128 | Comparadores: MobileNetV3-Small, ResNet-18, HOG + SVM |
-| Avaliação da ordem (só `ordered`) | Correspondência bipartite (algoritmo húngaro) entre os traços desenhados e os do KanjiVG, com hipóteses de traços unidos e quebrados (até 2) e checagem de direção, para cada candidato ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md); [spike](spikes/stroke-order-evaluation.md)) | Traços normalizados e reamostrados, e a referência do KanjiVG | Implementada, com parâmetros medidos em desenhos sintéticos ([docs/MODEL.md](MODEL.md#avaliação-da-ordem-dos-traços)); margem de direção, comprimento mínimo e abstenção por custo alto se ajustam com desenhos reais (#29, #66) |
-
-Ponto de partida da CNN (não fechado; tamanho e profundidade saem dos benchmarks):
+Ponto de partida da CNN (o tamanho sai dos benchmarks):
 
 ```text
 Imagem 1×H×W → 3–4 × [Conv2D → Norm → ReLU/SiLU → downsampling]
              → Global Average Pooling → Linear → Softmax → Top-K
 ```
 
-Pipeline de reconhecimento:
+**KanjiVG:** a referência de ordem e direção, numa versão fixada com checksum e gerada fora do git ([MODEL.md](MODEL.md#dados-de-referência-kanjivg)). A licença é CC BY-SA 3.0 e pede atribuição, inclusive na tela.
 
-```text
-Traços do canvas → Validação → Pré-processamento compartilhado → rasterização → CNN 2D → Softmax → Top-K
-                                          │
-                                          └─ (ordered) normalização dos traços ─▶ avaliação da ordem
-                                                         contra o KanjiVG dos candidatos ─▶ resultado traço a traço
-```
-
-**Dados de referência:** o KanjiVG (vetores, ordem e direção de cada traço). Ele fica numa versão fixada (`r20260714`, com checksum), e um script de preparação (`ml/scripts/prepare_kanjivg.py`) gera os traços de referência em `ml/artifacts/kanjivg/`, fora do git, porque a aplicação não sai para a rede ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md); [docs/MODEL.md](MODEL.md#dados-de-referência-kanjivg)). A licença, **CC BY-SA 3.0** (confirmada na fonte), exige atribuição, inclusive na interface, e vale também para os dados derivados, à parte da licença MIT do código.
-
-O modelo retorna as K classes mais prováveis, e não apenas a de maior probabilidade. Os dois modos compartilham:
-- o contrato da API;
-- a validação;
-- o modelo;
-- o módulo de pré-processamento;
-- a fila e os workers;
-- o formato da resposta.
-
-O `ordered` só acrescenta a avaliação.
-
-**Projetos de referência:** o [spike, seção 11.1](spikes/model-and-runtime-evaluation.md#111-projetos-de-referência-no-github) lista repositórios públicos para estudo, cada um com as suas limitações e a sua licença:
-- `mcyph/cnn_chinese_hw`: traços online;
-- `dariyooo/DaKanji-Single-Kanji-Recognition`: CNN compacta por imagem;
-- `ATShah03/KanjiRecognizer`: ETL9 + CNN;
-- `asdfjkl/kanjicanvas`: baseline geométrico.
-
-Esses projetos **não são dependências aprovadas**. Copiar código, pesos ou dados deles passa pela licença de cada um (há LGPL entre eles; o KanjiLens é MIT) e por uma ADR.
-
----
+Os projetos públicos usados como estudo estão no [spike, seção 11.1](spikes/model-and-runtime-evaluation.md#111-projetos-de-referência-no-github). Copiar algo deles passa pela licença de cada um e por uma ADR.
 
 ## 3. Camadas: Clean Architecture e ports and adapters
 
-Backend e frontend seguem Clean Architecture com ports and adapters (hexagonal), em camadas ([ADR 0004](adr/0004-clean-and-hexagonal-architecture.md)). **As dependências apontam para dentro**: uma camada interna nunca importa uma externa.
+Backend e frontend usam camadas com ports and adapters ([ADR 0004](adr/0004-clean-and-hexagonal-architecture.md)). A regra é uma só: **as dependências apontam para dentro**. O domínio não conhece framework; só os adapters tocam em FastAPI, PyTorch, `HttpClient` ou nas APIs do navegador. Um teste de arquitetura em cada parte quebra se um import fura essa regra.
 
-```mermaid
-flowchart TB
-    subgraph adapters["Adapters (código de framework)"]
-        direction LR
-        inbound["Inbound<br/>rotas HTTP, SSE, consumidor da fila"]
-        outbound["Outbound<br/>recognizer (PyTorch), avaliador da ordem (KanjiVG),<br/>fila, armazenamento dos jobs, notifier"]
-    end
-    subgraph application["Application"]
-        usecases["Use cases<br/>SubmitRecognition, GetRecognition,<br/>ProcessRecognition"]
-        ports["Ports<br/>KanjiRecognizer, StrokeOrderEvaluator,<br/>JobQueue, JobRepository, ResultNotifier, Clock"]
-    end
-    subgraph domain["Domain"]
-        entities["RecognitionJob, JobStatus, Prediction,<br/>Drawing, StrokeOrderMode, StrokeOrderEvaluation"]
-    end
-    bootstrap["Bootstrap (composition root)"]
-
-    inbound --> usecases
-    usecases --> ports
-    usecases --> entities
-    outbound -. implementa .-> ports
-    bootstrap --> inbound & outbound & usecases
-```
+Port novo só entra quando há uma segunda implementação de verdade (os fakes de teste não contam).
 
 ### 3.1 Backend (`backend/src/kanjilens/`)
 
-| Camada | O que contém | Pode importar |
-|---|---|---|
-| `domain/` | Entidades e value objects (`RecognitionJob`, `JobStatus`, `JobFailure`, `Prediction`, `RecognitionResult`, `Drawing` feito de `Stroke`s e `Point`s, `StrokeOrderMode`, `StrokeOrderEvaluation`) e as regras deles, em Python puro. Glossário, estados do job e regras em [architecture/domain.md](architecture/domain.md) | só a biblioteca padrão |
-| `application/use_cases/` | Um use case por ação (`SubmitRecognition`, `GetRecognition`, `ProcessRecognition`) | `domain`, `application/ports` |
-| `application/ports/` | As interfaces de que os use cases precisam (`KanjiRecognizer`, `StrokeOrderEvaluator`, `JobQueue`, `JobRepository`, `ResultNotifier`, `Clock`) | `domain` |
-| `adapters/inbound/` | Rotas do FastAPI e schemas Pydantic de request/response, o limite de tamanho do corpo, o mapeamento dos erros para `{"error": "<código>"}`, o endpoint SSE, o consumidor da fila que chama `ProcessRecognition` | `application`, `domain`, FastAPI |
-| `adapters/outbound/` | Implementações dos ports: recognizer em PyTorch (rodando no processo de inferência), avaliador da ordem com o KanjiVG, `asyncio.Queue`, armazenamento dos jobs em memória, notifier SSE, relógio do sistema | `application/ports`, `domain`, `kanjilens_ml`, PyTorch |
-| `bootstrap/` | Composition root: monta os adapters, injeta nos use cases e cria o app FastAPI | tudo |
-
-A fila e a notificação são **adapters atrás de um port** ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md), [ADR 0020](adr/0020-result-notification-by-server-sent-events.md)): trocar a fila em memória por uma persistente, ou o SSE por outro canal, substitui um adapter e a ligação em `bootstrap/`, sem mexer nos use cases.
+| Camada | O que tem |
+|---|---|
+| `domain/` | `RecognitionJob` e os estados, `Drawing`, `Prediction`, `StrokeOrderMode` e a avaliação da ordem, em Python puro ([architecture/domain.md](architecture/domain.md)) |
+| `application/` | Os use cases (`SubmitRecognition`, `GetRecognition`, `ProcessRecognition`) e os ports de que eles precisam: `KanjiRecognizer`, `StrokeOrderEvaluator`, `JobQueue`, `JobRepository`, `ResultNotifier`. O horário entra como uma função `now` |
+| `adapters/inbound/` | As rotas HTTP e os schemas Pydantic, o limite de tamanho do corpo, os erros `{"error": "<código>"}`, o SSE e o consumidor da fila |
+| `adapters/outbound/` | O processo de inferência, o recognizer e o avaliador da ordem, a fila (`asyncio.Queue`), os jobs em memória e o notifier do SSE |
+| `bootstrap/` | Monta tudo e cria o app FastAPI, com o `/api/health` |
 
 ### 3.2 Frontend (`frontend/src/app/`)
 
-| Camada | O que contém | Pode importar |
-|---|---|---|
-| `domain/` | Modelos (`Drawing` feito de traços e a captura deles, com os mesmos limites da API, `StrokeOrderMode`, `RecognitionRequest` (o corpo do `POST`), `DrawingSample` (o desenho exportado com o gabarito), `Prediction`, `StrokeOrderEvaluation`, `RecognitionJob`) e funções puras | nada do Angular |
-| `application/` | Use cases / facades (`DrawingSession`, o desenho em andamento; `StrokeOrderModeSelection`, o modo escolhido para o próximo reconhecimento; `ExportDrawing`, a exportação do desenho, só no desenvolvimento; `RecognizeDrawing`) e ports como classes abstratas usadas como token de DI (`FileDownload`, `RecognitionGateway`, `ResultStream`) | `domain`, e só o `@angular/core` (signals e DI; [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
-| `infrastructure/` | Implementações dos ports: `BrowserFileDownload` (download por link de Blob, no aparelho), `HttpRecognitionGateway` (`HttpClient`), `SseResultStream` (`EventSource`), com a leitura do JSON da API num lugar só (`recognition-api.ts`) | `application`, `domain`, Angular |
-| `presentation/` | Componentes, páginas e rotas: o seletor de modo, o canvas, a exportação do desenho (só no desenvolvimento) e a tela de resultados | `application`, `domain`, Angular |
+| Camada | O que tem |
+|---|---|
+| `domain/` | O desenho e os limites dele, o modo, o corpo do `POST` (`RecognitionRequest`), o job e o estado da tela, em TypeScript puro |
+| `application/` | `DrawingSession` (o desenho e o modo escolhido, com `mode` e `chooseMode()`), o use case `RecognizeDrawing` e os ports `RecognitionGateway` e `ResultStream` |
+| `infrastructure/` | `HttpRecognitionGateway` (`HttpClient`) e `SseResultStream` (`EventSource`), com a leitura do JSON da API num lugar só (`recognition-api.ts`) |
+| `presentation/` | Os componentes: escolha do modo, canvas, "Reconhecer" com o estado, e a exportação do desenho (só no desenvolvimento) |
 
-Os adapters são ligados aos ports nos providers de `app.config.ts`. Componente nunca injeta `HttpClient`.
+Os ports são ligados aos adapters em `app.config.ts`. Componente nunca injeta `HttpClient`.
 
-**Ferramentas só de desenvolvimento** (hoje, a exportação do desenho para os conjuntos de teste; [#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66), [docs/MODEL.md](MODEL.md#desenhos-do-canvas)) ficam listadas em `app.dev-tools.development.ts`, com os providers delas. O build de desenvolvimento (`ng serve`, testes, `extract-i18n`) usa esse arquivo; o de produção usa o `app.dev-tools.ts`, vazio, pelo `fileReplacements` do `angular.json`. Assim o código delas nem entra no bundle de produção, e o CI confere isso depois do build (`npm run check:production-bundle`).
+**Ferramenta só de desenvolvimento:** a exportação do desenho em JSON ([MODEL.md](MODEL.md#desenhos-do-canvas)) fica inteira em `presentation/drawing-export/`. O `App` mostra o `DEV_TOOL` de `app.dev-tools.ts`, que o `fileReplacements` do `angular.json` troca por `app.dev-tools.development.ts` só no build de desenvolvimento. No de produção ela nem entra no bundle, e o CI confere (`npm run check:production-bundle`).
 
 ### 3.3 ML (`ml/src/kanjilens_ml/`)
 
-O código de ML é uma biblioteca usada em dois lugares: os scripts de treino em `ml/` e os adapters outbound do backend (o recognizer e o avaliador da ordem). **O pré-processamento existe uma vez só**, em `kanjilens_ml/preprocessing/`, e os dois lados o importam. Ele gera, a partir da mesma lista de traços, a imagem que a CNN recebe e os traços normalizados que a avaliação da ordem usa. `kanjilens_ml/models/` tem a CNN 2D. A avaliação da ordem é um módulo puro, sem PyTorch (`kanjilens_ml/stroke_order/`), que compara os traços com o KanjiVG. Duas implementações paralelas divergiriam, e o modelo erraria calado em produção (*train/serve skew*).
+É uma biblioteca, usada pelos scripts de `ml/` e pelos adapters do backend.
+- `preprocessing/`: **o pré-processamento existe uma vez só**, e treino e inferência importam o mesmo módulo. Hoje tem os traços normalizados; a imagem da CNN entra na [#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14). Duas cópias que divergem fazem o modelo errar calado em produção (*train/serve skew*).
+- `stroke_order/`: a avaliação da ordem, sem PyTorch.
 
----
+As pastas do modelo, do treino e da avaliação nascem com o código delas.
 
 ## 4. Processamento assíncrono e concorrência
 
-Para suportar vários alunos ao mesmo tempo, a inferência é separada do recebimento das requisições HTTP ([ADR 0005](adr/0005-asynchronous-recognition-with-queue-and-workers.md)).
-
 ```mermaid
 flowchart TB
-    api["FastAPI"] --> queue[["Fila de jobs"]]
-    queue --> inf["Processo de inferência<br/>CNN 2D + referências do KanjiVG carregadas uma vez<br/>1 inferência ativa por vez (inicial)"]
-    inf --> results[("Resultados dos jobs")]
+    api["FastAPI"] --> queue[["Fila de jobs (até 16)"]]
+    queue --> inf["Processo de inferência<br/>modelo e KanjiVG carregados uma vez<br/>1 job por vez"]
+    inf --> results[("Resultados dos jobs, 5 min")]
 ```
 
 ### 4.1 Fila de jobs
 
-Decidida na [ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md) ([spike](spikes/queue-and-notification.md)):
-
-- **Fila:** `asyncio.Queue` **limitada** (tamanho inicial 16) no processo da API. Cheia, o `POST /api/recognitions` responde `503` com `Retry-After: 5` (valor inicial, a rever com o tempo real do modelo) e o código `queue_full`.
-- **Consumo:** uma tarefa consumidora pega **um job por vez** e o executa no **processo de inferência**: um `ProcessPoolExecutor(max_workers=1)` com contexto `spawn`, cujo `initializer` carrega o modelo e o KanjiVG uma vez.
-- **Estado dos jobs:** em memória. Os resultados (e os traços) expiram 5 minutos depois de terminados, e o Uvicorn roda com um processo só.
-- **Por que não Redis, RQ ou Celery:**
-  - o Redis não tem versão nativa oficial no Windows;
-  - o worker padrão do RQ depende de `fork()`;
-  - o Celery não suporta Windows.
-
-  Fila persistente só volta com ADR nova.
+Decidida na [ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md):
+- **Fila:** `asyncio.Queue` com até 16 jobs. Cheia, a API responde `503 queue_full` com `Retry-After: 5`.
+- **Consumo:** um job por vez, num processo separado (`ProcessPoolExecutor(max_workers=1)`, contexto `spawn`). O modelo e o KanjiVG carregam uma vez, quando o processo nasce. Se ele cair, o job falha e o processo é recriado.
+- **Jobs em memória**, apagados 5 minutos depois do fim. Por isso o Uvicorn roda com **um processo só** (sem `--workers`).
+- **Sem Redis, RQ ou Celery:** nenhum deles roda bem no Windows do notebook. Fila persistente só com ADR nova.
 
 ### 4.2 Estratégia de inferência
 
-O servidor é o notebook da escola (seção 6.3), com inferência **CPU-first** ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)). A configuração inicial, a validar por benchmark:
-
-1. **Um processo de inferência separado do event loop do FastAPI.** Ele carrega **o modelo e as referências do KanjiVG uma vez**. Nos jobs `ordered`, ele também roda a avaliação da ordem.
-2. **Uma fila só** para `ordered` e `unordered`, com **uma inferência ativa por vez** e as threads do runtime controladas.
-3. **Uma segunda execução simultânea** (no mesmo processo ou em dois processos de worker) só depois de medir a espera na fila e a latência p95. Dois processos carregam duas cópias do modelo na RAM.
-4. **Runtime:** o PyTorch CPU é a referência. Entram na comparação o OpenVINO CPU (prioritário no i7 de 11ª geração) e o ONNX Runtime CPU. INT8 só depois do FP32, e só se não piorar Top-1/Top-5.
-
-**Usuários conectados não são inferências simultâneas.** A meta é aceitar 3–5 envios próximos sem perder jobs, mantendo a API e o SSE responsivos. A fila pode serializar parte do trabalho. O limite numérico de latência só é fixado depois da primeira rodada de medições no notebook.
-
-### 4.3 Pontos de atenção
-
-- **A inferência bloqueia o event loop.** A inferência é CPU-bound. Se o worker rodar como corrotina no mesmo event loop do FastAPI, enquanto ele executa a API para de responder, inclusive as conexões SSE. Por isso a inferência roda no processo de inferência, por `run_in_executor` ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md)).
-- **O estado em memória não é compartilhado entre processos.** Com `asyncio.Queue`, a fila e os resultados vivem na memória de um processo. Se o Uvicorn subir com `--workers > 1`, cada processo terá sua própria fila, e o cliente pode consultar ou escutar um processo que não conhece o seu `job_id`. Por isso o Uvicorn roda com um processo só. Precisar de mais de um processo de API seria o motivo para rever a fila (ADR nova).
-- **Threads do runtime.** Por padrão, o PyTorch usa todos os núcleos em cada inferência, e o notebook tem 4 núcleos físicos. Configure as threads explicitamente (`torch.set_num_threads` ou o equivalente do runtime escolhido). Duas execuções com quatro threads cada disputam os mesmos núcleos, e mais execuções simultâneas não garantem mais throughput.
-- **O notebook divide a CPU com tudo:** frontend, API, fila e o modelo. Meça o consumo do conjunto, e não só o do modelo. Em carga longa, o notebook pode sofrer throttling térmico.
-
----
+Inferência na CPU do notebook ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)). Começa simples e só muda depois de medir:
+- **Fora do event loop:** inferência no mesmo processo da API trava tudo, inclusive o SSE.
+- **Uma inferência por vez,** com as threads do runtime fixadas (`torch.set_num_threads`): o notebook tem 4 núcleos e divide a CPU com a API e o frontend. Uma segunda inferência simultânea só se a espera na fila pedir; ela custa outra cópia do modelo na RAM.
+- **Runtime:** PyTorch CPU como referência, comparado com OpenVINO e ONNX Runtime. INT8 só se não piorar o Top-1/Top-5.
 
 ## 5. Comunicação entre frontend e backend
 
-A comunicação principal é REST. SOAP foi descartado por adicionar complexidade sem benefício para esse cenário.
+REST para o envio e a consulta, SSE para o aviso.
 
 ### 5.1 Endpoints
 
-| Método | Endpoint | Responsabilidade |
+| Método | Endpoint | Faz |
 |---|---|---|
-| `POST` | `/api/recognitions` | Enviar os traços e o modo (`ordered` / `unordered`) para reconhecimento |
-| `GET` | `/api/recognitions/{id}` | Consultar o estado de um job (reserva do SSE) |
-| `GET` | `/api/recognitions/{id}/events` | Receber as mudanças de estado do job por SSE ([ADR 0020](adr/0020-result-notification-by-server-sent-events.md)) |
-| `GET` | `/api/health` | Verificar disponibilidade do backend |
+| `POST` | `/api/recognitions` | Envia os traços e o modo |
+| `GET` | `/api/recognitions/{id}` | Consulta o estado do job (reserva do SSE) |
+| `GET` | `/api/recognitions/{id}/events` | Recebe as mudanças de estado por SSE |
+| `GET` | `/api/health` | Diz se a API está de pé |
 
 ### 5.2 Notificação: SSE
 
-Decidida na [ADR 0020](adr/0020-result-notification-by-server-sent-events.md). O caso é de uma via só, uma vez por job, então o canal é o SSE, e não o WebSocket.
-
-- **Backend:** `GET /api/recognitions/{id}/events` com o `EventSourceResponse` nativo do FastAPI (que já manda keep-alive a cada 15 s).
-- **Um evento por mudança de estado:**
-  - `event:` é o estado (`queued`, `processing`, `completed` ou `failed`);
-  - `data:` é o **estado completo do job**, no mesmo formato do `GET /api/recognitions/{id}`; num job `failed`, o estado traz o código da falha (`inference_failed`), que o frontend traduz;
-  - o stream termina no estado final.
-- **Reconexão:** como cada evento é completo, quem reconecta recebe o estado atual, sem `Last-Event-ID`.
-- **Frontend:** o adapter `SseResultStream` usa o `EventSource` nativo e fecha no estado final. Se o SSE falhar repetidamente (3 erros seguidos sem estado novo, ou o navegador desistir da conexão), o use case `RecognizeDrawing` passa a consultar o `GET /api/recognitions/{id}` a cada 1 s. Sem estado final em 60 s, a tela diz que o servidor demorou (#58).
-- **Ports:** `ResultNotifier` (backend) e `ResultStream` (frontend).
+Decidida na [ADR 0020](adr/0020-result-notification-by-server-sent-events.md):
+- **Um evento por mudança de estado:** `event:` é o estado; `data:` é o job completo, no formato do `GET`. O stream termina no estado final, e o FastAPI manda keep-alive a cada 15 s.
+- **Reconectar é simples:** cada evento traz o estado inteiro.
+- **No frontend**, o `SseResultStream` usa o `EventSource` do navegador. Se o SSE falhar 3 vezes seguidas sem estado novo, ou o navegador desistir, o `RecognizeDrawing` passa a consultar o `GET` a cada 1 s. Sem estado final em 60 s, a tela diz que o servidor demorou.
 
 ### 5.3 Erros
 
-Toda resposta de erro tem o corpo `{"error": "<código>"}`, com um código estável que o frontend traduz ([ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md)). Texto para o usuário nunca sai do backend, e o erro de validação do schema nunca é o `422` padrão do FastAPI.
+Todo erro tem o corpo `{"error": "<código>"}`. O frontend traduz o código; o backend nunca manda texto para a tela ([ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md)).
 
 | Status | Código | Quando |
 |---|---|---|
-| `400` | `invalid_drawing` | O desenho quebra uma regra de formato (do schema ou do domínio; [docs/architecture/domain.md](architecture/domain.md)) |
-| `400` | `invalid_stroke_order_mode` | O `stroke_order_mode` não é `ordered` nem `unordered` |
-| `400` | `invalid_request` | Corpo que não é JSON, ou campo desconhecido |
-| `404` | `job_not_found` | O job não existe ou o resultado expirou (5 minutos depois do fim), no `GET` e no SSE; o SSE responde `404` antes de abrir o stream |
-| `413` | `drawing_too_large` | Corpo acima de **1 MiB** (conferido antes de qualquer parsing, inclusive em envio *chunked*), ou traços e pontos acima dos limites da [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md) |
-| `503` | `queue_full` | A fila tem 16 jobs esperando; vem com `Retry-After` ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md)) |
-| outros | derivado do status (`not_found`, `method_not_allowed`) | Rota ou método que não existe |
-
----
+| `400` | `invalid_drawing` | O desenho quebra uma regra de formato ([domain.md](architecture/domain.md)) |
+| `400` | `invalid_stroke_order_mode` | O modo não é `ordered` nem `unordered` |
+| `400` | `invalid_request` | O corpo não é JSON ou tem campo desconhecido |
+| `404` | `job_not_found` | O job não existe ou já expirou; o SSE responde `404` antes de abrir |
+| `413` | `drawing_too_large` | Corpo acima de 1 MiB, ou traços e pontos acima dos limites |
+| `503` | `queue_full` | A fila tem 16 jobs; vem com `Retry-After` |
+| outros | `not_found`, `method_not_allowed` | Rota ou método que não existe |
 
 ## 6. Infraestrutura e execução local
 
-O projeto roda inteiramente em uma máquina local. Não são necessários domínio público, hospedagem em nuvem, servidor externo nem exposição à internet ([ADR 0007](adr/0007-local-execution-over-the-lan.md)). No notebook, ele roda **direto, sem Docker**: ambiente Python isolado, build estático do frontend e os processos como serviço do sistema operacional ([ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md)). O passo a passo do desenvolvimento e do acesso pelo celular está no [docs/RUNNING.md](RUNNING.md); o da instalação no notebook entra nele com a [#63](https://github.com/Asuka-Jyuku/kanji-lens/issues/63).
-
-O notebook da escola hospeda a aplicação e funciona como servidor (seção 6.3). Dispositivos na mesma rede Wi-Fi acessam pelo IP local:
+Tudo roda numa máquina da rede local, sem nuvem ([ADR 0007](adr/0007-local-execution-over-the-lan.md)). No notebook, direto no Windows, sem Docker ([ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md)). O passo a passo está no [RUNNING.md](RUNNING.md).
 
 ```text
 Servidor: 192.168.0.10
-Angular:  http://192.168.0.10:4200   (desenvolvimento, com /api encaminhado à API; em produção, build estático)
-FastAPI:  http://127.0.0.1:8000      (desenvolvimento: só a própria máquina; o celular passa pelo proxy)
+Frontend: http://192.168.0.10:4200   (desenvolvimento; /api passa pelo proxy)
+API:      http://127.0.0.1:8000      (só a própria máquina)
 ```
-
-O celular é apenas cliente. Toda a inferência roda no servidor.
 
 ### 6.1 Configuração necessária
 
-- **Bind em `0.0.0.0` só do que o celular acessa.** Por padrão, o `ng serve` e o Uvicorn escutam só em `localhost`. No desenvolvimento, só o `ng serve` precisa de `--host 0.0.0.0`: o celular chega à API pelo proxy dele, e a API continua em `127.0.0.1` (#58). Em produção, a porta única fica em `0.0.0.0` (#62).
-- **Frontend em produção é build estático.** O servidor de desenvolvimento do Angular não é configuração de deploy ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)). Como servir o build (pelo próprio FastAPI ou por um servidor estático) fica para o `docs/RUNNING.md`.
-- **CORS desligado: uma origem só.** No desenvolvimento, o proxy do `ng serve` (`frontend/proxy.conf.mjs`) encaminha `/api` para a API, então a página e a API têm a mesma origem (#58). Em produção, servir o build estático **na mesma origem da API** tem o mesmo efeito; quem serve o build (o próprio FastAPI ou um servidor na frente dos dois) é a [#62](https://github.com/Asuka-Jyuku/kanji-lens/issues/62). Se um dia forem origens diferentes, o CORS libera só a do frontend ([SECURITY.md](SECURITY.md)).
-- **URL da API no frontend.** Se o frontend chamar `http://localhost:8000`, no celular `localhost` é o próprio celular. Os adapters usam a URL relativa `/api` (`infrastructure/recognition-api.ts`): no desenvolvimento, o proxy do `ng serve` encaminha para a API (por padrão `http://127.0.0.1:8000`; outra com `KANJILENS_API_URL`), e o SSE passa por ele sem buffering (conferido na #58); em produção, a mesma origem resolve.
-- **Firewall.** Liberar na rede local só as portas em uso: a 4200 no desenvolvimento (a 8000 fica fechada, porque o celular passa pelo proxy) e a porta única de produção.
-- **Acesso pelo celular.** O aluno chega pela URL do servidor; a proposta é um QR Code na parede da escola com essa URL, o que depende do IP reservado (abaixo).
-- **IP fixo.** O IP do servidor pode mudar a cada conexão ao roteador. Reserve o IP no DHCP do roteador para não precisar reconfigurar.
+- **Só o frontend escuta na rede.** No desenvolvimento, o `ng serve` sobe com `--host 0.0.0.0` e a API fica em `127.0.0.1`. Em produção, uma porta só fica aberta ([#62](https://github.com/Asuka-Jyuku/kanji-lens/issues/62)).
+- **URL relativa `/api`, sem CORS.** O proxy do `ng serve` (`frontend/proxy.conf.mjs`) passa `/api` para a API (`KANJILENS_API_URL` troca o destino), e o SSE passa por ele sem buffering. Em produção, o build estático fica na mesma origem da API (#62).
+- **Produção usa o build estático**, nunca o `ng serve`.
+- **Firewall:** só a porta em uso, só para a rede local (no desenvolvimento, a 4200).
+- **IP fixo:** reserve o IP do notebook no roteador. A ideia é um QR Code na sala com o endereço.
 
 ### 6.2 Exposição na rede local
 
-Qualquer um na mesma rede alcança a API, sem login. As regras que decorrem disso (portas, limite de entrada, fila limitada, CORS, dados dos alunos, nenhuma saída de rede) estão no [SECURITY.md](SECURITY.md).
+Qualquer um na rede chega à API, sem login. Portas, limites, fila, dados dos alunos e a regra de nenhuma saída de rede estão no [SECURITY.md](SECURITY.md).
 
 ### 6.3 Hardware de referência: o notebook da escola
 
 | Item | Especificação |
 |---|---|
 | Notebook | Dell Inspiron 3501 |
-| CPU | Intel Core i7-1165G7: 4 núcleos / 8 threads, até 4,70 GHz, AVX2, AVX-512, DL Boost |
+| CPU | Intel Core i7-1165G7: 4 núcleos / 8 threads, até 4,7 GHz, AVX2, AVX-512 |
 | RAM | 16 GB |
-| Sistema operacional | Windows ([ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md)) |
-| GPU | Intel Iris Xe integrada; não pressupor GPU dedicada nem uso da integrada pelo runtime (configuração efetiva *a confirmar*) |
-| Hospeda | Frontend (build estático), FastAPI, fila, runtime de inferência, o modelo, as referências do KanjiVG e serviços auxiliares que rodarem ali |
+| Sistema | Windows |
+| GPU | Intel Iris Xe integrada; não contar com ela |
 
-O treino roda noutra máquina, mais potente. O que precisa caber no notebook é o artefato final, o runtime, a memória de trabalho e a carga ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)).
-
-**Os benchmarks só valem se rodarem no próprio notebook.** As condições:
-- ligado na tomada;
-- com warm-up;
-- com uma rodada longa para ver throttling.
-
-**O que registrar:**
-- hardware;
-- SO;
-- perfil de energia;
-- versões de Python e do runtime.
-
-**Cenários de carga:** 1, 2, 3 e 5 clientes, e 10 como estresse, com `ordered` e `unordered` misturados. Medir:
-- latência p50/p95;
-- espera na fila;
-- throughput;
-- CPU e RAM;
-- temperatura.
-
----
+**Benchmark só vale no próprio notebook:** na tomada, com warm-up e uma rodada longa, com 1 a 5 clientes e 10 no estresse ([#65](https://github.com/Asuka-Jyuku/kanji-lens/issues/65), [#67](https://github.com/Asuka-Jyuku/kanji-lens/issues/67)).
 
 ## 7. Dataset e treinamento
 
 ### 7.1 Dataset
 
-**Decidido na [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)** ([spike](spikes/dataset-selection.md), #11): o reconhecimento treina com o **ETL9G** (ETL Character Database, AIST), e o **ETL9B** é baixado junto como alternativa leve. Os critérios da escolha foram:
+**ETL9G**, com o ETL9B junto como alternativa leve ([ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)):
+- 2.965 kanji, 200 amostras por kanji, 128×127 em 16 tons de cinza. Cobre todos os 1.026 教育漢字.
+- **Licença:** uso livre, mas só pode ser baixado do site oficial. Nenhuma imagem do ETL entra no repositório, e cada máquina baixa do site. A citação é obrigatória.
+- **O site está fora do ar desde 08/11/2026.** O [spike "treinar sem o ETL"](spikes/training-without-etl.md) ([#78](https://github.com/Asuka-Jyuku/kanji-lens/issues/78)) propõe treinar com desenhos sintéticos do KanjiVG e do Kanji alive e validar só em escrita humana. A decisão vai para uma ADR nova.
 
-- Quantidade de kanjis disponíveis.
-- Quantidade de amostras por caractere.
-- Qualidade das imagens.
-- Diversidade de estilos de escrita.
-- Licença e possibilidade de uso.
-- Compatibilidade com o pipeline de treinamento.
-
-O resultado:
-
-- **ETL9G:** 2.965 kanji do JIS nível 1, com 200 amostras por classe, em 128×127 com 16 níveis de cinza. Cobre **2.106 dos 2.136 Jōyō** e todos os 1.026 教育漢字 (estimativa feita com o KANJIDIC2).
-- **Licença** (termos de 2025-03-28):
-  - uso livre e gratuito, sem cadastro;
-  - distribuição **só pelo site oficial**: nenhuma imagem do ETL entra no repositório, e cada máquina baixa do site;
-  - citação obrigatória (texto na ADR).
-- **Site fora do ar:** o site do ETL responde `503` desde 08/11/2026. O [spike "treinar o reconhecimento sem o ETL"](spikes/training-without-etl.md) (#78) propõe, enquanto ele estiver fora, treinar com desenhos sintéticos do KanjiVG e do Kanji alive, validados só em escrita humana (os desenhos da #66 e, se liberado, o subconjunto gratuito do TUAT). A decisão vai para uma ADR nova.
-- **Descartados:**
-  - o ETL8G, com só cerca de 41% do Jōyō;
-  - o ETL9B como base, por ser binarizado na digitalização;
-  - o Kuzushiji-Kanji, que é escrita cursiva clássica;
-  - as cópias do ETL em sites de terceiros, que ferem a cláusula de distribuição.
-- **Pendente,** até o site oficial voltar (está fora do ar desde 08/11/2026): baixar e conferir os md5, confirmar a lista de classes no `ETL9INFO` e verificar o `unpack.py` (#13).
-
-**Dados por parte** ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)):
-
-| Parte | Dados necessários | Candidatos |
-|---|---|---|
-| Reconhecimento (os dois modos) | Imagens do caractere (dados *offline*) para treinar | **ETL9G** (grayscale 128×127), com o ETL9B (binário 64×63) como alternativa leve ([ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)) |
-| Avaliação da ordem (`ordered`) | A ordem e a direção de referência de cada kanji; **nada de treino** | KanjiVG `r20260714` (CC BY-SA 3.0), cobrindo toda a lista de classes |
-| Teste da avaliação da ordem | Um conjunto fixo de desenhos com ordem certa e errada, com o resultado esperado | Desenhos feitos de propósito para o teste. Coletar desenhos de alunos muda a regra de não guardar desenhos ([SECURITY.md](SECURITY.md#dados-dos-alunos)) e pede ADR |
-
-O ETL foi digitalizado de folhas de papel: tem a imagem final, sem a trajetória da caneta. Isso basta, porque o modelo não usa a ordem. Datasets *online* (TUAT Kuchibue/Nakayosi, CASIA-OLHWDB) **não são necessários**: o `ordered` não treina um modelo temporal.
-
-A pesquisa que levou a esse desenho está no [spike, seção 5.3](spikes/model-and-runtime-evaluation.md#53-como-o-modo-ordered-costuma-ser-feito-pesquisa-de-2026-11-08): reconhecimento *online* × avaliação da ordem, algoritmos de correspondência entre traços e captura no navegador.
+A avaliação da ordem não treina nada: usa o KanjiVG. O ETL é papel escaneado, sem a trajetória da caneta, e isso basta, porque a CNN não usa a ordem.
 
 ### 7.2 Quantidade de classes
 
-**Decidido na [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md):** a primeira versão reconhece os **1.026 教育漢字**, os kanji ensinados no ensino fundamental japonês, todos presentes no ETL9 e no KanjiVG. O caminho:
+Na [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md):
+1. **240 kanji** da 1ª e da 2ª série, para validar o treino;
+2. os **1.026 教育漢字** na primeira versão;
+3. depois, os **2.106 Jōyō** que o ETL9 tem.
 
-1. **240 kanji** da 1ª e da 2ª série, para validar o pipeline com um treino curto;
-2. os **1.026**;
-3. depois da v1, os **2.106 Jōyō cobertos pelo ETL9**, com uma nova medição.
-
-Os 30 Jōyō que faltam no ETL9 ficam fora até uma fonte complementar passar por uma ADR. A lista de classes é um arquivo versionado em `ml/`: trocá-la muda treino, inferência e versão do modelo no mesmo PR.
+A lista de classes é um arquivo versionado em `ml/`. Trocar a lista muda treino, inferência e versão do modelo no mesmo PR.
 
 ### 7.3 Avaliação do modelo
 
-Métricas acompanhadas:
-
-- Accuracy Top-1 e Top-5 do reconhecimento (o mesmo modelo nos dois modos).
-- Precision, Recall, F1-score e Macro-F1.
-- Matriz de confusão.
-- Acurácia por faixa de complexidade (quantidade de traços) e por quem escreveu, quando o dataset permitir.
-- Invariância do reconhecimento à reordenação dos traços: a mesma figura, desenhada em outra ordem, dá o mesmo resultado.
-- **Avaliação da ordem (`ordered`)**, num conjunto fixo de desenhos com ordem certa e errada:
-  - erros de ordem e de direção detectados;
-  - falsos alarmes em desenhos corretos;
-  - comportamento com traços unidos ou quebrados.
-- Desempenho no notebook da escola:
-  - latência de pré-processamento, de inferência e total (p50/p95);
-  - throughput;
-  - RAM de pico;
-  - tamanho do artefato;
-  - cold start.
-
-A Top-5 é a métrica mais próxima da experiência do usuário, já que a interface mostra vários candidatos. A matriz de confusão serve principalmente para analisar kanjis visualmente semelhantes (como 日, 目 e 白).
+- **Reconhecimento:** Top-1 e Top-5 no mesmo split de teste fixo, e a matriz de confusão para kanjis parecidos (日, 目, 白). A Top-5 é a que mais importa, porque a tela mostra vários candidatos.
+- **Avaliação da ordem:** erros detectados × falsos alarmes num conjunto fixo de desenhos.
+- **No notebook:** latência p50/p95, RAM e tamanho do modelo.
 
 ### 7.4 Pontos de atenção
 
-- **O desenho do canvas é diferente das imagens do dataset.** Datasets como o ETL são digitalizações de papel: tons de cinza, traço de caneta, ruído e contraste próprios. O canvas gera traço sintético, geralmente fino e uniforme, com cores e proporção diferentes. Se o pré-processamento da inferência não aproximar o desenho das imagens de treino (inversão de cores, recorte pela bounding box, centralização, padding, espessura do traço e resolução), a acurácia em produção cai bastante em relação à do conjunto de teste. Esse é o principal risco do projeto e deve ser testado com desenhos reais assim que houver um modelo base.
-- **Treino e inferência rodam em máquinas diferentes.** O treino usa uma máquina potente; a inferência, a CPU de um notebook. Um modelo que só é bom porque é grande não cabe no servidor. Toda escolha de modelo é validada no hardware-alvo (seção 6.3).
-- **A avaliação da ordem depende do reconhecimento.** Se o kanji certo não estiver entre os candidatos avaliados, a ordem é comparada com o kanji errado. Por isso o Top-K do reconhecimento continua sendo a métrica principal.
-- **Traços unidos ou quebrados** mudam a quantidade de traços desenhados, e a avaliação não pode acusar erro falso. Variantes de ordem aceitas na escola precisam ser verificadas com os professores.
-- **O pré-processamento precisa ser o mesmo no treino e na inferência.** Ele fica em um único módulo compartilhado entre `ml/` e `backend/` (seção 3.3), nunca em duas implementações paralelas.
-
----
+- **O desenho do canvas não parece papel escaneado.** O traço do canvas é fino e limpo; o ETL tem caneta, ruído e outro contraste. Se o pré-processamento não aproximar os dois (cores, recorte, centralização, espessura, resolução), a acurácia real cai muito em relação à do teste. **É o principal risco do projeto:** teste com desenhos reais assim que houver um modelo.
+- **Modelo grande não cabe no notebook:** toda escolha de modelo é medida nele.
+- **A avaliação da ordem depende do reconhecimento.** Se o kanji certo não está entre os candidatos, a ordem é comparada com o kanji errado.
+- **Traços unidos ou quebrados** não podem virar erro falso. Variantes de ordem aceitas na escola precisam ser conferidas com os professores.
+- **Um pré-processamento só** para treino e inferência (seção 3.3).
 
 ## 8. Estrutura do repositório
-
-As pastas das três partes existem desde as ADRs [0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md), [0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) e [0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md). As de `ml/` sem código ainda (`configs/`, `notebooks/`) nascem com a primeira issue que precisar delas. `scripts/` nasceu com a avaliação da ordem (#29), que também cria `datasets/` e `artifacts/` na máquina, fora do git:
 
 ```text
 kanji-lens/
 ├── frontend/
 │   ├── src/app/
-│   │   ├── domain/
-│   │   ├── application/
-│   │   ├── infrastructure/
-│   │   ├── presentation/
-│   │   └── app.ts, app.config.ts, app.routes.ts   # shell: composition root
-│   ├── src/locale/          # messages.xlf (gerado por extract-i18n) e as traduções
+│   │   ├── domain/ application/ infrastructure/ presentation/
+│   │   └── app.ts, app.config.ts, app.dev-tools*.ts
+│   ├── proxy.conf.mjs       # /api para a API no ng serve
 │   ├── angular.json
-│   ├── eslint.config.js     # lint, regra de i18n e o teste de arquitetura (ADR 0017)
-│   ├── .nvmrc               # Node 26
-│   └── package.json
+│   ├── eslint.config.js     # lint, regra de i18n e teste de arquitetura
+│   └── package.json         # Node 26 (.nvmrc)
 ├── backend/
 │   ├── src/kanjilens/
-│   │   ├── domain/
-│   │   ├── application/
-│   │   │   ├── ports/
-│   │   │   └── use_cases/
-│   │   ├── adapters/
-│   │   │   ├── inbound/
-│   │   │   └── outbound/
-│   │   └── bootstrap/
-│   ├── tests/               # pytest, inclusive o teste de arquitetura
-│   └── pyproject.toml       # membro do workspace do uv (ADR 0015)
+│   │   ├── domain/ application/ adapters/ bootstrap/
+│   ├── tests/
+│   └── pyproject.toml
 ├── ml/
-│   ├── pyproject.toml       # membro do workspace do uv (ADR 0014)
-│   ├── tests/               # pytest, inclusive o teste de arquitetura
 │   ├── src/kanjilens_ml/
 │   │   ├── preprocessing/   # compartilhado com o backend
-│   │   ├── data/
-│   │   ├── models/          # arquitetura nn.Module da CNN 2D (código, não pesos)
-│   │   ├── stroke_order/    # avaliação da ordem contra o KanjiVG (sem PyTorch)
-│   │   ├── training/
-│   │   └── evaluation/
-│   ├── scripts/             # preparação de dados e medições (KanjiVG, benchmark da ordem)
-│   ├── configs/             # configurações de treino, versionadas
-│   ├── notebooks/           # só exploração; nada importa daqui
+│   │   └── stroke_order/    # avaliação da ordem (sem PyTorch)
+│   ├── scripts/             # preparar o KanjiVG e medir
+│   ├── tests/
 │   ├── datasets/            # fora do git
-│   └── artifacts/           # pesos treinados e referências do KanjiVG, fora do git
+│   └── artifacts/           # pesos e referências do KanjiVG, fora do git
 ├── docs/
-├── pyproject.toml           # raiz do workspace do uv e configuração do Ruff (não é pacote)
-├── uv.lock                  # lock único das partes Python
-├── .python-version          # 3.15
+├── pyproject.toml, uv.lock  # workspace do uv (Python 3.15)
 └── README.md
 ```
 
-> `ml/datasets/` e `ml/artifacts/` são grandes e estão no `.gitignore`. Como obter cada um fica documentado junto do código que os usa (e no `docs/MODEL.md`, a partir da etapa 1).
-
----
+`ml/datasets/` e `ml/artifacts/` estão no `.gitignore`. Pastas novas (modelo, treino, configs) nascem com o código delas.
 
 ## 9. Escopo do MVP
 
-A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta. Cada etapa vira um épico no GitHub Project ([CONTRIBUTING.md, "Épicos"](../CONTRIBUTING.md#épicos)).
+O MVP é o fluxo completo: desenhar no celular, reconhecer no notebook e ver os candidatos. **O andamento fica no [GitHub Project](https://github.com/orgs/Asuka-Jyuku/projects/6)**, não aqui. Cada etapa é um épico:
 
-### Etapa 1: Machine Learning
+1. **Machine Learning** ([#5](https://github.com/Asuka-Jyuku/kanji-lens/issues/5)): dataset, pré-processamento, CNN, avaliação da ordem, métricas e medição no notebook.
+2. **Backend** ([#6](https://github.com/Asuka-Jyuku/kanji-lens/issues/6)): API, fila, processo de inferência, SSE e a ligação com o modelo.
+3. **Frontend** ([#7](https://github.com/Asuka-Jyuku/kanji-lens/issues/7)): canvas, modo, envio, estado do job e lista de candidatos.
+4. **Infraestrutura** ([#8](https://github.com/Asuka-Jyuku/kanji-lens/issues/8)): instalação no notebook, acesso pelo Wi-Fi da escola e teste de carga.
 
-- [x] Avaliar famílias de modelos e runtimes ([spike](spikes/model-and-runtime-evaluation.md)) e definir o modo `ordered` como avaliação da ordem ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
-- [x] Definir as ferramentas e criar a estrutura de `ml/` ([ADR 0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md)).
-- [x] Pesquisar e selecionar o dataset e a quantidade de classes ([ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md); [spike](spikes/dataset-selection.md)).
-- [ ] Decidir como treinar sem o ETL enquanto o site estiver fora do ar ([spike](spikes/training-without-etl.md); [#78](https://github.com/Asuka-Jyuku/kanji-lens/issues/78)).
-- [x] Escolher o algoritmo de avaliação da ordem e o formato de captura dos pontos ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
-- [ ] Criar o pré-processamento compartilhado (imagem e traços normalizados). Os traços normalizados já existem ([docs/MODEL.md](MODEL.md#traços-normalizados-avaliação-da-ordem)); falta a imagem da CNN ([#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14)).
-- [ ] Carregar o dataset com split fixo de treino, validação e teste ([#13](https://github.com/Asuka-Jyuku/kanji-lens/issues/13)).
-- [ ] Implementar e treinar a CNN 2D compacta ([#15](https://github.com/Asuka-Jyuku/kanji-lens/issues/15)).
-- [ ] Implementar a avaliação da ordem contra o KanjiVG (`ordered`). O algoritmo e os dados de referência existem ([docs/MODEL.md](MODEL.md#avaliação-da-ordem-dos-traços)); falta o conjunto de desenhos reais, gravados pela exportação do canvas ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29); [#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66); [docs/MODEL.md, "Desenhos do canvas"](MODEL.md#desenhos-do-canvas)).
-- [ ] Avaliar o reconhecimento (Top-1/Top-5; [#16](https://github.com/Asuka-Jyuku/kanji-lens/issues/16)) e a avaliação da ordem (conjunto com ordem certa e errada; [#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29)).
-- [ ] Implementar inferência top-K ([#17](https://github.com/Asuka-Jyuku/kanji-lens/issues/17)).
-- [ ] Medir no notebook da escola, depois de o modelo e o código ficarem prontos (runtimes, resolução, INT8, concorrência; [#67](https://github.com/Asuka-Jyuku/kanji-lens/issues/67)).
-
-### Etapa 2: Backend
-
-- [x] Configurar o projeto FastAPI ([ADR 0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md)).
-- [x] Escolher a fila e a notificação ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md), [ADR 0020](adr/0020-result-notification-by-server-sent-events.md)).
-- [x] Criar o domínio: desenho, modo, job e estados ([#44](https://github.com/Asuka-Jyuku/kanji-lens/issues/44); [architecture/domain.md](architecture/domain.md)).
-- [x] Criar o endpoint de reconhecimento, gerar o `job_id` e pôr o job na fila ([#45](https://github.com/Asuka-Jyuku/kanji-lens/issues/45)).
-- [x] Processar os jobs no processo de inferência e armazenar os resultados, com um reconhecedor falso ([#46](https://github.com/Asuka-Jyuku/kanji-lens/issues/46)).
-- [x] Implementar a notificação por SSE, com o polling de reserva ([#47](https://github.com/Asuka-Jyuku/kanji-lens/issues/47)).
-- [ ] Integrar o modelo e a avaliação da ordem no processo de inferência ([#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48)).
-
-### Etapa 3: Frontend
-
-- [x] Criar a aplicação Angular ([ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)).
-- [x] Implementar o canvas responsivo ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
-- [x] Implementar desenho com mouse e touch, capturando os traços ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
-- [x] Implementar a escolha do modo (ordem importa / não importa) ([#57](https://github.com/Asuka-Jyuku/kanji-lens/issues/57)).
-- [x] Implementar a limpeza do canvas e o desfazer do último traço ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
-- [x] Exportar o desenho como JSON, só no build de desenvolvimento, para montar os conjuntos de teste ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66); [docs/MODEL.md](MODEL.md#desenhos-do-canvas)).
-- [x] Integrar com a REST API e o SSE ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
-- [x] Implementar o indicador de processamento ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
-- [ ] Exibir as previsões e a avaliação da ordem ([#59](https://github.com/Asuka-Jyuku/kanji-lens/issues/59)).
-- [ ] Abrir o verbete do kanji escolhido no dicionário externo, com o padrão configurável ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)).
-
-### Etapa 4: Infraestrutura
-
-- [x] Configurar o CI ([ADR 0018](adr/0018-ci-with-github-actions-and-a-single-required-check.md)).
-- [x] Documentar como rodar no desenvolvimento e pelo celular na rede local ([docs/RUNNING.md](RUNNING.md); [#61](https://github.com/Asuka-Jyuku/kanji-lens/issues/61)).
-- [ ] Decidir quem serve o frontend em produção e como a API roda como serviço no Windows ([#62](https://github.com/Asuka-Jyuku/kanji-lens/issues/62)).
-- [ ] Configurar a execução local no notebook da escola, com o frontend em build estático ([#63](https://github.com/Asuka-Jyuku/kanji-lens/issues/63)).
-- [ ] Configurar o acesso pela rede Wi-Fi ([#64](https://github.com/Asuka-Jyuku/kanji-lens/issues/64)).
-- [ ] Configurar a comunicação entre frontend e backend: o proxy de `/api` no desenvolvimento ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)) e a mesma origem em produção ([#62](https://github.com/Asuka-Jyuku/kanji-lens/issues/62)).
-- [ ] Testar 3–5 alunos enviando numa janela curta e 10 clientes como estresse ([#65](https://github.com/Asuka-Jyuku/kanji-lens/issues/65)).
-- [ ] Medir CPU, memória, temperatura e latência p50/p95 no notebook ([#65](https://github.com/Asuka-Jyuku/kanji-lens/issues/65)).
-
----
+Documentação e processo ficam no épico [#9](https://github.com/Asuka-Jyuku/kanji-lens/issues/9).
 
 ## 10. Decisões em resumo
 
-| Decisão | Escolha | Status |
-|---|---|---|
-| Repositório | Monorepo: frontend, backend e ML juntos | Decidido — [ADR 0002](adr/0002-monorepo-for-frontend-backend-and-ml.md) |
-| Frontend / backend | Angular + TypeScript / Python + FastAPI, REST | Decidido — [ADR 0003](adr/0003-angular-frontend-and-fastapi-backend.md) |
-| Arquitetura do código | Clean Architecture, ports and adapters, em camadas | Decidido — [ADR 0004](adr/0004-clean-and-hexagonal-architecture.md) |
-| Processamento | Assíncrono, com fila e um processo de inferência | Decidido — [ADR 0005](adr/0005-asynchronous-recognition-with-queue-and-workers.md) |
-| Machine Learning | PyTorch para treino e avaliação | Decidido — [ADR 0006](adr/0006-cnn-with-pytorch.md) |
-| Modos e modelo | `ordered` / `unordered`, escolhido por solicitação; uma CNN 2D compacta nos dois; no `ordered`, avaliação da ordem contra o KanjiVG | Decidido — [ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md) (substitui a [0010](adr/0010-two-recognition-modes-with-specialized-models.md)) |
-| Servidor e carga | Notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB), inferência CPU-first; 3–5 envios numa janela curta, 10 clientes como estresse | Decidido — [ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md) |
-| Execução | Local / rede local, sem nuvem | Decidido — [ADR 0007](adr/0007-local-execution-over-the-lan.md) |
-| Como roda no notebook | Direto, sem Docker, no Windows: ambiente Python isolado, build estático e serviço do sistema | Decidido — [ADR 0013](adr/0013-run-directly-on-the-school-notebook-without-docker.md) |
-| Branches e releases | `main` + `develop`, CHANGELOG por release | Decidido — [ADR 0008](adr/0008-git-flow-and-changelog-by-release.md) |
-| Notificação do resultado | SSE nativo do FastAPI, estado completo por evento, polling de reserva | Decidido — [ADR 0020](adr/0020-result-notification-by-server-sent-events.md) |
-| Fila | `asyncio.Queue` limitada (16) + um processo de inferência (`ProcessPoolExecutor`, `spawn`); jobs em memória com expiração | Decidido — [ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md) |
-| Dataset do reconhecimento | ETL9G (ETL9B como alternativa leve); uso livre, distribuição só pelo site oficial, nada do ETL no repositório | Decidido — [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md) (download pendente: site fora do ar) |
-| Algoritmo de avaliação da ordem | Bipartite com hipóteses de união e quebra; todos os candidatos avaliados; só anota, sem reordenar; formato dos pontos `[x, y, t]` | Decidido — [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md) |
-| Modo padrão da interface | "Não importa" (`unordered`) | Decidido — [ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md) (atualização) |
-| Verbete do kanji escolhido | Link externo em nova aba, com o Takoboto como padrão e o dicionário escolhido pelo usuário numa lista fixa ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)); dicionário próprio com dados abertos locais (KANJIDIC2 / JMdict) | Por ora, link externo; o dicionário próprio fica em aberto, para depois |
-| Runtime, resolução, precisão e concorrência de produção | PyTorch / OpenVINO / ONNX Runtime CPU; 64–128 px; FP32 / INT8; 1 ou 2 execuções | Em aberto (benchmark no notebook) |
-| Quantidade de classes | 240 (1ª e 2ª série) para validar → 1.026 教育漢字 na v1 → 2.106 Jōyō cobertos pelo ETL9 | Decidido — [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md) |
-| Ferramentas do ML | Python 3.15, uv (workspace com lock único), Ruff, mypy, pytest, Import Linter, PyTorch só-CPU | Decidido — [ADR 0014](adr/0014-ml-tooling-python-uv-ruff-pytest-import-linter.md) |
-| Ferramentas do backend | FastAPI + Uvicorn, membro do workspace do uv, com o `kanjilens_ml` pelo workspace; httpx2 nos testes; seis contratos de arquitetura | Decidido — [ADR 0015](adr/0015-backend-tooling-fastapi-uvicorn-on-the-uv-workspace.md) |
-| CI | GitHub Actions, um workflow só: Python em Linux e Windows, frontend e links dos `.md`, cada um só quando a parte muda; um check obrigatório, `CI` | Decidido — [ADR 0018](adr/0018-ci-with-github-actions-and-a-single-required-check.md) |
-| Ferramentas do frontend | Node 26 LTS, npm, Angular 22 (zoneless, standalone), TypeScript 6.0, `@angular/localize` (`pt-BR`), Vitest, ESLint + Prettier, `eslint-plugin-boundaries` como teste de arquitetura | Decidido — [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md) |
-| Idioma da interface | Português primeiro, japonês depois, com i18n desde a primeira tela | Decidido — [ADR 0009](adr/0009-portuguese-ui-first-then-japanese.md); mecanismo `@angular/localize`, um build por idioma ([ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
+As decisões fechadas estão no [índice das ADRs](adr/README.md), uma por arquivo.
 
-Quando uma decisão em aberto for fechada, ela vira ADR em `docs/adr/` e a linha dela aqui passa a apontar para a ADR.
+**Em aberto:**
+- **Runtime, resolução, precisão e concorrência de produção:** PyTorch, OpenVINO ou ONNX Runtime na CPU; 64 a 128 px; FP32 ou INT8; 1 ou 2 inferências. Sai do benchmark no notebook ([#67](https://github.com/Asuka-Jyuku/kanji-lens/issues/67)).
+- **Treinar sem o ETL** enquanto o site estiver fora ([#78](https://github.com/Asuka-Jyuku/kanji-lens/issues/78)).
+- **Quem serve o frontend em produção** e como a API roda como serviço no Windows ([#62](https://github.com/Asuka-Jyuku/kanji-lens/issues/62)).
+- **Dicionário próprio** (KANJIDIC2 / JMdict locais), no lugar do link externo. Fica para depois.
 
----
-
-## 11. Objetivo final
-
-Entregar uma aplicação funcional na qual diferentes usuários acessem uma interface web pelo celular ou computador, escolham se a ordem dos traços importa, desenhem kanjis e recebam sugestões de caracteres reconhecidos por um modelo de Deep Learning.
-
-Além do reconhecimento em si, o projeto explora:
-
-- Computer Vision.
-- Deep Learning (CNN 2D) e correspondência entre traços para avaliar a ordem.
-- Processamento assíncrono.
-- Arquitetura orientada a eventos.
-- REST API.
-- Comunicação em tempo real.
-- Concorrência e gerenciamento de filas.
-- Integração entre frontend e modelos de Machine Learning.
-
-O foco é uma solução modular, com separação clara entre interface, API, processamento e modelo, permitindo que cada componente evolua de forma independente.
+Quando uma delas fecha, vira ADR e sai desta lista.

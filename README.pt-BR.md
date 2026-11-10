@@ -1,35 +1,31 @@
 # KanjiLens
 
-**Reconhecimento de kanjis manuscritos com Deep Learning e Visão Computacional.**
+**Desenhe um kanji no celular e receba os caracteres mais prováveis, ordenados por confiança.**
 
 [English](README.md) · [Arquitetura](docs/ARCHITECTURE.md) · [Decisões (ADRs)](docs/adr/README.md) · [Como contribuir](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-> **Status:** fase inicial. A arquitetura, as ferramentas e o CI estão definidos, e as estruturas de `ml/`, `backend/` e `frontend/` existem. O código do produto começa pelo backend.
+> **Status:** a tela de desenho, a API e o processamento dos jobs funcionam de ponta a ponta, com um reconhecedor falso. O modelo espera o dataset de treino. O andamento está no [GitHub Project](https://github.com/orgs/Asuka-Jyuku/projects/6).
 
----
+## O que faz
 
-## Visão geral
+O KanjiLens é um app web pequeno, feito para uma escola. O aluno desenha um kanji no canvas e recebe os candidatos mais prováveis, para escolher o que queria escrever. Não precisa acertar sempre: basta o kanji certo aparecer entre os primeiros.
 
-O KanjiLens é uma aplicação web na qual você desenha um kanji em um canvas e recebe uma lista dos caracteres mais prováveis, ordenada por confiança. Antes de reconhecer, você escolhe se a ordem dos traços deve importar.
+Antes de desenhar, você escolhe se **a ordem dos traços importa**:
+- **Não importa (padrão):** só o reconhecimento, com uma CNN 2D compacta que olha a imagem final.
+- **Importa:** o KanjiLens também compara a ordem e a direção dos traços com o KanjiVG e diz quais traços estão errados.
 
-O objetivo não é acertar o caractere exato toda vez. É apresentar os **principais candidatos ordenados por confiança**, para que você identifique qual pretendia escrever.
-
-O reconhecimento usa uma CNN 2D compacta treinada em PyTorch, que não depende da ordem dos traços. Quando a ordem importa, o KanjiLens também confere a ordem e a direção dos seus traços contra a referência do KanjiVG e diz quais traços estão fora de ordem. Todo o sistema roda em uma única máquina na rede local (o notebook da escola, com inferência só na CPU): o acesso é feito pelo celular ou pelo computador via Wi-Fi, sem hospedagem em nuvem nem domínio público.
+Tudo roda num notebook da escola, na rede local, com inferência só na CPU. Sem nuvem e sem login.
 
 ```text
 ┌──────────────────────────────┐
 │          KanjiLens           │
-│   Ordem dos traços:          │
-│   [ importa | não importa ]  │
+│ Ordem dos traços:            │
+│   ( ) Importa (•) Não importa│
 │   ┌──────────────────────┐   │
-│   │                      │   │
 │   │          日          │   │
-│   │                      │   │
 │   └──────────────────────┘   │
-│                              │
-│   [Limpar]   [Reconhecer]    │
-│                              │
-│   Previsões                  │
+│ [Desfazer] [Limpar]          │
+│ [Reconhecer]                 │
 │   日  81%                    │
 │   目  12%                    │
 │   白   4%                    │
@@ -38,113 +34,40 @@ O reconhecimento usa uma CNN 2D compacta treinada em PyTorch, que não depende d
 
 ## Como funciona
 
-1. Você escolhe se a ordem dos traços importa e desenha o kanji no canvas (mouse ou touch).
-2. O frontend envia os traços (cada um uma lista de pontos, na ordem do desenho) e o modo escolhido para a API.
-3. A API gera um `job_id`, coloca a tarefa na fila e responde na hora. A requisição HTTP não fica aberta enquanto o modelo executa.
-4. O worker de inferência consome a tarefa e executa o modelo; no modo com ordem, também confere os traços contra a referência do KanjiVG. O modelo e as referências são carregados uma vez, e não a cada requisição.
-5. O backend avisa o frontend de cada mudança de estado do job por SSE (Server-Sent Events), com polling como reserva.
-6. O frontend exibe as previsões top-K com a confiança de cada uma e, no modo com ordem, quais traços estão fora de ordem. Tocar num candidato abre o verbete num dicionário externo (o Takoboto por padrão; o usuário pode escolher outro).
+1. O frontend manda os traços (os pontos, na ordem do desenho) e o modo para a API.
+2. A API põe um job na fila e responde na hora com o `job_id`.
+3. Um processo de inferência separado roda o modelo e, se a ordem importa, a avaliação da ordem.
+4. O resultado chega ao celular por SSE (Server-Sent Events), com polling de reserva.
 
 ```text
- Celular / Desktop
-       │
-       ▼
- Angular frontend ──REST──▶ FastAPI ──▶ Fila ──▶ Worker ──▶ CNN 2D
-       ▲                            (+ avaliação da ordem contra o KanjiVG)
-       │                                                 │
-       └──────────── SSE ─────────── ◀── Resultados ◀────┘
+ Celular ──▶ Angular ──REST──▶ FastAPI ──▶ Fila ──▶ Processo de inferência ──▶ CNN 2D
+   ▲                                                  (+ avaliação da ordem com o KanjiVG)
+   └──────────────── SSE ◀──────── resultado ◀───────┘
 ```
 
 ## Stack
 
-| Camada | Tecnologias |
+| Parte | Tecnologias |
 |---|---|
-| Frontend | Angular, TypeScript, HTML Canvas API |
-| Backend | Python, FastAPI, REST, SSE |
-| Machine Learning | PyTorch (treino), CNN 2D; avaliação da ordem contra o KanjiVG; runtime de inferência em CPU escolhido por benchmark (PyTorch / OpenVINO / ONNX Runtime) |
-| Fila | `asyncio.Queue` limitada, em memória, e um processo de inferência (sem Redis no notebook Windows) |
-| Execução | Notebook da escola (Dell Inspiron 3501, i7-1165G7, 16 GB, Windows), direto, sem Docker, acessado pela LAN |
+| Frontend | Angular 22, TypeScript, HTML Canvas, Pointer Events |
+| Backend | Python 3.15, FastAPI, SSE, `asyncio.Queue` e um processo de inferência |
+| Machine Learning | PyTorch (CNN 2D), NumPy e SciPy (avaliação da ordem com o KanjiVG) |
+| Ferramentas | uv, Ruff, mypy, pytest, Vitest, ESLint, GitHub Actions |
+| Execução | O notebook Windows da escola, sem Docker, pela rede local |
 
-## API
+O código segue Clean Architecture com ports and adapters ([ADR 0004](docs/adr/0004-clean-and-hexagonal-architecture.md)), num repositório só ([ADR 0002](docs/adr/0002-monorepo-for-frontend-backend-and-ml.md)). Cada decisão fica registrada numa ADR.
 
-| Método | Endpoint | Responsabilidade |
-|---|---|---|
-| `POST` | `/api/recognitions` | Enviar os traços e o modo (`ordered` / `unordered`) para reconhecimento |
-| `GET` | `/api/recognitions/{id}` | Consultar status e resultado de uma tarefa (reserva do SSE) |
-| `GET` | `/api/recognitions/{id}/events` | Receber as mudanças de estado da tarefa por SSE |
-| `GET` | `/api/health` | Verificar disponibilidade do backend |
+## Como rodar
 
-Hoje o `POST` recebe o desenho e põe o job na fila, e o processo de inferência o processa, ainda com um reconhecedor falso no lugar do modelo ([#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48)). O resultado sai pelo `GET` e pelo SSE, no mesmo formato. Os erros têm sempre um código estável ([ARCHITECTURE.md, seção 5.3](docs/ARCHITECTURE.md#53-erros)).
-
-Exemplo de tarefa concluída:
-
-```json
-{
-  "job_id": "abc123",
-  "status": "completed",
-  "stroke_order_mode": "unordered",
-  "predictions": [
-    { "kanji": "日", "confidence": 0.81 },
-    { "kanji": "目", "confidence": 0.12 },
-    { "kanji": "白", "confidence": 0.04 }
-  ]
-}
-```
-
-## Estrutura do repositório (planejada)
-
-Clean Architecture com portas e adaptadores, em camadas ([ADR 0004](docs/adr/0004-clean-and-hexagonal-architecture.md)), em um único repositório ([ADR 0002](docs/adr/0002-monorepo-for-frontend-backend-and-ml.md)).
-
-```text
-kanji-lens/
-├── frontend/                # App Angular, em camadas
-│   └── src/app/
-│       ├── domain/          # Modelos e regras puras
-│       ├── application/     # Casos de uso e portas
-│       ├── infrastructure/  # Adaptadores HTTP e SSE
-│       └── presentation/    # Canvas e tela de resultados
-├── backend/                 # FastAPI, portas e adaptadores
-│   └── src/kanjilens/
-│       ├── domain/          # RecognitionJob, Prediction, JobStatus, Drawing, StrokeOrderMode
-│       ├── application/     # Casos de uso e portas
-│       ├── adapters/        # Inbound (HTTP, SSE, consumidor da fila), outbound (reconhecedor, avaliador da ordem, fila, armazenamento)
-│       └── bootstrap/       # Composition root
-├── ml/
-│   ├── src/kanjilens_ml/    # Pré-processamento compartilhado, modelos, treino, avaliação, avaliação da ordem
-│   ├── configs/             # Configurações de treino versionadas
-│   ├── notebooks/           # Só exploração
-│   ├── datasets/            # Fora do git
-│   └── artifacts/           # Pesos treinados, fora do git
-└── docs/
-```
-
-## Roadmap
-
-- [ ] **Machine Learning:** dataset escolhido (ETL9G, com os 1.026 kanji escolares na primeira versão; [ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)), pré-processamento compartilhado, treinar a CNN 2D, avaliação da ordem contra o KanjiVG, avaliar (Top-1/Top-5 e acerto da avaliação da ordem), inferência top-K e, depois, medir no notebook da escola
-- [ ] **Backend:** projeto FastAPI, endpoint de reconhecimento, processamento assíncrono, integração com o modelo, notificação
-- [ ] **Frontend:** app Angular, escolha do modo (ordem dos traços), canvas responsivo com mouse e touch que captura os traços, tela de resultados
-- [ ] **Infraestrutura:** acesso pela LAN, CORS e firewall, frontend em build estático, teste com 3–5 alunos (10 clientes como estresse), consumo de CPU/memória/temperatura no notebook da escola
-
-O checklist completo está em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#9-escopo-do-mvp).
-
-## Decisões em aberto
-
-| Tema | Opções | Direção atual |
-|---|---|---|
-| Runtime de inferência | PyTorch / OpenVINO / ONNX Runtime (CPU), FP32 ou INT8 | Definido por benchmark no notebook da escola |
-
-## Como executar
-
-O app ainda não reconhece kanjis: a API responde com um reconhecedor falso. Para instalar, subir a API e o frontend e abrir pelo celular na rede local, siga o [`docs/RUNNING.md`](docs/RUNNING.md). Os comandos de teste, lint e build estão no [`CLAUDE.md`, "Comandos"](CLAUDE.md#comandos). A instalação no notebook da escola entra depois.
+Siga o [`docs/RUNNING.md`](docs/RUNNING.md) para instalar, subir a API e o frontend e abrir pelo celular na mesma rede. Os comandos de teste, lint e build estão no [`CLAUDE.md`](CLAUDE.md#comandos).
 
 ## O que o projeto explora
 
-Visão Computacional, Deep Learning e CNN, correspondência entre traços para avaliar a ordem, processamento assíncrono, arquitetura orientada a eventos, REST API, comunicação em tempo real, concorrência e filas, e integração entre frontend e modelo de Machine Learning.
+Visão computacional e CNN, correspondência entre traços para avaliar a ordem, processamento assíncrono de jobs, atualização em tempo real por SSE, uma tela acessível pensada para o toque, e treino e inferência usando o mesmo pré-processamento.
 
-## Licença
+## Licença e créditos
 
-O código-fonte está sob a [licença MIT](LICENSE).
+O código-fonte está sob a [licença MIT](LICENSE), que cobre só o código deste repositório. Datasets e pesos treinados não ficam no repositório: cada dataset mantém os próprios termos, e pesos treinados com ele podem herdá-los.
 
-A licença cobre só o código deste repositório. Os datasets usados no treino e os pesos treinados não fazem parte do repositório e não são cobertos por ela: cada dataset mantém os próprios termos, e pesos treinados com ele podem herdá-los. Os dados de referência do KanjiVG, usados na avaliação da ordem e distribuídos com a aplicação, mantêm a própria licença (CC BY-SA 3.0, © Ulrich Apel, [kanjivg.tagaini.net](https://kanjivg.tagaini.net)), com atribuição.
-
-O modelo de reconhecimento é treinado com o ETL Character Database (ETL9G), de uso livre, mas que só pode ser obtido pelo [site oficial](https://etlcdb.db.aist.go.jp/): este repositório não tem nenhuma imagem dele, e cada máquina o baixa de lá ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)). Referência: Electrotechnical Laboratory, Japanese Technical Committee for Optical Character Recognition, ETL Character Database, 1973-1984.
+- **KanjiVG:** os dados de referência da ordem dos traços mantêm a própria licença (CC BY-SA 3.0, © Ulrich Apel, [kanjivg.tagaini.net](https://kanjivg.tagaini.net)), com atribuição.
+- **ETL Character Database (ETL9G):** o modelo de reconhecimento vai ser treinado com ele (enquanto o site estiver fora do ar, veja o [spike](docs/spikes/training-without-etl.md)). É de uso livre, mas só pode ser obtido pelo [site oficial](https://etlcdb.db.aist.go.jp/), por isso este repositório não tem nenhuma imagem dele ([ADR 0021](docs/adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)). Referência: Electrotechnical Laboratory, Japanese Technical Committee for Optical Character Recognition, ETL Character Database, 1973-1984.
