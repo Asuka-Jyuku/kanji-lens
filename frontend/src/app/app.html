@@ -4,8 +4,22 @@
     <app-mode-selector />
     <app-drawing-pad />
     <app-recognition-panel />
+    <app-prediction-list />
   </div>
   @if (devTool) {
     <ng-container *ngComponentOutlet="devTool" />
   }
+  <footer class="credits">
+    <p i18n="@@app.credits.kanjivg">
+      Ordem dos traços comparada com o
+      <a href="https://kanjivg.tagaini.net" target="_blank" rel="noopener noreferrer">KanjiVG</a>, ©
+      Ulrich Apel, sob a licença
+      <a
+        href="https://creativecommons.org/licenses/by-sa/3.0/"
+        target="_blank"
+        rel="noopener noreferrer"
+        >CC BY-SA 3.0</a
+      >.
+    </p>
+  </footer>
 </main>

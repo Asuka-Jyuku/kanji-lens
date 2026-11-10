@@ -26,7 +26,8 @@ h1 {
 
 /* As wide as the canvas, so they read as one block (drawing-pad.css takes the same size). */
 app-mode-selector,
-app-recognition-panel {
+app-recognition-panel,
+app-prediction-list {
   width: var(--workspace-pad-size);
 }
 
@@ -41,10 +42,11 @@ app-drawing-pad {
   .workspace {
     display: grid;
     grid-template-columns: 10rem minmax(0, auto);
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     grid-template-areas:
       'mode pad'
-      'recognize pad';
+      'recognize pad'
+      'predictions pad';
     justify-content: center;
     align-items: start;
     gap: 0.5rem 1rem;
@@ -60,7 +62,28 @@ app-drawing-pad {
     width: auto;
   }
 
+  app-prediction-list {
+    grid-area: predictions;
+    width: auto;
+  }
+
   app-drawing-pad {
     grid-area: pad;
   }
+}
+
+/* The KanjiVG credit its licence asks for (CC BY-SA 3.0; ADR 0016). The ink on the page
+   background is 15.7:1, and the links keep the browser's underline (WCAG 1.4.1 and 1.4.3). */
+.credits {
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.credits p {
+  margin: 0;
+}
+
+.credits a {
+  color: inherit;
 }

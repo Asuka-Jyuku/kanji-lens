@@ -179,7 +179,7 @@ Port novo só entra quando há uma segunda implementação de verdade (os fakes 
 | `domain/` | O desenho e os limites dele, o modo, o corpo do `POST` (`RecognitionRequest`), o job e o estado da tela, em TypeScript puro |
 | `application/` | `DrawingSession` (o desenho e o modo escolhido, com `mode` e `chooseMode()`), o use case `RecognizeDrawing` e os ports `RecognitionGateway` e `ResultStream` |
 | `infrastructure/` | `HttpRecognitionGateway` (`HttpClient`) e `SseResultStream` (`EventSource`), com a leitura do JSON da API num lugar só (`recognition-api.ts`) |
-| `presentation/` | Os componentes: escolha do modo, canvas, "Reconhecer" com o estado, e a exportação do desenho (só no desenvolvimento) |
+| `presentation/` | Os componentes: escolha do modo, canvas, "Reconhecer" com o estado, a lista de candidatos com a avaliação da ordem em texto, e a exportação do desenho (só no desenvolvimento) |
 
 Os ports são ligados aos adapters em `app.config.ts`. Componente nunca injeta `HttpClient`.
 
