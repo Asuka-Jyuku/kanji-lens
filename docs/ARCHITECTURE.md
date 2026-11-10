@@ -287,12 +287,14 @@ A fila e a notificação são **adapters atrás de um port** ([ADR 0019](adr/001
 
 | Camada | O que contém | Pode importar |
 |---|---|---|
-| `domain/` | Modelos (`Drawing` feito de traços e a captura deles, com os mesmos limites da API, `StrokeOrderMode`, `Prediction`, `StrokeOrderEvaluation`, `RecognitionJob`) e funções puras | nada do Angular |
-| `application/` | Use cases / facades (`DrawingSession`, o desenho em andamento; `StrokeOrderModeSelection`, o modo escolhido para o próximo reconhecimento; `RecognizeDrawing`) e ports como classes abstratas usadas como token de DI (`RecognitionGateway`, `ResultStream`) | `domain`, e só o `@angular/core` (signals e DI; [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
-| `infrastructure/` | Implementações dos ports: `HttpRecognitionGateway` (`HttpClient`), `SseResultStream` (`EventSource`) | `application`, `domain`, Angular |
-| `presentation/` | Componentes, páginas e rotas: o seletor de modo, o canvas e a tela de resultados | `application`, `domain`, Angular |
+| `domain/` | Modelos (`Drawing` feito de traços e a captura deles, com os mesmos limites da API, `StrokeOrderMode`, `RecognitionRequest` (o corpo do `POST`), `DrawingSample` (o desenho exportado com o gabarito), `Prediction`, `StrokeOrderEvaluation`, `RecognitionJob`) e funções puras | nada do Angular |
+| `application/` | Use cases / facades (`DrawingSession`, o desenho em andamento; `StrokeOrderModeSelection`, o modo escolhido para o próximo reconhecimento; `ExportDrawing`, a exportação do desenho, só no desenvolvimento; `RecognizeDrawing`) e ports como classes abstratas usadas como token de DI (`FileDownload`, `RecognitionGateway`, `ResultStream`) | `domain`, e só o `@angular/core` (signals e DI; [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
+| `infrastructure/` | Implementações dos ports: `BrowserFileDownload` (download por link de Blob, no aparelho), `HttpRecognitionGateway` (`HttpClient`), `SseResultStream` (`EventSource`) | `application`, `domain`, Angular |
+| `presentation/` | Componentes, páginas e rotas: o seletor de modo, o canvas, a exportação do desenho (só no desenvolvimento) e a tela de resultados | `application`, `domain`, Angular |
 
 Os adapters são ligados aos ports nos providers de `app.config.ts`. Componente nunca injeta `HttpClient`.
+
+**Ferramentas só de desenvolvimento** (hoje, a exportação do desenho para os conjuntos de teste; [#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66), [docs/MODEL.md](MODEL.md#desenhos-do-canvas)) ficam listadas em `app.dev-tools.development.ts`, com os providers delas. O build de desenvolvimento (`ng serve`, testes, `extract-i18n`) usa esse arquivo; o de produção usa o `app.dev-tools.ts`, vazio, pelo `fileReplacements` do `angular.json`. Assim o código delas nem entra no bundle de produção, e o CI confere isso depois do build (`npm run check:production-bundle`).
 
 ### 3.3 ML (`ml/src/kanjilens_ml/`)
 
@@ -598,7 +600,7 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [ ] Criar o pré-processamento compartilhado (imagem e traços normalizados). Os traços normalizados já existem ([docs/MODEL.md](MODEL.md#traços-normalizados-avaliação-da-ordem)); falta a imagem da CNN ([#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14)).
 - [ ] Carregar o dataset com split fixo de treino, validação e teste ([#13](https://github.com/Asuka-Jyuku/kanji-lens/issues/13)).
 - [ ] Implementar e treinar a CNN 2D compacta ([#15](https://github.com/Asuka-Jyuku/kanji-lens/issues/15)).
-- [ ] Implementar a avaliação da ordem contra o KanjiVG (`ordered`). O algoritmo e os dados de referência existem ([docs/MODEL.md](MODEL.md#avaliação-da-ordem-dos-traços)); falta o conjunto de desenhos reais ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29), depois da [#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)).
+- [ ] Implementar a avaliação da ordem contra o KanjiVG (`ordered`). O algoritmo e os dados de referência existem ([docs/MODEL.md](MODEL.md#avaliação-da-ordem-dos-traços)); falta o conjunto de desenhos reais, gravados pela exportação do canvas ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29); [#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66); [docs/MODEL.md, "Desenhos do canvas"](MODEL.md#desenhos-do-canvas)).
 - [ ] Avaliar o reconhecimento (Top-1/Top-5; [#16](https://github.com/Asuka-Jyuku/kanji-lens/issues/16)) e a avaliação da ordem (conjunto com ordem certa e errada; [#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29)).
 - [ ] Implementar inferência top-K ([#17](https://github.com/Asuka-Jyuku/kanji-lens/issues/17)).
 - [ ] Medir no notebook da escola, depois de o modelo e o código ficarem prontos (runtimes, resolução, INT8, concorrência; [#67](https://github.com/Asuka-Jyuku/kanji-lens/issues/67)).
@@ -620,10 +622,10 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [x] Implementar desenho com mouse e touch, capturando os traços ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
 - [x] Implementar a escolha do modo (ordem importa / não importa) ([#57](https://github.com/Asuka-Jyuku/kanji-lens/issues/57)).
 - [x] Implementar a limpeza do canvas e o desfazer do último traço ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
+- [x] Exportar o desenho como JSON, só no build de desenvolvimento, para montar os conjuntos de teste ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66); [docs/MODEL.md](MODEL.md#desenhos-do-canvas)).
 - [ ] Integrar com a REST API e o SSE ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
 - [ ] Implementar o indicador de processamento ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
 - [ ] Exibir as previsões e a avaliação da ordem ([#59](https://github.com/Asuka-Jyuku/kanji-lens/issues/59)).
-- [ ] Exportar o desenho do canvas como JSON, só no build de desenvolvimento, para montar os conjuntos de teste ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)).
 - [ ] Abrir o verbete do kanji escolhido no dicionário externo, com o padrão configurável ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)).
 
 ### Etapa 4: Infraestrutura
