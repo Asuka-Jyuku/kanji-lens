@@ -1,0 +1,79 @@
+<section class="recognition">
+  <button
+    type="button"
+    class="recognize"
+    [disabled]="!recognition.canRecognize()"
+    (click)="recognition.recognize()"
+    i18n="@@recognition.recognize"
+  >
+    Reconhecer
+  </button>
+  <p class="status" role="status">
+    @switch (state().phase) {
+      @case ('sending') {
+        <span i18n="@@recognition.sending">Enviando…</span>
+      }
+      @case ('queued') {
+        <span i18n="@@recognition.queued">Na fila</span>
+      }
+      @case ('processing') {
+        <span i18n="@@recognition.processing">Reconhecendo…</span>
+      }
+      @case ('completed') {
+        @if (best(); as best) {
+          <span i18n="@@recognition.completed"
+            >Mais provável: <span class="kanji" lang="ja">{{ best.kanji }}</span></span
+          >
+        } @else {
+          <span i18n="@@recognition.noCandidates">Nenhum candidato. Limpe e desenhe de novo.</span>
+        }
+      }
+      @case ('failed') {
+        @if (failure(); as failure) {
+          @switch (failure.error) {
+            @case ('queue_full') {
+              <span i18n="@@recognition.error.queueFull"
+                >Muitos desenhos na fila agora. Tente de novo em
+                {{ failure.retryAfterSeconds }} segundos.</span
+              >
+            }
+            @case ('inference_failed') {
+              <span i18n="@@recognition.error.inferenceFailed"
+                >Não deu para reconhecer este desenho. Tente de novo.</span
+              >
+            }
+            @case ('invalid_drawing') {
+              <span i18n="@@recognition.error.invalidDrawing"
+                >O desenho não foi aceito. Limpe e desenhe de novo.</span
+              >
+            }
+            @case ('drawing_too_large') {
+              <span i18n="@@recognition.error.drawingTooLarge"
+                >O desenho ficou grande demais. Desfaça alguns traços ou limpe e desenhe de
+                novo.</span
+              >
+            }
+            @case ('job_not_found') {
+              <span i18n="@@recognition.error.jobNotFound"
+                >O resultado expirou. Toque em Reconhecer de novo.</span
+              >
+            }
+            @case ('offline') {
+              <span i18n="@@recognition.error.offline"
+                >Sem conexão com o servidor. Confira o Wi-Fi e tente de novo.</span
+              >
+            }
+            @case ('timeout') {
+              <span i18n="@@recognition.error.timeout"
+                >O servidor demorou demais para responder. Tente de novo.</span
+              >
+            }
+            @default {
+              <span i18n="@@recognition.error.unexpected">Algo deu errado. Tente de novo.</span>
+            }
+          }
+        }
+      }
+    }
+  </p>
+</section>

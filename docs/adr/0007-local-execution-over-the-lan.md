@@ -28,3 +28,4 @@ Rodamos tudo numa máquina local que faz o papel de servidor, e os clientes a ac
   - o `ng serve --host 0.0.0.0` vale só no desenvolvimento;
   - em produção, o frontend é servido como build estático.
 - **Atualização de 2026-11-08 ([ADR 0013](0013-run-directly-on-the-school-notebook-without-docker.md)):** no notebook, o KanjiLens roda direto, sem Docker, com os processos como serviço do sistema.
+- **Atualização de 2026-11-10 ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)):** das duas formas de o frontend achar a API, ficou o **proxy de `/api` no `ng serve`** (`frontend/proxy.conf.mjs`). Com ele, no desenvolvimento só o `ng serve` escuta em `0.0.0.0`; a API fica em `127.0.0.1`, o firewall abre só a 4200 e o CORS fica desligado. As portas e o resto da exposição estão no [docs/SECURITY.md](../SECURITY.md).

@@ -1,4 +1,4 @@
-"""Cap the request body before anything parses it (CLAUDE.md, "Segurança").
+"""Cap the request body before anything parses it (docs/SECURITY.md, "Limites de entrada").
 
 The schema and the domain cap strokes and points, but only after the JSON is parsed; this caps
 the bytes, so an oversized body never reaches memory. Pure ASGI, so it also counts a chunked

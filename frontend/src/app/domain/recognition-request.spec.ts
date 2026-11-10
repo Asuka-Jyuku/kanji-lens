@@ -1,29 +1,41 @@
-import { Drawing } from './drawing';
 import { toRecognitionRequest } from './recognition-request';
 
 describe('toRecognitionRequest', () => {
-  it('sends the strokes as drawn, each point as [x, y, t], with the canvas and the mode', () => {
-    const drawing: Drawing = {
-      canvas: { width: 320, height: 300 },
-      strokes: [
-        [
-          { x: 41.5, y: 30, t: 0 },
-          { x: 41, y: 88.25, t: 140 },
+  it('sends the mode, the canvas and the strokes as [x, y, t], in the order drawn', () => {
+    const request = toRecognitionRequest(
+      {
+        canvas: { width: 320, height: 300 },
+        strokes: [
+          [
+            { x: 10.5, y: 20, t: 0 },
+            { x: 30, y: 40.25, t: 16 },
+          ],
+          [{ x: 5, y: 6, t: 400 }],
         ],
-        [{ x: -4, y: 310, t: 410 }],
-      ],
-    };
+      },
+      'ordered',
+    );
 
-    expect(toRecognitionRequest(drawing, 'ordered')).toEqual({
+    expect(request).toEqual({
       stroke_order_mode: 'ordered',
       canvas: { width: 320, height: 300 },
       strokes: [
         [
-          [41.5, 30, 0],
-          [41, 88.25, 140],
+          [10.5, 20, 0],
+          [30, 40.25, 16],
         ],
-        [[-4, 310, 410]],
+        [[5, 6, 400]],
       ],
     });
+  });
+
+  it('is plain JSON, with nothing but the three fields the API accepts', () => {
+    const request = toRecognitionRequest(
+      { canvas: { width: 1, height: 1 }, strokes: [] },
+      'unordered',
+    );
+
+    expect(JSON.parse(JSON.stringify(request))).toEqual(request);
+    expect(Object.keys(request).sort()).toEqual(['canvas', 'stroke_order_mode', 'strokes']);
   });
 });

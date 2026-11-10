@@ -21,7 +21,7 @@ class DrawingLimits:
     canvas_margin: float  # fraction of each side a point may fall outside the canvas
 
 
-# Initial values from ADR 0016; changing them updates the ADR and CLAUDE.md, "Segurança".
+# Initial values from ADR 0016; changing them updates the ADR and docs/SECURITY.md.
 DRAWING_LIMITS = DrawingLimits(
     max_strokes=40,
     max_points_per_stroke=1_000,

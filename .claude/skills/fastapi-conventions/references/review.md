@@ -27,7 +27,7 @@ Ruff (lint e formatação), mypy strict, pytest e o teste de arquitetura (os sei
 - [ ] Nada supõe mais de um processo do Uvicorn enquanto a fila estiver em memória.
 - [ ] O stream SSE manda o estado completo a cada mudança, termina no estado final e não deixa tarefa nem espera pendurada quando o cliente desconecta (ADR 0020).
 
-**Segurança na rede local (`CLAUDE.md`, "Segurança")**
+**Segurança na rede local ([`docs/SECURITY.md`](../../../../docs/SECURITY.md))**
 - [ ] Tamanho e formato do desenho (quantidade de traços e de pontos) e o `stroke_order_mode` conferidos antes de ir para a fila (`413` / `400`); o corpo continua limitado pelo `BodySizeLimitMiddleware` (1 MiB).
 - [ ] A fila é limitada; fila cheia → `503` com `Retry-After`.
 - [ ] O CORS só lista a origem do frontend, nunca `*`.

@@ -25,7 +25,7 @@ Closes #<!-- número da issue -->
 - [ ] Mudou a avaliação da ordem (algoritmo, normalização dos traços, dados do KanjiVG)? Erros detectados × falsos alarmes antes e depois, no mesmo conjunto fixo de desenhos
 - [ ] Decisão de arquitetura (dependência, ferramenta, modelo/dataset, segurança, infraestrutura, decisão em aberto, padrão de código)? ADR criada ou atualizada neste PR, ou o motivo de não precisar
 - [ ] Mudou tela, canvas ou controle? Cada decisão de desenho cita o princípio de `docs/UI-UX.md` (fonte × julgamento) e diz o que não foi validado num celular de verdade
-- [ ] Mudou portas, CORS, limites de entrada ou o tamanho da fila? O `CLAUDE.md`, "Segurança" (ou o `docs/SECURITY.md`, quando existir) continua batendo
+- [ ] Mudou portas, CORS, limites de entrada ou o tamanho da fila? O `docs/SECURITY.md` continua batendo
 - [ ] Documentos em dia (`CLAUDE.md`, "Documentos nascem com o assunto"): ARCHITECTURE.md, ADRs, READMEs, `CLAUDE.md`, `CONTRIBUTING.md` e skills conferidos e atualizados, ou nada a mudar
 - [ ] Mudou o `README.md`? O `README.pt-BR.md` também (e vice-versa)
 - [ ] Nenhum dataset, peso de modelo, segredo ou `.env` no commit

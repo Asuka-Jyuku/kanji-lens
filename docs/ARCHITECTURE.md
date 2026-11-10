@@ -289,7 +289,7 @@ A fila e a notificação são **adapters atrás de um port** ([ADR 0019](adr/001
 |---|---|---|
 | `domain/` | Modelos (`Drawing` feito de traços e a captura deles, com os mesmos limites da API, `StrokeOrderMode`, `RecognitionRequest` (o corpo do `POST`), `DrawingSample` (o desenho exportado com o gabarito), `Prediction`, `StrokeOrderEvaluation`, `RecognitionJob`) e funções puras | nada do Angular |
 | `application/` | Use cases / facades (`DrawingSession`, o desenho em andamento; `StrokeOrderModeSelection`, o modo escolhido para o próximo reconhecimento; `ExportDrawing`, a exportação do desenho, só no desenvolvimento; `RecognizeDrawing`) e ports como classes abstratas usadas como token de DI (`FileDownload`, `RecognitionGateway`, `ResultStream`) | `domain`, e só o `@angular/core` (signals e DI; [ADR 0017](adr/0017-frontend-tooling-angular-localize-vitest-eslint-boundaries.md)) |
-| `infrastructure/` | Implementações dos ports: `BrowserFileDownload` (download por link de Blob, no aparelho), `HttpRecognitionGateway` (`HttpClient`), `SseResultStream` (`EventSource`) | `application`, `domain`, Angular |
+| `infrastructure/` | Implementações dos ports: `BrowserFileDownload` (download por link de Blob, no aparelho), `HttpRecognitionGateway` (`HttpClient`), `SseResultStream` (`EventSource`), com a leitura do JSON da API num lugar só (`recognition-api.ts`) | `application`, `domain`, Angular |
 | `presentation/` | Componentes, páginas e rotas: o seletor de modo, o canvas, a exportação do desenho (só no desenvolvimento) e a tela de resultados | `application`, `domain`, Angular |
 
 Os adapters são ligados aos ports nos providers de `app.config.ts`. Componente nunca injeta `HttpClient`.
@@ -370,7 +370,7 @@ Decidida na [ADR 0020](adr/0020-result-notification-by-server-sent-events.md). O
   - `data:` é o **estado completo do job**, no mesmo formato do `GET /api/recognitions/{id}`; num job `failed`, o estado traz o código da falha (`inference_failed`), que o frontend traduz;
   - o stream termina no estado final.
 - **Reconexão:** como cada evento é completo, quem reconecta recebe o estado atual, sem `Last-Event-ID`.
-- **Frontend:** o adapter `SseResultStream` usa o `EventSource` nativo e fecha no estado final. Se o SSE falhar repetidamente, o frontend consulta o `GET /api/recognitions/{id}` por polling.
+- **Frontend:** o adapter `SseResultStream` usa o `EventSource` nativo e fecha no estado final. Se o SSE falhar repetidamente (3 erros seguidos sem estado novo, ou o navegador desistir da conexão), o use case `RecognizeDrawing` passa a consultar o `GET /api/recognitions/{id}` a cada 1 s. Sem estado final em 60 s, a tela diz que o servidor demorou (#58).
 - **Ports:** `ResultNotifier` (backend) e `ResultStream` (frontend).
 
 ### 5.3 Erros
@@ -397,25 +397,25 @@ O notebook da escola hospeda a aplicação e funciona como servidor (seção 6.3
 
 ```text
 Servidor: 192.168.0.10
-Angular:  http://192.168.0.10:4200   (desenvolvimento; em produção, build estático)
-FastAPI:  http://192.168.0.10:8000
+Angular:  http://192.168.0.10:4200   (desenvolvimento, com /api encaminhado à API; em produção, build estático)
+FastAPI:  http://127.0.0.1:8000      (desenvolvimento: só a própria máquina; o celular passa pelo proxy)
 ```
 
 O celular é apenas cliente. Toda a inferência roda no servidor.
 
 ### 6.1 Configuração necessária
 
-- **Bind dos serviços em `0.0.0.0`.** Por padrão, tanto o `ng serve` quanto o Uvicorn escutam só em `localhost` e ficam invisíveis para o celular. Use `ng serve --host 0.0.0.0` (só no desenvolvimento) e `uvicorn ... --host 0.0.0.0`.
+- **Bind em `0.0.0.0` só do que o celular acessa.** Por padrão, o `ng serve` e o Uvicorn escutam só em `localhost`. No desenvolvimento, só o `ng serve` precisa de `--host 0.0.0.0`: o celular chega à API pelo proxy dele, e a API continua em `127.0.0.1` (#58). Em produção, a porta única fica em `0.0.0.0` (#62).
 - **Frontend em produção é build estático.** O servidor de desenvolvimento do Angular não é configuração de deploy ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)). Como servir o build (pelo próprio FastAPI ou por um servidor estático) fica para o `docs/RUNNING.md`.
-- **CORS.** No desenvolvimento, o frontend (porta 4200) e a API (porta 8000) são origens diferentes, e o FastAPI precisa liberar a origem do frontend, e só ela. Em produção, servir o build estático **na mesma origem da API** elimina o CORS. O build pode ser servido pelo próprio FastAPI ou por um proxy na frente dos dois; a escolha fica para o `docs/RUNNING.md`.
-- **URL da API no frontend.** Se o frontend chamar `http://localhost:8000`, no celular `localhost` é o próprio celular. Use uma URL relativa (`/api`): no desenvolvimento, o proxy do `ng serve` encaminha para a API; em produção, a mesma origem resolve.
-- **Firewall.** Liberar na rede local só as portas em uso: 4200 e 8000 no desenvolvimento, e a porta única de produção.
+- **CORS desligado: uma origem só.** No desenvolvimento, o proxy do `ng serve` (`frontend/proxy.conf.mjs`) encaminha `/api` para a API, então a página e a API têm a mesma origem (#58). Em produção, servir o build estático **na mesma origem da API** tem o mesmo efeito; quem serve o build (o próprio FastAPI ou um servidor na frente dos dois) é a [#62](https://github.com/Asuka-Jyuku/kanji-lens/issues/62). Se um dia forem origens diferentes, o CORS libera só a do frontend ([SECURITY.md](SECURITY.md)).
+- **URL da API no frontend.** Se o frontend chamar `http://localhost:8000`, no celular `localhost` é o próprio celular. Os adapters usam a URL relativa `/api` (`infrastructure/recognition-api.ts`): no desenvolvimento, o proxy do `ng serve` encaminha para a API (por padrão `http://127.0.0.1:8000`; outra com `KANJILENS_API_URL`), e o SSE passa por ele sem buffering (conferido na #58); em produção, a mesma origem resolve.
+- **Firewall.** Liberar na rede local só as portas em uso: a 4200 no desenvolvimento (a 8000 fica fechada, porque o celular passa pelo proxy) e a porta única de produção.
 - **Acesso pelo celular.** O aluno chega pela URL do servidor; a proposta é um QR Code na parede da escola com essa URL, o que depende do IP reservado (abaixo).
 - **IP fixo.** O IP do servidor pode mudar a cada conexão ao roteador. Reserve o IP no DHCP do roteador para não precisar reconfigurar.
 
 ### 6.2 Exposição na rede local
 
-Qualquer um na mesma rede alcança a API, sem login. As regras que decorrem disso (limite de entrada, fila limitada, CORS restrito, nenhuma saída de rede) estão no `CLAUDE.md`, "Segurança", e passam para o `docs/SECURITY.md` quando a API for exposta pela primeira vez.
+Qualquer um na mesma rede alcança a API, sem login. As regras que decorrem disso (portas, limite de entrada, fila limitada, CORS, dados dos alunos, nenhuma saída de rede) estão no [SECURITY.md](SECURITY.md).
 
 ### 6.3 Hardware de referência: o notebook da escola
 
@@ -483,7 +483,7 @@ O resultado:
 |---|---|---|
 | Reconhecimento (os dois modos) | Imagens do caractere (dados *offline*) para treinar | **ETL9G** (grayscale 128×127), com o ETL9B (binário 64×63) como alternativa leve ([ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md)) |
 | Avaliação da ordem (`ordered`) | A ordem e a direção de referência de cada kanji; **nada de treino** | KanjiVG `r20260714` (CC BY-SA 3.0), cobrindo toda a lista de classes |
-| Teste da avaliação da ordem | Um conjunto fixo de desenhos com ordem certa e errada, com o resultado esperado | Desenhos feitos de propósito para o teste. Coletar desenhos de alunos muda a regra de não guardar desenhos (`CLAUDE.md`, "Segurança") e pede ADR |
+| Teste da avaliação da ordem | Um conjunto fixo de desenhos com ordem certa e errada, com o resultado esperado | Desenhos feitos de propósito para o teste. Coletar desenhos de alunos muda a regra de não guardar desenhos ([SECURITY.md](SECURITY.md#dados-dos-alunos)) e pede ADR |
 
 O ETL foi digitalizado de folhas de papel: tem a imagem final, sem a trajetória da caneta. Isso basta, porque o modelo não usa a ordem. Datasets *online* (TUAT Kuchibue/Nakayosi, CASIA-OLHWDB) **não são necessários**: o `ordered` não treina um modelo temporal.
 
@@ -623,8 +623,8 @@ A primeira versão prioriza o fluxo completo de reconhecimento, de ponta a ponta
 - [x] Implementar a escolha do modo (ordem importa / não importa) ([#57](https://github.com/Asuka-Jyuku/kanji-lens/issues/57)).
 - [x] Implementar a limpeza do canvas e o desfazer do último traço ([#56](https://github.com/Asuka-Jyuku/kanji-lens/issues/56)).
 - [x] Exportar o desenho como JSON, só no build de desenvolvimento, para montar os conjuntos de teste ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66); [docs/MODEL.md](MODEL.md#desenhos-do-canvas)).
-- [ ] Integrar com a REST API e o SSE ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
-- [ ] Implementar o indicador de processamento ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
+- [x] Integrar com a REST API e o SSE ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
+- [x] Implementar o indicador de processamento ([#58](https://github.com/Asuka-Jyuku/kanji-lens/issues/58)).
 - [ ] Exibir as previsões e a avaliação da ordem ([#59](https://github.com/Asuka-Jyuku/kanji-lens/issues/59)).
 - [ ] Abrir o verbete do kanji escolhido no dicionário externo, com o padrão configurável ([#35](https://github.com/Asuka-Jyuku/kanji-lens/issues/35)).
 

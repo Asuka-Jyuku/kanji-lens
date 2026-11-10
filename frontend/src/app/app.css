@@ -11,18 +11,23 @@ h1 {
   text-align: center;
 }
 
-/* The mode comes before the drawing, so it is chosen and seen first (ADR 0012; Nielsen 1). */
+/* The mode comes before the drawing, so it is chosen and seen first (ADR 0012; Nielsen 1), and
+   "Reconhecer" right after it, within the thumb's reach (docs/UI-UX.md, "Canvas primeiro"). */
 .workspace {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  /* The canvas side: the width, at most 60% of the height, and on a short phone (320x568) what
+     the height leaves after the title, the mode, the pad's buttons, "Reconhecer" and the two
+     status lines (about 23.5rem), so "Reconhecer" stays in view without scrolling. */
+  --workspace-pad-size: min(100%, 60dvh, calc(100dvh - 23.5rem));
 }
 
-/* As wide as the canvas, so the two read as one block (the same size as --pad-size in
-   drawing-pad.css). */
-app-mode-selector {
-  width: min(100%, 60dvh);
+/* As wide as the canvas, so they read as one block (drawing-pad.css takes the same size). */
+app-mode-selector,
+app-recognition-panel {
+  width: var(--workspace-pad-size);
 }
 
 app-drawing-pad {
@@ -30,23 +35,32 @@ app-drawing-pad {
   min-width: 0;
 }
 
-/* A phone lying down: the selector goes left of the pad, so the canvas keeps the height
-   left under the title (drawing-pad.css; WCAG 1.3.4). */
+/* A phone lying down: the mode and "Reconhecer" go left of the pad, so the canvas keeps the
+   height left under the title (drawing-pad.css; WCAG 1.3.4). */
 @media (orientation: landscape) and (max-height: 32rem) {
   .workspace {
-    flex-direction: row;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 10rem minmax(0, auto);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'mode pad'
+      'recognize pad';
     justify-content: center;
-    gap: 1rem;
+    align-items: start;
+    gap: 0.5rem 1rem;
   }
 
   app-mode-selector {
-    flex: 0 0 10rem;
+    grid-area: mode;
+    width: auto;
+  }
+
+  app-recognition-panel {
+    grid-area: recognize;
     width: auto;
   }
 
   app-drawing-pad {
-    flex: 1 1 auto;
-    align-self: flex-start;
+    grid-area: pad;
   }
 }

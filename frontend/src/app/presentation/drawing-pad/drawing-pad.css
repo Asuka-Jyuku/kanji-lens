@@ -1,7 +1,8 @@
 :host {
   display: block;
-  /* Canvas first: the largest element, whole on a phone screen with the buttons below it. */
-  --pad-size: min(100%, 60dvh);
+  /* Canvas first: the largest element, whole on a phone screen with the buttons below it. The
+     page sets --workspace-pad-size when other controls share the screen (app.css). */
+  --pad-size: var(--workspace-pad-size, min(100%, 60dvh));
 }
 
 .pad {

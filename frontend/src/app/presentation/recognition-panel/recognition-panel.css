@@ -1,0 +1,45 @@
+:host {
+  display: block;
+}
+
+.recognition {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* The main action: filled, so it stands apart from "Desfazer" and "Limpar" (Nielsen 8).
+   White on --action-background is 6.7:1 (WCAG 1.4.3). */
+.recognize {
+  /* About 1 cm, like the pad buttons (Harley, NN/g; WCAG 2.5.8). */
+  min-height: 3rem;
+  font: inherit;
+  font-weight: 600;
+  border: 2px solid var(--action-background);
+  border-radius: 8px;
+  background: var(--action-background);
+  color: var(--action-ink);
+}
+
+.recognize:focus-visible {
+  outline: 3px solid var(--pad-focus);
+  outline-offset: 2px;
+}
+
+.recognize:disabled {
+  opacity: 0.55;
+}
+
+/* Room for one line kept even when empty, so a new message does not push the page. */
+.status {
+  margin: 0;
+  min-height: 1.5em;
+  text-align: center;
+}
+
+.kanji {
+  font-size: 1.25em;
+  /* Bigger, but no taller line: the status keeps its reserved height. */
+  line-height: 1;
+  font-weight: 600;
+}

@@ -1,7 +1,7 @@
 """Jobs kept in the memory of the API process until they expire (ADR 0019).
 
 Expired jobs are dropped, with their drawing, whenever the repository is used, so a drawing
-never outlives its result (CLAUDE.md, "Segurança").
+never outlives its result (docs/SECURITY.md, "Dados dos alunos").
 """
 
 from datetime import timedelta
