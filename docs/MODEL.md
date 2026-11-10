@@ -1,66 +1,50 @@
 # Modelo e pré-processamento
 
-O que o KanjiLens faz com os traços e as imagens antes do modelo, a avaliação da ordem dos traços, os desenhos do canvas usados nos testes e, a partir da etapa 1, o dataset, o treino, as métricas e as versões do modelo. Este documento muda junto com o código: toda mudança em dataset, pré-processamento, treino ou modelo atualiza esta página no mesmo PR (`CLAUDE.md`, "Documentos nascem com o assunto").
-
-O dataset (ETL9G) e as classes (os 1.026 教育漢字) estão decididos na [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md). A seção do dataset nasce com o carregamento dele ([#13](https://github.com/Asuka-Jyuku/kanji-lens/issues/13)).
+O que o KanjiLens faz com os traços antes de avaliar, como a avaliação da ordem funciona, e os desenhos do canvas usados nos testes. O dataset, o treino e o modelo entram aqui quando existirem. O dataset (ETL9G) e as classes estão na [ADR 0021](adr/0021-etl9g-dataset-and-kyouiku-kanji-as-first-classes.md).
 
 ## Pré-processamento
 
-Existe uma implementação só, em `ml/src/kanjilens_ml/preprocessing/`, que o treino e o backend importam (`CLAUDE.md`, "Pré-processamento sempre junto"). Hoje ela tem a parte dos traços. A imagem da CNN entra no segundo PR da [#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14), quando houver amostras do ETL para comparar com o canvas.
+Uma implementação só, em `ml/src/kanjilens_ml/preprocessing/`, usada pelo treino e pelo backend. Hoje tem os traços. A imagem da CNN entra na segunda parte da [#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14), quando houver amostras do ETL para comparar com o canvas.
 
 ### Traços normalizados (avaliação da ordem)
 
-`kanjilens_ml.preprocessing.strokes.normalize_strokes(strokes, points_per_stroke=24)` é a entrada da avaliação da ordem contra o KanjiVG ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)). A mesma função normaliza os traços do canvas e os de referência do KanjiVG, para os dois ficarem no mesmo sistema de coordenadas.
+`normalize_strokes(strokes, points_per_stroke=24)`, em `kanjilens_ml.preprocessing.strokes`. A mesma função trata os traços do canvas e os do KanjiVG, para os dois ficarem no mesmo sistema de coordenadas ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)).
 
-**Entrada:** os traços como o canvas manda, cada ponto `[x, y, t]` em pixels CSS ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)), ou `[x, y]`, como sai do KanjiVG.
-
-**Passos:**
-1. **Caixa do caractere:** a caixa que envolve todos os pontos desenhados. Ela é calculada antes da reamostragem, porque os pontos reamostrados podem pular um canto do traço.
-2. **Escala e posição:** o caractere é escalado pelo **lado maior** da caixa e centrado no quadrado `[0, 1] × [0, 1]`. A proporção se mantém: um kanji alto e estreito continua alto e estreito, sem ser esticado para encher o quadrado.
-3. **Reamostragem:** cada traço vira `points_per_stroke` pontos **igualmente espaçados pelo comprimento**, do primeiro ao último ponto. Pontos repetidos (o dedo parado na tela) não somam comprimento.
-
-**O que se mantém:** a ordem dos traços, a separação entre eles e a direção de cada um, porque são o que a avaliação compara. **O tempo `t` é ignorado:** a reamostragem é pelo comprimento, como no protótipo.
-
-**Casos de borda:**
-- um traço de um ponto só, ou de pontos todos no mesmo lugar, vira esse ponto repetido;
-- um desenho inteiro num ponto só vai para o centro, `(0,5; 0,5)`;
-- traço sem pontos, coordenada não finita ou menos de 2 pontos por traço levantam `ValueError`;
-- nenhum traço devolve uma lista vazia.
-
-**Parâmetro:** `POINTS_PER_STROKE = 24`, o valor do protótipo ([spike](spikes/stroke-order-evaluation.md)). Ele faz parte dos parâmetros da [avaliação da ordem](#avaliação-da-ordem-dos-traços), que se ajustam com desenhos reais.
-
-**Traços unidos:** `resample_polyline(polyline, count)` é a reamostragem pelo comprimento, pública para a avaliação da ordem montar o caminho de traços vizinhos unidos.
-
-**Formato de saída:** listas de tuplas `(x, y)` de `float`, que atravessam o processo de inferência por pickle ([ADR 0019](adr/0019-in-memory-job-queue-with-one-inference-process.md)).
-
-**Sem PyTorch:** o módulo é Python puro, e um contrato do Import Linter (`ml/pyproject.toml`) impede que ele importe o PyTorch, porque a avaliação da ordem o importa ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)).
+- **Entrada:** pontos `[x, y, t]` em pixels CSS, como o canvas manda, ou `[x, y]`, como sai do KanjiVG.
+- **Passos:**
+  1. calcula a caixa de todos os pontos (antes de reamostrar, para não perder cantos);
+  2. escala pelo lado maior da caixa e centraliza em `[0, 1] × [0, 1]`, mantendo a proporção;
+  3. reamostra cada traço em 24 pontos igualmente espaçados pelo comprimento.
+- **Mantém** a ordem, a separação e a direção dos traços. **Ignora** o tempo `t`.
+- **Casos de borda:**
+  - traço de um ponto só, ou parado num lugar, vira esse ponto repetido;
+  - desenho inteiro num ponto vai para o centro, `(0,5; 0,5)`;
+  - traço vazio, coordenada não finita ou menos de 2 pontos por traço levantam `ValueError`;
+  - sem traços, devolve lista vazia.
+- **Saída:** listas de tuplas `(x, y)`, que passam pelo pickle até o processo de inferência.
+- `resample_polyline(polyline, count)` é a reamostragem, pública para a avaliação montar traços vizinhos unidos.
+- **Sem PyTorch:** um contrato do Import Linter garante isso.
 
 ## Avaliação da ordem dos traços
 
-No modo `ordered`, cada candidato do reconhecimento ganha a comparação do desenho com a ordem e a direção do KanjiVG ([ADR 0012](adr/0012-ordered-mode-as-stroke-order-evaluation.md)). O algoritmo é o da [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md), implementado em `ml/src/kanjilens_ml/stroke_order/` ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29)). É NumPy e SciPy, sem PyTorch, e um contrato do Import Linter garante isso.
+No `ordered`, cada candidato ganha a comparação do desenho com a ordem e a direção do KanjiVG. O algoritmo é o da [ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md), em `ml/src/kanjilens_ml/stroke_order/` ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29)), com NumPy e SciPy, sem PyTorch.
 
 ### Como funciona
 
-1. **Normalização:** o desenho e a referência passam pela mesma função ([traços normalizados](#traços-normalizados-avaliação-da-ordem)). Para cada grupo de até 3 traços vizinhos, o caminho unido também é reamostrado em 24 pontos.
-2. **Custo entre traços:** a distância média entre os pontos, no quadrado de lado 1. Ela é calculada nos dois sentidos, e vale o menor.
-3. **Correspondência:** o algoritmo húngaro (`scipy.optimize.linear_sum_assignment`).
-4. **Hipóteses** quando a quantidade de traços difere em 1 ou 2:
-   - o lado com mais traços pode ter traços vizinhos unidos: na referência, eles viram **traços unidos** (`joined`); no desenho, viram **traço quebrado** (`broken`);
-   - o que nenhuma união explica fica **fora da correspondência**, como um traço que faltou ou um traço a mais;
-   - cada traço fora da correspondência custa `unmatched_stroke_cost`;
-   - ganha a hipótese de menor custo total; no empate, a com menos uniões.
-5. **Ordem:** um traço está fora de ordem quando o lugar dele entre os traços pareados é diferente do lugar da referência dele. A posição é contada entre os traços pareados, então um traço que faltou não desloca os outros.
-6. **Direção:** um traço vai no sentido errado quando o custo no sentido inverso fica abaixo de `direction_margin` vezes o custo no sentido direto, e nem o traço nem a referência são mais curtos que `min_direction_length`.
-   - A direção de um traço quebrado não é conferida, porque não há um traço só para apontar.
-7. **Sem avaliação:** com mais de 2 traços de diferença, o motivo é `stroke_count_mismatch`; sem referência, `reference_missing`.
+1. **Normaliza** o desenho e a referência com a mesma função. Grupos de até 3 traços vizinhos também viram um caminho unido, reamostrado em 24 pontos.
+2. **Custo entre dois traços:** a distância média entre os pontos, nos dois sentidos; vale o menor.
+3. **Pareia** os traços com o algoritmo húngaro (`scipy.optimize.linear_sum_assignment`).
+4. **Quando a quantidade difere em 1 ou 2**, testa hipóteses:
+   - traços vizinhos da referência unidos num só desenhado (`joined`), ou um traço da referência desenhado em pedaços (`broken`);
+   - o que nenhuma união explica fica sem par (traço a mais ou a menos), e cada um custa `unmatched_stroke_cost`;
+   - ganha a hipótese de menor custo; no empate, a com menos uniões.
+5. **Ordem:** um traço está fora de ordem quando a posição dele entre os pareados difere da posição da referência. Um traço que faltou não desloca os outros.
+6. **Direção:** está invertida quando o custo no sentido contrário fica abaixo de `direction_margin` × o custo no sentido certo, e nenhum dos dois traços é mais curto que `min_direction_length`. Traço quebrado não tem a direção conferida.
+7. **Sem avaliação:** mais de 2 traços de diferença dá `stroke_count_mismatch`; kanji sem referência dá `reference_missing`.
 
-**Uso:** o desenho é preparado uma vez por job (`PreparedStrokes`) e comparado com cada candidato (`evaluate_stroke_order`). As referências são lidas uma vez por processo (`KanjiVGReferences.load`), e cada kanji é preparado no primeiro uso e guardado. O resultado (`EvaluatedStrokeOrder` ou `NotEvaluatedStrokeOrder`) tem o formato da ADR 0016:
-- `status`, `correct`, `expected_strokes`, `drawn_strokes`;
-- `issues` com `order`, `direction`, `joined` e `broken`, numerados a partir de 1;
-- `as_dict()` dá o JSON da resposta;
-- tem também `cost`, a distância média dos pares, que **não vai para a API** e serve para ajustar a abstenção.
+**Uso:** o desenho é preparado uma vez por job (`PreparedStrokes`) e comparado com cada candidato (`evaluate_stroke_order`). As referências são lidas uma vez por processo (`KanjiVGReferences.load`), e cada kanji é preparado no primeiro uso. O resultado tem o formato da ADR 0016 (`status`, `correct`, `expected_strokes`, `drawn_strokes`, `issues` numerados a partir de 1, e `as_dict()` para o JSON). Também traz `cost`, que **não vai para a API** e serve para estudar a abstenção.
 
-Os tipos espelham os do domínio do backend ([docs/architecture/domain.md](architecture/domain.md)), que o adapter da [#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48) converte.
+A ligação com o backend é a [#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48).
 
 ### Parâmetros
 
@@ -70,11 +54,9 @@ Os tipos espelham os do domínio do backend ([docs/architecture/domain.md](archi
 | `direction_margin` | 0,75 | protótipo |
 | `min_direction_length` | 0,08 | protótipo |
 | `max_count_difference` | 2 | ADR 0016 |
-| `unmatched_stroke_cost` | 0,05 | medido aqui (abaixo) |
+| `unmatched_stroke_cost` | 0,05 | medido aqui |
 
-**`unmatched_stroke_cost` é novo.** Sem ele, deixar fora da correspondência um pedaço de traço quebrado não custava nada. Em traço curto, casar a referência com metade do traço custa tanto quanto o ruído, e o "quebrado" virava "traço a mais": só 70% de acerto com ruído leve, contra 99,5% no protótipo.
-
-O custo escolhe entre explicar a diferença de traços por união e quebra ou por traço que faltou ou sobrou. Varredura no benchmark sintético (abaixo), em % de acerto exato com ruído 0,015 / 0,03:
+**Por que `unmatched_stroke_cost`:** sem ele, deixar um pedaço de traço quebrado sem par não custava nada, e "quebrado" virava "traço a mais" (70% de acerto com ruído leve). A varredura abaixo é em % de acerto exato, com ruído 0,015 / 0,03:
 
 | Custo | quebrado | a mais | a menos |
 |---:|---:|---:|---:|
@@ -84,39 +66,35 @@ O custo escolhe entre explicar a diferença de traços por união e quebra ou po
 | 0,1 | 99,2 / 94,5 | 69,2 / 56,8 | 68,2 / 59,2 |
 | 0,2 | 99,2 / 94,5 | 23,8 / 18,2 | 15,2 / 13,5 |
 
-O 0,05 equilibra os três casos. Quanto da diferença de traços vem de traço quebrado e quanto de traço a mais ou a menos só os desenhos reais vão dizer. A margem de direção e o comprimento mínimo ficaram com os valores do protótipo: o benchmark sintético não tem traço curto mal desenhado para ajustá-los.
+O 0,05 equilibra os três casos. A margem de direção e o comprimento mínimo ficaram com os valores do protótipo: os sintéticos não têm traço curto mal desenhado para ajustá-los. Os desenhos reais vão dizer se o equilíbrio está certo.
 
 ### Abstenção por custo alto
 
-**Ainda não implementada; decisão desta etapa.** A ideia do spike é responder "não foi possível avaliar a ordem" quando o desenho está muito longe da referência, em vez de apontar erros. O custo médio sobe com o ruído nos sintéticos (0,044, 0,066 e 0,093 nos três níveis), então ele serve de sinal. Mas:
-- o limiar depende da escala do custo em desenhos reais, que o sintético não reproduz;
-- a resposta precisa de um motivo novo em `not_evaluated`, o que muda a ADR 0016, o domínio e a API.
-
-Por isso o `cost` já sai no resultado, e a abstenção entra com o conjunto de desenhos reais ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)).
+**Ainda não existe.** A ideia é responder "não deu para avaliar a ordem" quando o desenho está longe demais da referência. O custo médio sobe com o ruído (0,044, 0,066 e 0,093 nos três níveis), então serve de sinal. Mas o limiar precisa de desenhos reais, e a resposta pede um motivo novo em `not_evaluated`, o que muda a ADR 0016, o domínio e a API. Por isso o `cost` já sai no resultado, e a decisão espera os desenhos reais.
 
 ### Dados de referência (KanjiVG)
 
-- **Versão fixada:** `r20260714`, arquivo `kanjivg-20260714-main.zip`, SHA-256 `b5df6cd2bc249dd49b8041eb99e38ba9f8dc6b9ea57962a80084b4a315d1a7fc`. O checksum foi calculado no download e bate com o que o GitHub publica para o asset.
+- **Versão fixada:** `r20260714`, arquivo `kanjivg-20260714-main.zip`, SHA-256 `b5df6cd2bc249dd49b8041eb99e38ba9f8dc6b9ea57962a80084b4a315d1a7fc` (bate com o que o GitHub publica).
 - **Preparação:** `uv run --directory ml python scripts/prepare_kanjivg.py [--classes ARQUIVO]`.
-  - Baixa o zip uma vez para `ml/datasets/kanjivg/`, confere o checksum e grava `ml/artifacts/kanjivg/kanjivg-references.json`, com um `README.md` de atribuição e licença ao lado. As duas pastas ficam fora do git.
-  - Os traços de cada kanji ficam como linhas poligonais no quadro 109×109 do KanjiVG, na ordem e no sentido oficiais. As curvas Bézier são amostradas em 8 pontos por segmento.
-  - Sem `--classes`, entram todos os kanji do bloco CJK unificado: são 6.422, contando os blocos de extensão, num arquivo de cerca de 20 MB, lido em 0,6 s.
-  - Com a lista de classes, que nasce com o dataset ([#13](https://github.com/Asuka-Jyuku/kanji-lens/issues/13), ADR 0021), entram só esses kanji. Um kanji que falte faz o script terminar com erro.
-- **Versão conferida ao carregar:** o loader recusa um arquivo de outro formato ou de outra versão do KanjiVG. Trocar a versão é decisão consciente: novo checksum no código e a avaliação medida de novo.
-- **Licença:** o KanjiVG é © Ulrich Apel, sob **CC BY-SA 3.0** ([kanjivg.tagaini.net](https://kanjivg.tagaini.net)). Os dados derivados mantêm a licença e a atribuição: elas vão no próprio arquivo (`source`) e no `README.md` gerado ao lado, à parte da licença MIT do código. A atribuição na interface fica numa issue do frontend.
+  - Baixa o zip uma vez para `ml/datasets/kanjivg/`, confere o checksum e grava `ml/artifacts/kanjivg/kanjivg-references.json`, com um `README.md` de atribuição ao lado. As duas pastas ficam fora do git.
+  - Cada traço vira uma linha poligonal no quadro 109×109 do KanjiVG, na ordem e no sentido oficiais. As curvas Bézier viram 8 pontos por segmento.
+  - Sem `--classes`: todos os 6.422 kanji do bloco CJK, num arquivo de cerca de 20 MB, lido em 0,6 s.
+  - Com a lista de classes ([#13](https://github.com/Asuka-Jyuku/kanji-lens/issues/13)): só esses kanji. Se faltar algum, o script termina com erro.
+- **O loader recusa** arquivo de outro formato ou de outra versão do KanjiVG. Trocar a versão pede checksum novo no código e a avaliação medida de novo.
+- **Licença:** KanjiVG © Ulrich Apel, **CC BY-SA 3.0** ([kanjivg.tagaini.net](https://kanjivg.tagaini.net)). Os dados derivados mantêm a licença e a atribuição, no próprio arquivo (`source`) e no `README.md` gerado, à parte da licença MIT do código. A atribuição na tela fica para uma issue do frontend.
 
 ### Medição em desenhos sintéticos
 
-`uv run --directory ml python scripts/benchmark_stroke_order.py` repete o método do [spike, seção 4](spikes/stroke-order-evaluation.md#4-como-foi-medido) com a implementação de verdade e as referências preparadas:
-- **conjunto:** 400 kanjis sorteados (seed 0) do KanjiVG, de 3 a 24 traços, com média de 12,3;
-- **distorção:** global, mais um deslocamento por traço e ruído suavizado por ponto, num canvas de 320 px;
-- **casos:** os cinco do spike, mais **traço a mais** (uma marca curta solta) e **traço a menos**;
+`uv run --directory ml python scripts/benchmark_stroke_order.py` repete o método do [spike, seção 4](spikes/stroke-order-evaluation.md#4-como-foi-medido) com o código de verdade:
+- **conjunto:** 400 kanji sorteados (seed 0) do KanjiVG, de 3 a 24 traços (média 12,3);
+- **distorção:** global, mais um deslocamento por traço e ruído por ponto, num canvas de 320 px;
+- **casos:** os cinco do spike, mais traço a mais (uma marca curta solta) e traço a menos;
 - **acerto exato:** os problemas apontados são exatamente os esperados;
-- **falso alarme:** erro de ordem ou de direção onde não há nenhum.
+- **falso alarme:** erro de ordem ou direção onde não há nenhum.
 
-Os números servem para escolher parâmetros e pegar regressões, **não são a acurácia do produto**. O gerador de ruído não é o do protótipo, que não foi para o repositório, então a comparação com o spike é aproximada.
+Os números servem para escolher parâmetros e pegar regressões. **Não são a acurácia do produto.** O gerador de ruído não é o do protótipo, então a comparação com o spike é aproximada.
 
-Medido em 2026-11-09, na máquina de treino (Ryzen 7 9800X3D), com Python 3.15, NumPy 2.5 e SciPy 1.18:
+Medido em 2026-11-09, na máquina de treino (Ryzen 7 9800X3D), Python 3.15, NumPy 2.5 e SciPy 1.18:
 
 | Ruído | Caso | Acerto exato (%) | Falso alarme (%) |
 |---|---|---:|---:|
@@ -143,38 +121,35 @@ Medido em 2026-11-09, na máquina de treino (Ryzen 7 9800X3D), com Python 3.15, 
 | 0,05 | a menos | 60,5 | 28,2 |
 
 **Tempo:**
-- **por candidato** (`evaluate_stroke_order`): 0,39 ms em média, 0,85 ms no p95 e 1,34 ms no máximo, somando todos os casos. Fica abaixo do protótipo (2 ms e 10 ms), porque a matriz de custo é calculada uma vez por par desenho e referência, e cada hipótese só recorta a matriz;
-- **preparo do desenho**, uma vez por job: 0,48 ms em média;
-- **preparo de cada referência**, só no primeiro uso: 0,46 ms.
+- por candidato: 0,39 ms em média, 0,85 ms no p95 e 1,34 ms no máximo (o protótipo dava 2 ms e 10 ms);
+- preparo do desenho, uma vez por job: 0,48 ms;
+- preparo de cada referência, no primeiro uso: 0,46 ms.
 
-A medição no notebook da escola fica para o benchmark ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)).
+A medição no notebook da escola vem com o benchmark ([ADR 0011](adr/0011-school-notebook-as-server-with-cpu-first-inference.md)).
 
-**Leitura e limites conhecidos:**
-- **Traços paralelos e parecidos** são a principal fonte de falso alarme em desenho correto: as barras de 鰻 ou 矍 trocam de par com o ruído. Com ruído moderado, isso acontece em 3,5% dos desenhos corretos.
-- **Traço a mais ou a menos** é o caso mais frágil. A marca solta pode ser casada com um traço curto de verdade, e o traço deslocado gera erros de ordem falsos: 2,5% com ruído leve e cerca de 9% com ruído moderado.
-- **Um traço movido para longe** marca também os traços entre a posição dele e a esperada, porque a ordem é por posição: cada um está, de fato, num lugar diferente do esperado. A troca de dois traços marca os dois, como na ADR 0016. Se a tela ([#59](https://github.com/Asuka-Jyuku/kanji-lens/issues/59), [#70](https://github.com/Asuka-Jyuku/kanji-lens/issues/70)) precisar de só "o traço movido", a mudança é no relatório, não na correspondência.
-- **Direção:** 92,8% com ruído moderado. As falhas são traços curtos ou quase simétricos.
+**Limites conhecidos:**
+- **Traços paralelos parecidos** (as barras de 鰻 ou 矍) trocam de par com o ruído: 3,5% de falso alarme em desenho correto, com ruído moderado.
+- **Traço a mais ou a menos** é o caso mais frágil: 2,5% de falso alarme com ruído leve, cerca de 9% com moderado.
+- **Um traço movido para longe** marca também os traços entre a posição dele e a esperada, porque a ordem é por posição. Se a tela ([#59](https://github.com/Asuka-Jyuku/kanji-lens/issues/59), [#70](https://github.com/Asuka-Jyuku/kanji-lens/issues/70)) quiser mostrar só "o traço movido", a mudança é no relatório, não no pareamento.
+- **Direção:** 92,8% com ruído moderado; as falhas são traços curtos ou quase simétricos.
 
-### Falta (parte da #29)
-
-- **O conjunto fixo de desenhos reais**, com ordem certa e errada, feitos de propósito, com erros detectados × falsos alarmes. Os desenhos são gravados pela exportação do canvas (veja [Desenhos do canvas](#desenhos-do-canvas)), e é nesse conjunto que os parâmetros e a abstenção se ajustam.
-- **O adapter do backend**, que liga o avaliador ao processo de inferência, é a [#48](https://github.com/Asuka-Jyuku/kanji-lens/issues/48).
+**Falta:** o conjunto fixo de desenhos reais, com ordem certa e errada ([Desenhos do canvas](#desenhos-do-canvas)). É nele que os parâmetros e a abstenção se ajustam.
 
 ## Desenhos do canvas
 
-Os conjuntos fixos de teste são desenhos feitos no próprio app, gravados pela exportação do canvas ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)). Eles servem a três trabalhos:
-- o conjunto da avaliação da ordem, com ordem certa e errada ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29));
-- a comparação do pré-processamento de um desenho do canvas com uma amostra do ETL ([#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14), parte 2);
-- a acurácia com desenhos reais, o principal risco do projeto ([ARCHITECTURE.md, 7.4](ARCHITECTURE.md#74-pontos-de-atenção)), e o teste de carga.
+Os conjuntos de teste são desenhos feitos no próprio app e gravados pela exportação do canvas ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)). Servem para:
+- o conjunto da avaliação da ordem ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29));
+- comparar o pré-processamento do canvas com o ETL ([#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14), parte 2);
+- medir a acurácia com desenhos reais, o maior risco do projeto ([ARCHITECTURE.md, 7.4](ARCHITECTURE.md#74-pontos-de-atenção)), e o teste de carga.
 
 ### Como gravar
 
-**Só no build de desenvolvimento** (`npm start`): abaixo do canvas fica o painel "Exportar desenho (desenvolvimento)".
-1. Desenhe e escolha o modo, como num reconhecimento. Para o conjunto da ordem, use "Importa".
-2. No painel, informe o kanji desenhado e a ordem usada. Se houve erro, informe também os números dos traços com o erro, contados como a API conta (a partir de 1, na ordem desenhada).
-3. "Baixar JSON" salva o arquivo no aparelho, sem passar por servidor nenhum.
+**Só no build de desenvolvimento** (`npm start`). Abaixo do canvas fica o painel "Exportar desenho (desenvolvimento)":
+1. Desenhe e escolha o modo. Para o conjunto da ordem, use "Importa".
+2. Informe o kanji e a ordem usada. Se fez um erro de propósito, informe os traços com o erro, contados a partir de 1.
+3. "Baixar JSON" salva o arquivo no aparelho, sem passar por servidor.
 
-O build de produção não tem o painel: ele troca `app.dev-tools.development.ts` por `app.dev-tools.ts`, que não lista ferramenta nenhuma, e o CI confere o bundle depois do build (`npm run check:production-bundle`). Na escola, nenhum desenho de aluno sai do aparelho (`CLAUDE.md`, "Segurança").
+No build de produção o painel não existe, e o CI confere isso (`npm run check:production-bundle`). Na escola, nenhum desenho de aluno sai do aparelho.
 
 ### Formato
 
@@ -194,19 +169,19 @@ Um arquivo por desenho, com o nome `u<código do kanji>-<ordem>-<data UTC>.json`
 }
 ```
 
-(Encurtado: o arquivo real tem 13 pontos por traço, um ponto por linha, com os números como o navegador os mediu.)
+(Encurtado: o arquivo real tem 13 pontos por traço, um ponto por linha.)
 
-- **`request`** é o corpo do `POST /api/recognitions`, sem mudança nenhuma: os traços como foram desenhados ([ADR 0016](adr/0016-stroke-order-check-by-bipartite-matching-and-capture-format.md)). A API recusa campo desconhecido, por isso o gabarito fica ao lado, e não dentro dele.
-- **`label`** é o gabarito, preenchido por quem desenhou:
-  - `kanji`: o kanji pretendido, um caractere;
-  - `stroke_order`: `correct`, ou o erro feito de propósito. Os erros são os tipos da ADR 0016 (`order`, `direction`, `joined`, `broken`) e mais `extra` e `missing`, um traço a mais ou a menos;
-  - `strokes`: os traços desenhados com o erro, a partir de 1; vazio quando a ordem está certa.
-- **`format` e `version`** identificam o formato. Mudança incompatível sobe a versão, e quem lê confere os dois.
+- **`request`** é o corpo do `POST /api/recognitions`, sem mudança nenhuma. A API recusa campo desconhecido, por isso o gabarito fica ao lado.
+- **`label`** é o gabarito:
+  - `kanji`: o kanji pretendido;
+  - `stroke_order`: `correct`, ou o erro feito de propósito: `order`, `direction`, `joined`, `broken` (os tipos da ADR 0016), `extra` ou `missing`;
+  - `strokes`: os traços com o erro, a partir de 1; vazio se a ordem está certa.
+- **`format` e `version`** identificam o formato. Mudança incompatível sobe a versão.
 
 ### Onde ficam
 
-- **Conjuntos de teste:** `ml/drawings/<conjunto>/`, versionados. O primeiro, o da ordem dos traços, vai em `ml/drawings/stroke-order/`. A pasta nasce com os primeiros desenhos reais.
-- **Amostras do formato:** `backend/tests/fixtures/drawings/`, dois desenhos de 十 gravados pelo painel no Chromium com toque emulado. Não são desenhos de pessoa e não entram em conjunto nenhum.
-- **Teste:** `backend/tests/adapters/test_exported_drawings.py` manda o `request` de cada arquivo das duas pastas ao `POST /api/recognitions` e confere o gabarito. Um arquivo que a API não aceita sem mudança quebra o teste.
+- **Conjuntos de teste:** `ml/drawings/<conjunto>/`, versionados. O da ordem dos traços vai em `ml/drawings/stroke-order/`, que nasce com os primeiros desenhos.
+- **Amostras do formato:** `backend/tests/fixtures/drawings/`, dois desenhos de 十 feitos no Chromium com toque emulado. Não são de pessoa e não entram em conjunto nenhum.
+- **Teste:** `backend/tests/adapters/test_exported_drawings.py` manda o `request` de cada arquivo das duas pastas à API e confere o gabarito.
 
-**Só desenhos da equipe.** Desenho de aluno só entra com ADR antes (`CLAUDE.md`, "Segurança"). Os conjuntos não têm nome nem dado de quem desenhou.
+**Só desenhos da equipe.** Desenho de aluno só com ADR antes. Os conjuntos não guardam nome nem dado de quem desenhou.
