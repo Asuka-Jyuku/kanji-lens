@@ -20,6 +20,7 @@ Formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [versio
 - O domínio do reconhecimento existe no backend: desenho, modo, job, candidatos e avaliação da ordem (#44).
 
 ### Publicação e documentação
+- O `docs/UI-UX.md` registra que a tela de reconhecimento foi testada num celular de verdade; falta o leitor de tela (#59).
 - O processo de inferência devolve as classes do domínio direto, sem a ponte de dicionários (`wire.py`), o que prepara a #48 (#88).
 - Documentação de referência mais curta e simples (`ARCHITECTURE.md`, `MODEL.md`, `RUNNING.md`, `UI-UX.md`, `SECURITY.md`, `domain.md` e os READMEs); a §9 da arquitetura não tem mais caixas para marcar, porque o andamento fica no Project (#83).
 - O frontend ficou mais simples por dentro, sem mudar a tela: a exportação de desenho numa pasta só, sem router e sem `@angular/forms`, e o modo junto do desenho (#80).
