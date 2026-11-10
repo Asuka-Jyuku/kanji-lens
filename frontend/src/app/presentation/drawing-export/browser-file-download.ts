@@ -1,13 +1,11 @@
 import { DOCUMENT, Injectable, inject } from '@angular/core';
 
-import { FileDownload } from '../application/file-download';
-
 /**
- * Adapter: a download through a Blob link, made and used on the device, with no request to
- * any server (CLAUDE.md, "Segurança").
+ * Hands a file to the person through a Blob link, made and used on the device, with no request
+ * to any server (CLAUDE.md, "Segurança"). A class only so the tests can swap it.
  */
-@Injectable()
-export class BrowserFileDownload extends FileDownload {
+@Injectable({ providedIn: 'root' })
+export class BrowserFileDownload {
   private readonly document = inject(DOCUMENT);
 
   save(fileName: string, content: string, mediaType: string): void {

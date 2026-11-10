@@ -1,13 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
 import { DrawingSession } from '../../application/drawing-session';
-import { ExportDrawing } from '../../application/export-drawing.use-case';
+import { isEmpty } from '../../domain/drawing';
+import { BrowserFileDownload } from './browser-file-download';
 import {
+  DrawingLabel,
   StrokeOrderLabel,
+  drawingSample,
   isSingleKanji,
   isStrokeOrderLabel,
   parseStrokeNumbers,
-} from '../../domain/drawing-sample';
+  sampleFileName,
+  serializeSample,
+} from './drawing-sample';
 
 /** Why the file was not saved; the template turns it into a message (ADR 0009). */
 type ExportProblem = 'kanji' | 'strokes';
@@ -25,7 +30,7 @@ type ExportProblem = 'kanji' | 'strokes';
 })
 export class DrawingExport {
   protected readonly session = inject(DrawingSession);
-  private readonly exportDrawing = inject(ExportDrawing);
+  private readonly download = inject(BrowserFileDownload);
 
   protected readonly kanji = signal('');
   protected readonly strokeOrder = signal<StrokeOrderLabel>('correct');
@@ -63,12 +68,18 @@ export class DrawingExport {
       return;
     }
     this.problem.set(null);
-    this.saved.set(
-      this.exportDrawing.export({
-        kanji: this.kanji(),
-        stroke_order: this.strokeOrder(),
-        strokes,
-      }),
-    );
+    this.saved.set(this.save({ kanji: this.kanji(), stroke_order: this.strokeOrder(), strokes }));
+  }
+
+  /** Saves the drawing on screen with its answer key; the file name, or `null` if empty. */
+  private save(label: DrawingLabel): string | null {
+    const drawing = this.session.drawing();
+    if (isEmpty(drawing)) {
+      return null;
+    }
+    const sample = drawingSample(drawing, this.session.mode(), label, new Date());
+    const fileName = sampleFileName(sample);
+    this.download.save(fileName, serializeSample(sample), 'application/json');
+    return fileName;
   }
 }

@@ -1,4 +1,4 @@
-import type { Drawing } from './drawing';
+import type { CanvasSize, Drawing } from './drawing';
 import type { StrokeOrderMode } from './stroke-order-mode';
 
 /**
@@ -9,7 +9,7 @@ import type { StrokeOrderMode } from './stroke-order-mode';
  */
 export interface RecognitionRequest {
   readonly stroke_order_mode: StrokeOrderMode;
-  readonly canvas: { readonly width: number; readonly height: number };
+  readonly canvas: CanvasSize;
   readonly strokes: [number, number, number][][];
 }
 

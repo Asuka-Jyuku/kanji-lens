@@ -58,6 +58,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   - **documentação:** glossário e diagrama de estados em [docs/architecture/domain.md](docs/architecture/domain.md).
 
 ### Publicação e documentação
+- **O frontend ficou mais simples por dentro, sem mudar nada na tela** (#80): a exportação de desenho mora numa pasta só, o router (sem nenhuma rota) saiu e o modo escolhido fica junto do desenho.
 - **O backend e o ML perderam peças que não se pagavam, sem mudar a API** (#81): testes que só conferiam constantes, o port `Clock` e os pacotes vazios do ML.
 - **Como treinar sem o ETL, enquanto o site dele estiver fora do ar** (spike em [docs/spikes/training-without-etl.md](docs/spikes/training-without-etl.md), #78):
   - **proposta:** desenhos sintéticos gerados a partir do KanjiVG e do Kanji alive (CC BY 4.0), no mesmo formato do canvas, com fontes renderizadas como complemento. A validação é só em escrita humana: os desenhos da #66 e, se liberado, o subconjunto gratuito de 10 escritores do TUAT;

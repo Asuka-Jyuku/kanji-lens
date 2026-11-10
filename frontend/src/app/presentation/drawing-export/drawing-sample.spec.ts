@@ -1,4 +1,4 @@
-import { Drawing } from './drawing';
+import { Drawing } from '../../domain/drawing';
 import {
   DrawingLabel,
   STROKE_ORDER_LABELS,

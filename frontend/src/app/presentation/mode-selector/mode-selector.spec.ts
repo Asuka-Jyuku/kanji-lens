@@ -1,19 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DrawingSession } from '../../application/drawing-session';
-import { StrokeOrderModeSelection } from '../../application/stroke-order-mode-selection';
 import { ModeSelector } from './mode-selector';
 
 describe('ModeSelector', () => {
   let fixture: ComponentFixture<ModeSelector>;
   let page: HTMLElement;
-  let selection: StrokeOrderModeSelection;
+  let session: DrawingSession;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({ imports: [ModeSelector] }).compileComponents();
     fixture = TestBed.createComponent(ModeSelector);
     page = fixture.nativeElement as HTMLElement;
-    selection = TestBed.inject(StrokeOrderModeSelection);
+    session = TestBed.inject(DrawingSession);
     await fixture.whenStable();
   });
 
@@ -38,20 +37,20 @@ describe('ModeSelector', () => {
   it('starts with "Não importa" chosen', () => {
     expect(radio('unordered').checked).toBe(true);
     expect(radio('ordered').checked).toBe(false);
-    expect(selection.mode()).toBe('unordered');
+    expect(session.mode()).toBe('unordered');
   });
 
   it('hands over the mode chosen, and shows it', async () => {
     radio('ordered').click();
     await fixture.whenStable();
 
-    expect(selection.mode()).toBe('ordered');
+    expect(session.mode()).toBe('ordered');
     expect(radio('ordered').checked).toBe(true);
     expect(radio('unordered').checked).toBe(false);
   });
 
   it('follows the mode when it changes elsewhere', async () => {
-    selection.choose('ordered');
+    session.chooseMode('ordered');
     await fixture.whenStable();
 
     expect(radio('ordered').checked).toBe(true);
@@ -67,11 +66,10 @@ describe('ModeSelector', () => {
     radio('ordered').dispatchEvent(new Event('change', { bubbles: true }));
     await fixture.whenStable();
 
-    expect(selection.mode()).toBe('ordered');
+    expect(session.mode()).toBe('ordered');
   });
 
   it('does not touch the drawing', async () => {
-    const session = TestBed.inject(DrawingSession);
     session.resize({ width: 320, height: 320 });
     session.startStroke({ x: 10, y: 10, time: 0 });
     session.endStroke();

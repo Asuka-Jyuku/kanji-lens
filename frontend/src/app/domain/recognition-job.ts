@@ -61,10 +61,7 @@ export interface RecognitionJob {
 }
 
 /** The job as POST /api/recognitions answers it: its id and first status. */
-export interface SubmittedJob {
-  readonly jobId: string;
-  readonly status: JobStatus;
-}
+export type SubmittedJob = Pick<RecognitionJob, 'jobId' | 'status'>;
 
 /** `completed` and `failed` are final: the job changes no more. */
 export function isFinalStatus(status: JobStatus): boolean {

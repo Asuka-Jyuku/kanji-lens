@@ -14,7 +14,7 @@ const layers = {
     { type: 'infrastructure', pattern: 'src/app/infrastructure' },
     { type: 'presentation', pattern: 'src/app/presentation' },
   ],
-  // Shell files (main.ts, app.ts, app.config.ts, app.routes.ts) are the composition root.
+  // Shell files (main.ts, app.ts, app.config.ts, app.dev-tools*.ts) are the composition root.
   'boundaries/files': [{ pattern: ['src/app/app*.ts', 'src/main.ts'], category: 'shell' }],
   'import/resolver': { typescript: { alwaysTryTypes: true } },
 };
@@ -57,7 +57,7 @@ const layerPolicies = [
         disallow: { to: { module: { source: '@angular/common', internalPath: 'http{,/**}' } } },
         message: 'Components never use HttpClient: they talk to the application layer (ADR 0004)',
       },
-      // Shell (main.ts, app.ts, app.config.ts, app.routes.ts): composition root, wires everything.
+      // Shell (main.ts, app.ts, app.config.ts, app.dev-tools*.ts): composition root, wires everything.
       {
         from: { file: { categories: 'shell' } },
         allow: [

@@ -12,7 +12,6 @@ describe('BrowserFileDownload', () => {
   });
 
   it('downloads the content through a Blob link on the page, then removes the link', async () => {
-    TestBed.configureTestingModule({ providers: [BrowserFileDownload] });
     const blobs: Blob[] = [];
     // jsdom has no Blob URLs and does not download: the link is checked when it is clicked.
     URL.createObjectURL = vi.fn((blob: Blob) => {

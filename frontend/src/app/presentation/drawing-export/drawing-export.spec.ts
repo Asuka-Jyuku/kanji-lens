@@ -1,14 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DrawingSession } from '../../application/drawing-session';
-import { FileDownload } from '../../application/file-download';
+import { BrowserFileDownload } from './browser-file-download';
 import { DrawingExport } from './drawing-export';
 
-class FakeFileDownload extends FileDownload {
-  readonly saved: { fileName: string; content: string }[] = [];
+class FakeFileDownload {
+  readonly saved: { fileName: string; content: string; mediaType: string }[] = [];
 
-  save(fileName: string, content: string): void {
-    this.saved.push({ fileName, content });
+  save(fileName: string, content: string, mediaType: string): void {
+    this.saved.push({ fileName, content, mediaType });
   }
 }
 
@@ -22,7 +22,7 @@ describe('DrawingExport', () => {
     download = new FakeFileDownload();
     await TestBed.configureTestingModule({
       imports: [DrawingExport],
-      providers: [{ provide: FileDownload, useValue: download }],
+      providers: [{ provide: BrowserFileDownload, useValue: download }],
     }).compileComponents();
     fixture = TestBed.createComponent(DrawingExport);
     page = fixture.nativeElement as HTMLElement;
@@ -58,8 +58,10 @@ describe('DrawingExport', () => {
     expect((page.querySelector('button.save') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('saves the drawing with the kanji and the mistake, and says the file name', async () => {
+  it('saves the drawing with the kanji, the mistake and the mode, and says the file name', async () => {
+    session.chooseMode('ordered');
     drawStrokes(3);
+    const before = session.drawing();
     await fixture.whenStable();
     type('input[lang="ja"]', ' 川 ');
     type('select', 'order');
@@ -70,7 +72,11 @@ describe('DrawingExport', () => {
     const sample = JSON.parse(download.saved[0].content);
     expect(sample.label).toEqual({ kanji: '川', stroke_order: 'order', strokes: [2, 3] });
     expect(sample.request.strokes).toHaveLength(3);
+    expect(sample.request.stroke_order_mode).toBe('ordered');
+    expect(download.saved[0].mediaType).toBe('application/json');
+    expect(download.saved[0].fileName).toMatch(/^u5ddd-order-\d{8}T\d{6}Z\.json$/);
     expect(status()).toContain(download.saved[0].fileName);
+    expect(session.drawing()).toBe(before);
   });
 
   it('asks for one kanji before saving', async () => {

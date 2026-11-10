@@ -5,8 +5,7 @@
     <app-drawing-pad />
     <app-recognition-panel />
   </div>
-  @for (tool of devTools; track tool) {
-    <ng-container *ngComponentOutlet="tool" />
+  @if (devTool) {
+    <ng-container *ngComponentOutlet="devTool" />
   }
-  <router-outlet />
 </main>
