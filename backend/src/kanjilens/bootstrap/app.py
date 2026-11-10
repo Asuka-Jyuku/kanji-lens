@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from fastapi import FastAPI
-from pydantic import BaseModel
 
 from kanjilens import __version__
 from kanjilens.adapters.inbound.http.body_limit import BodySizeLimitMiddleware
@@ -52,10 +51,6 @@ PLACEHOLDER_INFERENCE = InferenceFunctions(
 )
 
 
-class HealthResponse(BaseModel):
-    status: str
-
-
 def utc_now() -> datetime:
     return datetime.now(UTC)
 
@@ -94,8 +89,8 @@ def create_app(inference: InferenceFunctions = PLACEHOLDER_INFERENCE) -> FastAPI
     install_error_handlers(app)
 
     @app.get("/api/health")
-    async def get_health() -> HealthResponse:
-        return HealthResponse(status="ok")
+    async def get_health() -> dict[str, str]:
+        return {"status": "ok"}
 
     app.include_router(recognitions_router(submit_recognition, get_recognition))
     app.include_router(recognition_events_router(get_recognition, notifier))
