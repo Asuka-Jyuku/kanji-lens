@@ -20,6 +20,7 @@ Formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [versio
 - O domínio do reconhecimento existe no backend: desenho, modo, job, candidatos e avaliação da ordem (#44).
 
 ### Publicação e documentação
+- O TUAT fica fora por enquanto: é pago, e o contrato só libera de graça um uso de teste de 10 escritores; a ADR 0022 e os spikes foram corrigidos (#94).
 - O README principal do repositório passa a ser em português (`README.md`), com a versão em inglês em `README.en.md`.
 - O MVP vai treinar com desenhos sintéticos do KanjiVG enquanto o site do ETL estiver fora, medidos só em desenhos reais; o ETL entra depois como mais uma fonte ([ADR 0022](docs/adr/0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md), #95).
 - O `docs/UI-UX.md` registra que a tela de reconhecimento foi testada num celular de verdade; falta o leitor de tela (#59).

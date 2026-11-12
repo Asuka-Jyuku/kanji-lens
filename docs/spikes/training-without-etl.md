@@ -37,7 +37,7 @@ O site do ETL (`etlcdb.db.aist.go.jp`) está fora do ar, sem previsão de volta.
 | **Sintético do KanjiVG** | japonês | sim | CC BY-SA 3.0, já está no projeto ([PR #74](https://github.com/Asuka-Jyuku/kanji-lens/pull/74), [docs/MODEL.md](../MODEL.md#dados-de-referência-kanjivg)) | 240 de 240 | **base proposta** |
 | **Kanji alive** | japonês | sim, um traço por imagem | **CC BY 4.0**, sem ShareAlike; download direto pelo GitHub | **240 de 240** (1.008 dos 1.026 教育漢字) | segunda fonte de traços do sintético |
 | **Fontes renderizadas** (Klee One, Noto Sans/Serif JP) | japonês | não | SIL OFL 1.1; o FAQ da OFL libera usar a fonte para gerar imagens | 240 de 240 | complemento |
-| **TUAT Kuchibue/Nakayosi** (HANDS) | japonês | sim (*online*) | **Pago.** Pedido por e-mail ao Prof. Nakagawa e compra pela cooperativa da TUAT: ¥200.000 no preço acadêmico e ¥2.000.000 no comercial, sem impostos. **Os dados de 10 escritores são gratuitos para pesquisa** | a conferir no arquivo | **pedir os 10 escritores agora**, para validar |
+| **TUAT Kuchibue/Nakayosi** (HANDS) | japonês | sim (*online*) | **Pago.** Pedido por e-mail ao Prof. Nakagawa e compra pela cooperativa da TUAT: ¥200.000 no preço acadêmico e ¥2.000.000 no comercial, sem impostos. Além disso, o contrato (cláusula 2) só libera de graça um **uso de teste** (試用, no original em japonês) dos dados de 10 escritores, para pesquisa, sem prazo nem condições definidas | a conferir no arquivo | fora por enquanto (#94) |
 | **CASIA OLHWDB/HWDB** | chinês simplificado | sim (OLHWDB) | **Gratuito para pesquisa acadêmica**, sem formulário desde 2020; download direto. Uso comercial pago, por contato | **192 de 240** pelo código; os outros **48 não existem** em GB2312 | pré-treino, no máximo |
 | **Kuzushiji-Kanji** | japonês histórico | não | CC BY-SA 4.0, aberto | não conferida | **não serve** (cursiva clássica) |
 | **Desenhos da equipe** (#66) | japonês | sim | nossos | os que forem desenhados | **validação** |
@@ -115,6 +115,8 @@ O site do ETL (`etlcdb.db.aist.go.jp`) está fora do ar, sem previsão de volta.
 - **Formas do chinês:** pré-treinar no CASIA pode ensinar formas simplificadas que não existem no japonês. Se for testado, entra só como pré-treino, e as 240 classes são ajustadas com dados japoneses.
 
 ## 8. Recomendação
+
+> **Atualização de 2026-11-10** (#94): o TUAT fica fora por enquanto. Conferindo os contratos de novo, o contrato (cláusula 2) só libera de graça um **uso de teste** (試用, no original em japonês) dos dados de 10 escritores, para pesquisa, sem prazo nem condições definidas. Os itens sobre o TUAT abaixo e nas seções 5 e 6 ficam como registro; a validação do MVP é só com os desenhos da equipe (#93).
 
 - **Seguir com o sintético do KanjiVG (mais o Kanji alive) como base do MVP enquanto o ETL estiver fora.** Validar só em escrita humana: a #66 e, se liberado, os 10 escritores do TUAT.
 - **Não esperar o ETL para destravar o treino.** Se ele voltar, entra como base preferida, e as duas medições ficam lado a lado.

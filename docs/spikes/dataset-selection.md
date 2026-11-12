@@ -79,7 +79,7 @@ Feita com o KANJIDIC2 (EDRDG) de 2026-11-08, supondo que os 2.965 kanji do ETL9 
 ## 6. Alternativas
 
 > **Atualização de 2026-11-10:** com o site do ETL ainda fora do ar, o [spike "treinar o reconhecimento sem o ETL"](training-without-etl.md) ([#78](https://github.com/Asuka-Jyuku/kanji-lens/issues/78)) conferiu as linhas marcadas abaixo como *não verificado*:
-> - **TUAT:** é pago, com um subconjunto de 10 escritores gratuito para pesquisa.
+> - **TUAT:** é pago (¥200 mil no acadêmico e ¥2 milhões no comercial); de graça, só um uso de teste (試用) de 10 escritores, para pesquisa. Fica fora por enquanto (#94).
 > - **CASIA:** é gratuito para pesquisa acadêmica, mas 48 dos 240 kanji do MVP não existem no conjunto chinês.
 >
 > Ele também acrescentou o Kanji alive (CC BY 4.0) como fonte de traços.
