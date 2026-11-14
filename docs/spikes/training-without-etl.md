@@ -92,7 +92,7 @@ O site do ETL (`etlcdb.db.aist.go.jp`) está fora do ar, sem previsão de volta.
 ## 6. O que medir
 
 - **Top-1 e Top-5 nos desenhos reais** da #66 e no TUAT, por classe, e não só no total.
-- **Confusões entre kanji parecidos** (日 × 目, 人 × 入, 土 × 士, por exemplo).
+- **Confusões entre kanji parecidos** (日 × 目, 人 × 入, 王 × 玉, por exemplo). *Corrigido em 2026-11-13:* o exemplo dizia 土 × 士, mas 士 é da 5ª série e não está nas 240 classes.
 - **O efeito de cada ingrediente:** só KanjiVG; + Kanji alive; + fontes.
 - **A diferença para o ETL,** se ele voltar: o mesmo modelo treinado com cada um e medido nos mesmos desenhos reais.
 - **Quantos desenhos reais bastam para medir** (*estimativa*, a fechar na ADR): 5 desenhos de 3 pessoas por classe nas 240 dão 1.200 desenhos. Dá para começar por uma amostra (por exemplo, 40 classes com os pares parecidos) e completar depois.

@@ -1,0 +1,123 @@
+/* Below the drawing, closed by default, like the drawing export (development builds only). */
+:host {
+  display: block;
+  width: min(100%, 24rem);
+  margin: 1rem auto 0;
+}
+
+.collect {
+  border: 2px dashed var(--pad-border);
+  border-radius: 8px;
+  background: var(--pad-background);
+}
+
+/* About 1 cm, like the pad buttons (Harley, NN/g; WCAG 2.5.8). */
+summary {
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0 0.75rem;
+  cursor: pointer;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.hint,
+.status,
+.prompt {
+  margin: 0;
+}
+
+.status {
+  min-height: 1.5em;
+  overflow-wrap: anywhere;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field input,
+.field textarea,
+button {
+  min-height: 3rem;
+  box-sizing: border-box;
+  font: inherit;
+  border: 2px solid var(--pad-border);
+  border-radius: 8px;
+  background: var(--pad-background);
+  color: var(--pad-ink);
+}
+
+.field input,
+.field textarea {
+  padding: 0.5rem;
+}
+
+button:disabled {
+  opacity: 0.55;
+}
+
+summary:focus-visible,
+.field input:focus-visible,
+.field textarea:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--pad-focus);
+  outline-offset: 2px;
+}
+
+/* While a session runs: the kanji asked for and the buttons, fixed at the bottom, so a phone
+   never scrolls between the canvas and "Salvar e próximo". Judgment of our own (#100). */
+.bar {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem max(0.75rem, env(safe-area-inset-left)) max(0.5rem, env(safe-area-inset-bottom));
+  border-top: 2px dashed var(--pad-border);
+  background: var(--pad-background);
+}
+
+.bar > * {
+  width: min(100%, 24rem);
+  margin-inline: auto;
+}
+
+.prompt {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.kanji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.progress {
+  margin-left: auto;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actions button {
+  flex: 1;
+  padding: 0 0.25rem;
+}
+
+/* The height of the bar, so the end of the page can scroll out from under it. */
+.spacer {
+  height: 10rem;
+}

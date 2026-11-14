@@ -139,7 +139,7 @@ A medição no notebook da escola vem com o benchmark ([ADR 0011](adr/0011-schoo
 
 Os conjuntos de teste são desenhos feitos no próprio app e gravados pela exportação do canvas ([#66](https://github.com/Asuka-Jyuku/kanji-lens/issues/66)). Servem para:
 - o conjunto da avaliação da ordem ([#29](https://github.com/Asuka-Jyuku/kanji-lens/issues/29));
-- comparar o pré-processamento do canvas com o ETL ([#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14), parte 2);
+- comparar o pré-processamento do canvas com os desenhos sintéticos ([#14](https://github.com/Asuka-Jyuku/kanji-lens/issues/14), parte 2; [ADR 0022](adr/0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md));
 - medir a acurácia com desenhos reais, o maior risco do projeto ([ARCHITECTURE.md, 7.4](ARCHITECTURE.md#74-pontos-de-atenção)), e o teste de carga.
 
 ### Como gravar
@@ -150,6 +150,25 @@ Os conjuntos de teste são desenhos feitos no próprio app e gravados pela expor
 3. "Baixar JSON" salva o arquivo no aparelho, sem passar por servidor.
 
 No build de produção o painel não existe, e o CI confere isso (`npm run check:production-bundle`). Na escola, nenhum desenho de aluno sai do aparelho.
+
+### Sessão de coleta (conjunto do reconhecimento)
+
+Para o conjunto real que mede o reconhecimento ([#93](https://github.com/Asuka-Jyuku/kanji-lens/issues/93)), o painel "Sessão de coleta (desenvolvimento)" desenha os kanji em sequência, sem digitar o gabarito, e baixa tudo num arquivo só ([#100](https://github.com/Asuka-Jyuku/kanji-lens/issues/100)). Também só existe no build de desenvolvimento.
+
+1. **No celular, com o dedo,** que é como o aluno usa: abra o app pela rede local ([RUNNING.md](RUNNING.md)).
+2. Informe um **código** de quem desenha (`a`, `p2`), **nunca o nome**. A lista já vem com as 40 classes de `ml/drawings/recognition/classes.txt` e 5 vezes cada; "Começar".
+3. A barra fixa no pé da tela mostra o kanji pedido e o andamento. Desenhe **na ordem certa** e toque em "Salvar e próximo"; "Pular" passa sem guardar. O canvas limpa a cada desenho.
+4. A fila vem em rodadas: cada rodada pede todos os kanji uma vez, embaralhados, e o mesmo kanji nunca sai duas vezes seguidas. Uma sessão interrompida no meio cobre as classes por igual.
+5. "Baixar lote" baixa o que foi guardado, a qualquer momento. Baixe de vez em quando: os desenhos ficam só na memória da página, e o navegador avisa antes de fechá-la com desenhos não baixados. "Encerrar sessão" só funciona depois de baixar tudo.
+6. Passe o lote para o computador e importe:
+
+```bash
+uv run --directory ml python scripts/import_drawings.py ~/Downloads/batch-a-*.json
+```
+
+O script confere o lote (formato, código, kanji da lista, ordem marcada como certa) e grava um arquivo por desenho, no formato abaixo, em `ml/drawings/recognition/<código>/`. Importar o mesmo lote de novo não duplica nada. No fim, mostra quantos desenhos cada classe tem, por pessoa, contra a meta da [ADR 0022](adr/0022-synthetic-training-data-from-kanjivg-while-etl-is-down.md): 5 desenhos de cada uma de 3 pessoas. Sem lote, só mostra a contagem.
+
+O lote (`batch-<código>-<data UTC>.json`) é `{"format": "kanjilens-drawing-batch", "version": 1, "exported_at": ..., "writer": "<código>", "samples": [...]}`, com cada desenho no formato abaixo. Não fica no repositório.
 
 ### Formato
 
@@ -180,8 +199,10 @@ Um arquivo por desenho, com o nome `u<código do kanji>-<ordem>-<data UTC>.json`
 
 ### Onde ficam
 
-- **Conjuntos de teste:** `ml/drawings/<conjunto>/`, versionados. O da ordem dos traços vai em `ml/drawings/stroke-order/`, que nasce com os primeiros desenhos.
+- **Conjuntos de teste:** `ml/drawings/<conjunto>/`, versionados.
+  - **Reconhecimento:** `ml/drawings/recognition/<código>/`, uma pasta por pessoa, para o split por pessoa. A lista de classes do conjunto fica em `ml/drawings/recognition/classes.txt`, um kanji por linha: as 40 primeiras, em grupos de parecidos (日目白百自, 人入八, 大太犬天, 木本休体, 王玉土工, 力刀万方, 午牛, 貝見, 右石, 九丸, 円内, 間聞, 姉妹, 気汽), todas da 1ª e 2ª série.
+  - **Ordem dos traços:** `ml/drawings/stroke-order/`, que nasce com os primeiros desenhos.
 - **Amostras do formato:** `backend/tests/fixtures/drawings/`, dois desenhos de 十 feitos no Chromium com toque emulado. Não são de pessoa e não entram em conjunto nenhum.
-- **Teste:** `backend/tests/adapters/test_exported_drawings.py` manda o `request` de cada arquivo das duas pastas à API e confere o gabarito.
+- **Testes:** `backend/tests/adapters/test_exported_drawings.py` manda o `request` de cada arquivo das duas pastas à API e confere o gabarito. `ml/tests/data/test_drawings.py` confere que cada desenho do conjunto do reconhecimento é de uma classe da lista, está na pasta de um código e no formato que o frontend grava.
 
-**Só desenhos da equipe.** Desenho de aluno só com ADR antes. Os conjuntos não guardam nome nem dado de quem desenhou.
+**Só desenhos da equipe.** Desenho de aluno só com ADR antes. Os conjuntos não guardam nome nem dado de quem desenhou; o conjunto do reconhecimento guarda só o código, para o split por pessoa.

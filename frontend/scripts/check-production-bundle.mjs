@@ -1,12 +1,19 @@
-// Fails when a development-only tool reached the production build in dist/ (#66): the drawing
-// export saves drawings, and in production no drawing leaves the device (CLAUDE.md,
-// "Segurança"). Run after `npm run build`; app.dev-tools.ts says how the tools are left out.
+// Fails when a development-only tool reached the production build in dist/ (#66, #100): the
+// drawing export and the collection session save drawings, and in production no drawing leaves
+// the device (CLAUDE.md, "Segurança"). Run after `npm run build`; app.dev-tools.ts says how the
+// tools are left out.
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const DIST = 'dist';
-// The component selector, the file format and the panel title: any of them means it is there.
-const MARKERS = ['app-drawing-export', 'kanjilens-drawing', 'Exportar desenho'];
+// The component selectors, the file format and the panel titles: any of them means it is there.
+const MARKERS = [
+  'app-drawing-export',
+  'app-collection-session',
+  'kanjilens-drawing',
+  'Exportar desenho',
+  'Sessão de coleta',
+];
 
 function scripts(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

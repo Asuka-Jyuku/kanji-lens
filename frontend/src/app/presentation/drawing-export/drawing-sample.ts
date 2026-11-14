@@ -95,9 +95,14 @@ export function drawingSample(
  * numbers) on one line, so a drawing reads and diffs one point per line.
  */
 export function serializeSample(sample: DrawingSample): string {
+  return compactJson(sample);
+}
+
+/** `serializeSample` for any value: the collection batch (#100) is written the same way. */
+export function compactJson(value: unknown): string {
   const number = String.raw`-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?`;
   const numberList = new RegExp(String.raw`\[\s*(${number}(?:,\s*${number})*)\s*\]`, 'g');
-  const json = JSON.stringify(sample, null, 2).replace(
+  const json = JSON.stringify(value, null, 2).replace(
     numberList,
     (_, items: string) => `[${items.split(/,\s*/).join(', ')}]`,
   );

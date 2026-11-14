@@ -1,0 +1,138 @@
+<details class="collect">
+  <summary i18n="@@collectionSession.summary">Sessão de coleta (desenvolvimento)</summary>
+  <div class="body">
+    @if (queue() === null) {
+      <form class="fields" novalidate (submit)="onStart($event)">
+        <p class="hint" i18n="@@collectionSession.hint">
+          Desenha em sequência os kanji do conjunto real e baixa todos num arquivo só. Desenhe no
+          celular, com o dedo, na ordem certa. Só desenhos da equipe; desenhos de alunos precisam de
+          ADR.
+        </p>
+        <label class="field">
+          <span i18n="@@collectionSession.writer"
+            >Código de quem desenha (como a ou p2; nunca o nome)</span
+          >
+          <input
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="16"
+            required
+            [value]="writer()"
+            (input)="onWriter($event)"
+          />
+        </label>
+        <label class="field">
+          <span i18n="@@collectionSession.kanji">Kanji da sessão</span>
+          <textarea
+            lang="ja"
+            rows="3"
+            autocomplete="off"
+            spellcheck="false"
+            required
+            [value]="kanjiText()"
+            (input)="onKanji($event)"
+          ></textarea>
+        </label>
+        <label class="field">
+          <span i18n="@@collectionSession.repetitions">Vezes cada kanji</span>
+          <input
+            type="number"
+            inputmode="numeric"
+            min="1"
+            [max]="maxRepetitions"
+            required
+            [value]="repetitions()"
+            (input)="onRepetitions($event)"
+          />
+        </label>
+        <button type="submit" class="start" i18n="@@collectionSession.start">Começar</button>
+        <p class="status" role="status">
+          @switch (problem()) {
+            @case ('writer') {
+              <span i18n="@@collectionSession.problem.writer"
+                >Use um código de letras minúsculas, números e hífen, como a ou p2.</span
+              >
+            }
+            @case ('kanji') {
+              <span i18n="@@collectionSession.problem.kanji"
+                >Escreva só kanji, separados ou não por espaço ou vírgula.</span
+              >
+            }
+            @case ('repetitions') {
+              <span i18n="@@collectionSession.problem.repetitions"
+                >Escolha de 1 a {{ maxRepetitions }} vezes.</span
+              >
+            }
+          }
+        </p>
+      </form>
+    } @else {
+      <div class="fields">
+        <p class="hint" i18n="@@collectionSession.running">
+          Sessão de {{ writer() }}: {{ samples().length }} guardados, {{ pending() }} ainda não
+          baixados.
+        </p>
+        <button type="button" class="end" (click)="end()" i18n="@@collectionSession.end">
+          Encerrar sessão
+        </button>
+      </div>
+    }
+  </div>
+</details>
+
+@if (queue(); as queue) {
+  <!-- Keeps the page scrollable past the fixed bar, so nothing stays hidden under it. -->
+  <div class="spacer" aria-hidden="true"></div>
+  <section class="bar" i18n-aria-label="@@collectionSession.bar" aria-label="Sessão de coleta">
+    <p class="prompt">
+      @if (current(); as kanji) {
+        <span i18n="@@collectionSession.prompt">Desenhe</span>
+        <span class="kanji" lang="ja">{{ kanji }}</span>
+        <span class="progress" i18n="@@collectionSession.progress"
+          >{{ position() + 1 }} de {{ queue.length }}</span
+        >
+      } @else {
+        <span i18n="@@collectionSession.finished">Fila terminada: baixe o lote.</span>
+      }
+    </p>
+    <div class="actions">
+      <button
+        type="button"
+        class="skip"
+        [disabled]="finished()"
+        (click)="skip()"
+        i18n="@@collectionSession.skip"
+      >
+        Pular
+      </button>
+      <button
+        type="button"
+        class="save"
+        [disabled]="finished() || session.empty()"
+        (click)="saveAndNext()"
+        i18n="@@collectionSession.save"
+      >
+        Salvar e próximo
+      </button>
+      <button
+        type="button"
+        class="download"
+        [disabled]="samples().length === 0"
+        (click)="downloadBatch()"
+        i18n="@@collectionSession.download"
+      >
+        Baixar lote ({{ samples().length }})
+      </button>
+    </div>
+    <p class="status" role="status">
+      @if (problem() === 'pending') {
+        <span i18n="@@collectionSession.problem.pending"
+          >Baixe o lote antes de encerrar: {{ pending() }} desenhos ainda não foram baixados.</span
+        >
+      } @else if (downloaded(); as fileName) {
+        <span i18n="@@collectionSession.downloaded">Lote baixado: {{ fileName }}</span>
+      }
+    </p>
+  </section>
+}

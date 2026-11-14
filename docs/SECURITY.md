@@ -40,7 +40,7 @@ O frontend aplica os mesmos limites enquanto o aluno desenha, para avisar na hor
 
 - **Os desenhos não são guardados** depois que o job expira (5 minutos depois do fim). Guardar desenhos de alunos, mesmo para teste, precisa de ADR antes.
 - **Nada de desenho no log.** O log do Uvicorn registra rota e status, não o corpo.
-- **A exportação de desenhos** (#66) só existe no build de desenvolvimento.
+- **A exportação de desenhos** (#66) e a **sessão de coleta** (#100) só existem no build de desenvolvimento.
 
 ## Nenhuma saída de rede
 
