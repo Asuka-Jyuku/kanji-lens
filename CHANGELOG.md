@@ -5,6 +5,7 @@ Formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [versio
 ## [Não publicado]
 
 ### Funcionalidades
+- No build de desenvolvimento, a sessão de coleta pede os kanji do conjunto real em sequência, no celular, e baixa os desenhos num lote só; `ml/scripts/import_drawings.py` grava o lote por pessoa em `ml/drawings/recognition/` e mostra quanto falta por classe. As 40 primeiras classes estão em `ml/drawings/recognition/classes.txt` (#100, parte da #93).
 - A tela mostra os candidatos com a confiança em porcentagem e, quando a ordem importa, diz em texto se a ordem dos traços está certa e o que corrigir, para o kanji que o aluno escolher; o rodapé dá o crédito do KanjiVG (#59).
 - "Reconhecer" envia o desenho, mostra o estado do job ("Na fila", "Reconhecendo…") e o candidato mais provável; cada erro diz o que fazer (#58).
 - Num celular pequeno em pé, o canvas encolhe para tudo caber sem rolar (#58).

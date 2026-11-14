@@ -6,8 +6,8 @@
     <app-recognition-panel />
     <app-prediction-list />
   </div>
-  @if (devTool) {
-    <ng-container *ngComponentOutlet="devTool" />
+  @for (tool of devTools; track tool) {
+    <ng-container *ngComponentOutlet="tool" />
   }
   <footer class="credits">
     <p i18n="@@app.credits.kanjivg">

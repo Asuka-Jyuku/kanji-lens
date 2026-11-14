@@ -23,7 +23,9 @@ O app recebe traços desenhados no canvas (`[x, y, t]`), não papel escaneado. O
 
 O MVP treina a CNN com **desenhos sintéticos gerados a partir dos traços do KanjiVG**, com variações aleatórias (tremor, espessura, deslocamento e escala de cada traço, rotação leve, deformação elástica e velocidade). O **Kanji alive** (CC BY 4.0) entra como segunda fonte de traços, se os dados dele servirem. Fontes tipográficas (Klee One primeiro) só entram se o sintético sozinho não generalizar.
 
-O modelo é **validado só com escrita humana**, nunca com o sintético. O conjunto é fixo e feito pela equipe no canvas, com a exportação de desenhos (#66). Meta *estimada*: 5 desenhos de 3 pessoas por classe, começando por 40 classes que incluam os pares parecidos (日 × 目, 人 × 入, 土 × 士).
+O modelo é **validado só com escrita humana**, nunca com o sintético. O conjunto é fixo e feito pela equipe no canvas, com a exportação de desenhos (#66). Meta *estimada*: 5 desenhos de 3 pessoas por classe, começando por 40 classes que incluam os pares parecidos (日 × 目, 人 × 入, 王 × 玉, 土 × 工).
+
+> **Correção de 2026-11-13** ([#100](https://github.com/Asuka-Jyuku/kanji-lens/issues/100)): o exemplo dizia 土 × 士, mas 士 é da 5ª série e não está nas 240 classes, então o modelo não tem como confundi-los. As 40 classes escolhidas estão em `ml/drawings/recognition/classes.txt` ([docs/MODEL.md](../MODEL.md#onde-ficam)).
 
 **Para o ETL entrar depois sem mexer no resto,** o pipeline nasce com cinco regras:
 1. **Lista de classes fixa:** um arquivo versionado em `ml/`, com os 240 kanji sempre na mesma ordem (ADR 0021). O ETL9G tem todos eles.
